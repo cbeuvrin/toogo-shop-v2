@@ -41,7 +41,7 @@ export const DashboardWhatsAppBot = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  
+
   // Verification dialog state
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
@@ -60,7 +60,7 @@ export const DashboardWhatsAppBot = () => {
   // Parse existing phone number to extract country and local number
   const parsePhoneNumber = (fullNumber: string) => {
     if (!fullNumber) return;
-    
+
     // Try to match with known country prefixes
     for (const country of countries) {
       if (fullNumber.startsWith(country.phonePrefix)) {
@@ -98,7 +98,7 @@ export const DashboardWhatsAppBot = () => {
         .maybeSingle();
 
       if (error) throw error;
-      
+
       if (data) {
         setWhatsappUser(data as WhatsAppUser);
         parsePhoneNumber(data.phone_number);
@@ -153,13 +153,13 @@ export const DashboardWhatsAppBot = () => {
   const sendVerificationCode = async (phoneNumber: string) => {
     try {
       setIsSendingCode(true);
-      
+
       const { data, error } = await supabase.functions.invoke('whatsapp-send-verification', {
         body: { phoneNumber, tenantId: currentTenantId }
       });
 
       if (error) throw error;
-      
+
       if (data?.error) {
         throw new Error(data.error);
       }
@@ -178,7 +178,7 @@ export const DashboardWhatsAppBot = () => {
 
   const handleRegisterPhone = async () => {
     const fullPhone = getFullPhoneNumber();
-    
+
     if (!fullPhone || localNumber.trim().length < 8) {
       toast.error("Ingresa un número de WhatsApp válido (mínimo 8 dígitos)");
       return;
@@ -196,7 +196,7 @@ export const DashboardWhatsAppBot = () => {
         // Update existing
         const { error } = await supabase
           .from("whatsapp_users")
-          .update({ 
+          .update({
             phone_number: fullPhone,
             is_active: true,
             is_verified: false,
@@ -219,14 +219,14 @@ export const DashboardWhatsAppBot = () => {
       }
 
       await loadWhatsAppConfig();
-      
+
       // Send verification code and show dialog
       const sent = await sendVerificationCode(fullPhone);
       if (sent) {
         setShowVerificationDialog(true);
         setVerificationCode("");
       }
-      
+
     } catch (error: any) {
       console.error("Error registering phone:", error);
       toast.error("Error al registrar el número de WhatsApp");
@@ -243,17 +243,17 @@ export const DashboardWhatsAppBot = () => {
 
     try {
       setIsVerifying(true);
-      
+
       const { data, error } = await supabase.functions.invoke('whatsapp-verify-code', {
-        body: { 
+        body: {
           phoneNumber: whatsappUser?.phone_number,
           tenantId: currentTenantId,
-          code: verificationCode 
+          code: verificationCode
         }
       });
 
       if (error) throw error;
-      
+
       if (data?.error) {
         toast.error(data.error);
         return;
@@ -263,7 +263,7 @@ export const DashboardWhatsAppBot = () => {
       setShowVerificationDialog(false);
       setVerificationCode("");
       await loadWhatsAppConfig();
-      
+
     } catch (error: any) {
       console.error("Error verifying code:", error);
       toast.error(error.message || "Error al verificar el código");
@@ -350,8 +350,8 @@ export const DashboardWhatsAppBot = () => {
           </DialogHeader>
           <div className="space-y-6 py-4">
             <div className="flex justify-center">
-              <InputOTP 
-                maxLength={6} 
+              <InputOTP
+                maxLength={6}
                 value={verificationCode}
                 onChange={setVerificationCode}
                 disabled={isVerifying}
@@ -366,10 +366,10 @@ export const DashboardWhatsAppBot = () => {
                 </InputOTPGroup>
               </InputOTP>
             </div>
-            
+
             <div className="space-y-3">
-              <Button 
-                onClick={handleVerifyCode} 
+              <Button
+                onClick={handleVerifyCode}
                 className="w-full"
                 disabled={verificationCode.length !== 6 || isVerifying}
               >
@@ -382,7 +382,7 @@ export const DashboardWhatsAppBot = () => {
                   "Verificar"
                 )}
               </Button>
-              
+
               <Button
                 variant="ghost"
                 className="w-full"
@@ -401,7 +401,7 @@ export const DashboardWhatsAppBot = () => {
                 )}
               </Button>
             </div>
-            
+
             <p className="text-xs text-center text-muted-foreground">
               El código expira en 10 minutos
             </p>
@@ -607,6 +607,55 @@ export const DashboardWhatsAppBot = () => {
                 Si envías audio, el bot también te responde con audio
               </li>
             </ul>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-blue-50/50 border-blue-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <span className="text-xl">💡</span>
+            Guía de Comandos Rápidos
+          </CardTitle>
+          <CardDescription>
+            Copia y pega estos ejemplos para hablar con tu asistente
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3 p-4 bg-white rounded-lg border shadow-sm">
+              <h4 className="font-semibold flex items-center gap-2 text-sm text-blue-600">
+                <span className="text-lg">📊</span> Consultas y Reportes
+              </h4>
+              <ul className="space-y-2 text-sm">
+                <li className="p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer transition-colors border border-transparent hover:border-gray-200">
+                  "¿Cuánto vendí hoy?"
+                </li>
+                <li className="p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer transition-colors border border-transparent hover:border-gray-200">
+                  "Dame un resumen de esta semana"
+                </li>
+                <li className="p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer transition-colors border border-transparent hover:border-gray-200">
+                  "¿Cuáles son mis productos más vendidos?"
+                </li>
+              </ul>
+            </div>
+
+            <div className="space-y-3 p-4 bg-white rounded-lg border shadow-sm">
+              <h4 className="font-semibold flex items-center gap-2 text-sm text-purple-600">
+                <span className="text-lg">🛍️</span> Gestión de Productos
+              </h4>
+              <ul className="space-y-2 text-sm">
+                <li className="p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer transition-colors border border-transparent hover:border-gray-200">
+                  "Crear producto: Tenis Nike Air $2500"
+                </li>
+                <li className="p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer transition-colors border border-transparent hover:border-gray-200">
+                  "Cambiar precio de Tenis Nike Air a $2300"
+                </li>
+                <li className="p-2 bg-gray-50 rounded hover:bg-gray-100 cursor-pointer transition-colors border border-transparent hover:border-gray-200">
+                  "Desactivar producto: Tenis Nike Air"
+                </li>
+              </ul>
+            </div>
           </div>
         </CardContent>
       </Card>
