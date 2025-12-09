@@ -6,11 +6,11 @@ import Tienda from '@/pages/Tienda';
 export const SmartHomePage = () => {
   const { tenant, isLoading, error } = useTenantByDomain();
   const [fallbackToIndex, setFallbackToIndex] = React.useState(false);
-  
+
   // Get current hostname and pathname
   const hostname = window.location.hostname;
   const pathname = window.location.pathname.replace(/\/$/, '');
-  
+
   console.log('🏠 [SmartHomePage] Estado actual:', {
     hostname,
     pathname,
@@ -23,7 +23,7 @@ export const SmartHomePage = () => {
 
   // Fallback timeout for preview domains (aumentado para conexiones lentas)
   React.useEffect(() => {
-    const isPreviewDomain = hostname.includes('lovableproject.com') || hostname.includes('lovable.app') || hostname.includes('localhost');
+    const isPreviewDomain = hostname.includes('lovableproject.com') || hostname.includes('lovable.app') || hostname.includes('localhost') || hostname.includes('vercel.app');
     if (isPreviewDomain && isLoading) {
       const timeout = setTimeout(() => {
         console.log('⏰ [SmartHomePage] Timeout alcanzado - mostrando Index como fallback');
@@ -32,7 +32,7 @@ export const SmartHomePage = () => {
       return () => clearTimeout(timeout);
     }
   }, [isLoading, hostname]);
-  
+
   // Show loading state (with fallback)
   if (isLoading && !fallbackToIndex) {
     console.log('⏳ [SmartHomePage] Mostrando loading state');
@@ -42,15 +42,15 @@ export const SmartHomePage = () => {
       </div>
     );
   }
-  
+
   // Main TOOGO domain should show landing page
   if (hostname === 'toogo.store' || hostname === 'www.toogo.store') {
     console.log('🏠 [SmartHomePage] Dominio principal detectado - mostrando Index (landing)');
     return <Index />;
   }
-  
+
   // Lovable preview domains - show Tienda for /tienda, Index for everything else
-  if (hostname.includes('lovableproject.com') || hostname.includes('lovable.app') || hostname.includes('localhost')) {
+  if (hostname.includes('lovableproject.com') || hostname.includes('lovable.app') || hostname.includes('localhost') || hostname.includes('vercel.app')) {
     if (pathname === '/tienda') {
       console.log('🏪 [SmartHomePage] Dominio de preview con /tienda - mostrando Tienda (demo)');
       return <Tienda />;
@@ -59,7 +59,7 @@ export const SmartHomePage = () => {
       return <Index />;
     }
   }
-  
+
   // For any other domain (subdomain or purchased domains)
   // Let Tienda component handle whether the store exists or not
   console.log('🏪 [SmartHomePage] Dominio no principal - mostrando Tienda (resolverá existencia internamente)');
