@@ -25,23 +25,23 @@ export const useTenantAuth = (): TenantAuthResult => {
         return;
       }
 
-    // Check cache first (10 min TTL)
-    const cacheKey = `user_role_${user.id}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      try {
-        const { role, timestamp } = JSON.parse(cached);
-        const age = Date.now() - timestamp;
-        if (age < 10 * 60 * 1000) { // 10 minutes
-          console.log('💾 [useTenantAuth] Using cached role:', role);
-          setUserRole(role);
-          setRoleChecked(true);
-          return;
+      // Check cache first (10 min TTL)
+      const cacheKey = `user_role_${user.id}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const { role, timestamp } = JSON.parse(cached);
+          const age = Date.now() - timestamp;
+          if (age < 10 * 60 * 1000) { // 10 minutes
+            console.log('💾 [useTenantAuth] Using cached role:', role);
+            setUserRole(role);
+            setRoleChecked(true);
+            return;
+          }
+        } catch (e) {
+          // Invalid cache, continue to fetch
         }
-      } catch (e) {
-        // Invalid cache, continue to fetch
       }
-    }
 
       try {
         // Fetch ALL user roles for this user
@@ -63,15 +63,15 @@ export const useTenantAuth = (): TenantAuthResult => {
           return;
         }
 
-        // Prioritize roles: tenant_admin > tenant_staff > superadmin
+        // Prioritize roles: superadmin > tenant_admin > tenant_staff
         const rolePriority = {
+          'superadmin': 100, // Highest priority
           'tenant_admin': 3,
-          'tenant_staff': 2,
-          'superadmin': 1
+          'tenant_staff': 2
         };
 
         // Sort roles by priority
-        const sortedRoles = roles.sort((a, b) => 
+        const sortedRoles = roles.sort((a, b) =>
           (rolePriority[b.role] || 0) - (rolePriority[a.role] || 0)
         );
 
@@ -99,22 +99,22 @@ export const useTenantAuth = (): TenantAuthResult => {
   }, [user, authLoading]);
 
   const isLoading = authLoading || !roleChecked;
-  
+
   // Check if we're on a main/dev domain
   const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-  const isMainDomain = hostname === 'toogo.store' || 
-                       hostname === 'www.toogo.store' || 
-                       hostname.includes('lovableproject.com') ||
-                       hostname.includes('lovable.app') ||
-                       hostname.includes('localhost');
-  
+  const isMainDomain = hostname === 'toogo.store' ||
+    hostname === 'www.toogo.store' ||
+    hostname.includes('lovableproject.com') ||
+    hostname.includes('lovable.app') ||
+    hostname.includes('localhost');
+
   // Usuario está autenticado si:
   // 1. Está logueado en Supabase Y
   // 2. Tiene un rol válido Y
   // 3. (Es superadmin) O (tenant_admin/tenant_staff incluso sin tenant en dominios principales)
   const isAuthenticated = !!(
-    user && 
-    userRole && 
+    user &&
+    userRole &&
     (
       // Superadmin puede acceder sin tenant
       (userRole === 'superadmin') ||

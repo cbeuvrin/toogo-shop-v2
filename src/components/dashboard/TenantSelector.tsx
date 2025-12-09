@@ -27,22 +27,52 @@ export const TenantSelector = () => {
     userRole,
   } = ctx;
 
-  // Show current tenant name for all users (superadmins now only have Demo Store)
+  const handleTenantChange = (value: string) => {
+    setCurrentTenantId(value);
+  };
+
   const currentTenant = availableTenants.find(t => t.id === currentTenantId);
-  
-  return (
-    <div className="flex items-center gap-2">
-      {/* Desktop: solo "Ver Tienda" + rol */}
-      <div className="hidden md:flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">Ver Tienda</span>
+
+  if (availableTenants.length <= 1 && !isSuperAdmin) {
+    // Single tenant user (and not superadmin), just show the name static
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium hidden md:inline truncate max-w-[150px]">
+          {currentTenant?.name}
+        </span>
         {userRole && (
           <Badge variant={isSuperAdmin ? "destructive" : "outline"} className="text-xs">
-            {userRole === 'tenant_admin' ? 'Admin' : 
-             userRole === 'tenant_staff' ? 'Staff' : 
-             userRole === 'superadmin' ? 'Super Admin' : userRole}
+            {userRole === 'tenant_admin' ? 'Admin' :
+              userRole === 'tenant_staff' ? 'Staff' :
+                userRole === 'superadmin' ? 'Super Admin' : userRole}
           </Badge>
         )}
       </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <Select value={currentTenantId || ''} onValueChange={handleTenantChange}>
+        <SelectTrigger className="w-[180px] h-8 text-xs md:text-sm rounded-[20px] bg-white/50 border-gray-200">
+          <SelectValue placeholder="Seleccionar tienda" />
+        </SelectTrigger>
+        <SelectContent>
+          {availableTenants.map((tenant) => (
+            <SelectItem key={tenant.id} value={tenant.id}>
+              {tenant.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {userRole && (
+        <Badge variant={isSuperAdmin ? "destructive" : "outline"} className="text-xs hidden md:inline-flex">
+          {userRole === 'tenant_admin' ? 'Admin' :
+            userRole === 'tenant_staff' ? 'Staff' :
+              userRole === 'superadmin' ? 'Super Admin' : userRole}
+        </Badge>
+      )}
     </div>
   );
 };

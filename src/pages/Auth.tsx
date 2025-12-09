@@ -14,7 +14,7 @@ import { usePlatformFacebookPixel } from "@/hooks/usePlatformFacebookPixel";
 // Función helper para traducir errores de autenticación
 const getAuthErrorMessage = (error: any): string => {
   const errorMessage = error?.message || "";
-  
+
   // Mapear errores comunes de Supabase a mensajes amigables en español
   switch (errorMessage) {
     case "Invalid login credentials":
@@ -65,7 +65,7 @@ const Auth = () => {
     const isReset = searchParams.get('reset') === 'true';
     const hasTokens = searchParams.get('access_token') && searchParams.get('refresh_token');
     const reason = searchParams.get('reason');
-    
+
     if (isReset && hasTokens) {
       // This is a password reset, show the password reset component
       return;
@@ -167,20 +167,25 @@ const Auth = () => {
         title: "Éxito",
         description: "Has iniciado sesión correctamente",
       });
-      
+
       // Smart routing: prioritize return URL, then check PWA source
       const urlParams = new URLSearchParams(window.location.search);
       const returnTo = urlParams.get('return');
       const fromPWA = urlParams.get('source') === 'pwa' || sessionStorage.getItem('fromPWA') === '1';
       const isSuperAdmin = userRole?.role === 'superadmin';
-      
+
       // Clear PWA flag
       sessionStorage.removeItem('fromPWA');
-      
+
+      // Navigate based on priority: return URL > PWA source > default
       // Navigate based on priority: return URL > PWA source > default
       if (returnTo && isSuperAdmin) {
         navigate(returnTo);
+      } else if (isSuperAdmin) {
+        // Superadmin ALWAYS goes to /admin by default unless a specific return URL is present
+        navigate("/admin");
       } else if (fromPWA && isSuperAdmin) {
+        // Redundant check but kept for logic consistency if PWA flag needs specific handling later
         navigate("/admin");
       } else {
         navigate("/dashboard");
@@ -355,7 +360,7 @@ const Auth = () => {
                   </Button>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <button
                   type="button"
