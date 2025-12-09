@@ -2,6 +2,7 @@ import React from 'react';
 import { useTenantByDomain } from '@/hooks/useTenantByDomain';
 import Index from '@/pages/Index';
 import Tienda from '@/pages/Tienda';
+import { LoadingScreen } from '@/components/ui/LoadingScreen';
 
 export const SmartHomePage = () => {
   const { tenant, isLoading, error } = useTenantByDomain();
@@ -47,12 +48,8 @@ export const SmartHomePage = () => {
 
   // Show loading state (with fallback)
   if (isLoading && !fallbackToIndex) {
-    console.log('⏳ [SmartHomePage] Mostrando loading state');
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-      </div>
-    );
+    console.log('⏳ [SmartHomePage] Mostrando loading state (Custom Animation)');
+    return <LoadingScreen />;
   }
 
   // Lovable preview domains - show Tienda for /tienda, Index for everything else
