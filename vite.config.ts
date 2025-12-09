@@ -105,5 +105,14 @@ export default defineConfig(({ mode }) => ({
   build: {
     cssCodeSplit: true,
     sourcemap: true, // ✅ Ver errores legibles en producción
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-slot', 'lucide-react', 'clsx', 'tailwind-merge'],
+          supabase: ['@supabase/supabase-js']
+        }
+      }
+    }
   },
 }));
