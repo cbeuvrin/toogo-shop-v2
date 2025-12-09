@@ -18,18 +18,19 @@ interface PaymentConfig {
   mercadopago: {
     enabled: boolean;
     publicKey: string;
-    accessToken: string; // Added for secure input
+    accessToken: string;
     hasAccessToken: boolean;
   };
   paypal: {
     enabled: boolean;
     clientId: string;
-    clientSecret: string; // Added for secure input
+    clientSecret: string;
     hasClientSecret: boolean;
   };
   stripe: {
     enabled: boolean;
     publicKey: string;
+    secretKey: string;
     hasSecretKey: boolean;
   };
   whatsapp: {
@@ -67,6 +68,7 @@ export const DashboardPayments = () => {
     stripe: {
       enabled: false,
       publicKey: "",
+      secretKey: "",
       hasSecretKey: false
     },
     whatsapp: {
@@ -89,25 +91,25 @@ export const DashboardPayments = () => {
     try {
       setLoading(true);
 
-      // SECURITY: Use secure RPC instead of direct table access
       const { data, error } = await supabase
         .rpc('get_tenant_payment_display_config', { p_tenant_id: tenantId });
 
       if (error) throw error;
+
       const settings = data as unknown as PaymentDisplaySettings;
 
-      // 2. Check existence of SECRET credentials (in safe separate table)
-      // We don't need the actual value, just to know if it's configured
-      const { data: secretDataRaw } = await supabase
+      // Check existence of SECRET credentials (in safe separate table)
+      const { data: secretDataRow } = await supabase
         .from('tenant_payment_secrets' as any)
-        .select('mercadopago_access_token, paypal_client_secret')
+        .select('mercadopago_access_token, paypal_client_secret, stripe_secret_key')
         .eq('tenant_id', tenantId)
         .maybeSingle();
 
-      const secretData = secretDataRaw as any;
+      const secretData = secretDataRow as any;
 
       const hasMpSecret = !!secretData?.mercadopago_access_token;
       const hasPaypalSecret = !!secretData?.paypal_client_secret;
+      const hasStripeSecret = !!secretData?.stripe_secret_key;
 
       if (settings) {
         console.log('Received payment config');
@@ -121,19 +123,20 @@ export const DashboardPayments = () => {
           mercadopago: {
             enabled: !!settings.mercadopago_public_key,
             publicKey: settings.mercadopago_public_key || '',
-            accessToken: '', // Never expose secret to frontend state
+            accessToken: '',
             hasAccessToken: hasMpSecret
           },
           paypal: {
             enabled: !!settings.paypal_client_id,
             clientId: settings.paypal_client_id || '',
-            clientSecret: '', // Never expose secret to frontend state
+            clientSecret: '',
             hasClientSecret: hasPaypalSecret
           },
           stripe: {
             enabled: false,
             publicKey: '',
-            hasSecretKey: false
+            secretKey: '',
+            hasSecretKey: hasStripeSecret
           }
         }));
       }
@@ -186,25 +189,17 @@ export const DashboardPayments = () => {
       if (settingsError) throw settingsError;
 
       // 2. Update SECRET settings in tenant_payment_secrets (if provided)
-      // Only upsert if we have secrets to save
-      if (config.mercadopago.accessToken || config.paypal.clientSecret) {
+      if (config.mercadopago.accessToken || config.paypal.clientSecret || config.stripe.secretKey) {
 
-        // Fetch existing first to merge (or use upsert with ignoreDuplicates: false)
-        // We construct the payload dynamically
         const secretPayload: any = {
           tenant_id: tenantId,
           updated_at: new Date().toISOString()
         };
 
-        if (config.mercadopago.accessToken) {
-          secretPayload.mercadopago_access_token = config.mercadopago.accessToken;
-        }
+        if (config.mercadopago.accessToken) secretPayload.mercadopago_access_token = config.mercadopago.accessToken;
+        if (config.paypal.clientSecret) secretPayload.paypal_client_secret = config.paypal.clientSecret;
+        if (config.stripe.secretKey) secretPayload.stripe_secret_key = config.stripe.secretKey;
 
-        if (config.paypal.clientSecret) {
-          secretPayload.paypal_client_secret = config.paypal.clientSecret;
-        }
-
-        // Use upsert to handle both insert (first time) and update
         const { error: secretError } = await supabase
           .from('tenant_payment_secrets' as any)
           .upsert(secretPayload, { onConflict: 'tenant_id' });
@@ -224,7 +219,8 @@ export const DashboardPayments = () => {
       setConfig(prev => ({
         ...prev,
         mercadopago: { ...prev.mercadopago, accessToken: '', hasAccessToken: prev.mercadopago.hasAccessToken || !!config.mercadopago.accessToken },
-        paypal: { ...prev.paypal, clientSecret: '', hasClientSecret: prev.paypal.hasClientSecret || !!config.paypal.clientSecret }
+        paypal: { ...prev.paypal, clientSecret: '', hasClientSecret: prev.paypal.hasClientSecret || !!config.paypal.clientSecret },
+        stripe: { ...prev.stripe, secretKey: '', hasSecretKey: prev.stripe.hasSecretKey || !!config.stripe.secretKey }
       }));
 
     } catch (error: any) {
@@ -510,21 +506,28 @@ export const DashboardPayments = () => {
                 placeholder="pk_live_..."
               />
             </div>
-            <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Secret Key (Secreto):</strong> {config.stripe.hasSecretKey ? "✅ Configurado en secretos" : "❌ No configurado"}
-                <br />
-                ¿No sabes cómo obtener tus credenciales de Stripe?{" "}
-                <a
-                  href="/ayuda/configurar-pagos?provider=stripe"
-                  className="text-primary hover:underline font-medium"
-                  target="_blank"
-                >
-                  Ver guía paso a paso →
-                </a>
-              </AlertDescription>
-            </Alert>
+            <div>
+              <Label htmlFor="stripe-secret-key" className="flex items-center gap-2">
+                Secret Key *
+                <span className="text-xs text-muted-foreground font-normal">(Requerido)</span>
+              </Label>
+              <Input
+                id="stripe-secret-key"
+                type="password"
+                value={config.stripe.secretKey}
+                onChange={(e) => updateConfig("stripe", "secretKey", e.target.value)}
+                placeholder={config.stripe.hasSecretKey ? "•••••••••••••••• (Guardado)" : "sk_live_..."}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Tu Secret Key se guarda de forma segura.
+              </p>
+            </div>
+            <div className="bg-blue-50 p-3 rounded-md border border-blue-100 text-sm text-blue-800">
+              <p className="flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                ¿No sabes cómo obtener tus credenciales? <a href="#" className="underline">Ver guía</a>
+              </p>
+            </div>
           </CardContent>
         )}
       </Card>
