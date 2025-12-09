@@ -98,7 +98,47 @@
 </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+       <!-- Static Loading Screen (Visible before React mounts) -->
+       <style>
+        .initial-loader {
+          position: fixed;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background-color: white;
+          z-index: 9999;
+        }
+        .initial-loader-image {
+          width: 50px;
+          height: 50px;
+          margin-bottom: 20px;
+          animation: float 2s ease-in-out infinite;
+        }
+        @keyframes float {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+          100% { transform: translateY(0px); }
+        }
+        .initial-loader-text {
+          font-family: system-ui, -apple-system, sans-serif;
+          font-size: 1.25rem;
+          font-weight: bold;
+          color: #374151;
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: .5; }
+        }
+      </style>
+      <div class="initial-loader">
+        <img src="/assets/toogo-logo.png" alt="TOOGO Logo" class="initial-loader-image" />
+        <div class="initial-loader-text">Cargando tu tienda...</div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

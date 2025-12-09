@@ -44,22 +44,41 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
+  // Determine Cart Key based on tenant/subdomain to isolate carts
+  // In production (subdomains), localStorage is already isolated.
+  // This helps in development/preview modes on shared domains.
+  const getCartKey = () => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const host = searchParams.get('host') || window.location.hostname;
+      // Simple sanitization
+      return `cart_${host.replace(/[^a-z0-9]/gi, '_')}`;
+    } catch {
+      return 'cart_default';
+    }
+  };
+
+  const CART_KEY = getCartKey();
+
   // Load cart from localStorage on mount
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
+    const savedCart = localStorage.getItem(CART_KEY);
     if (savedCart) {
       try {
         setItems(JSON.parse(savedCart));
       } catch (error) {
         console.error('Error loading cart from localStorage:', error);
       }
+    } else {
+      // Reset if no cart for this key (important when switching keys)
+      setItems([]);
     }
-  }, []);
+  }, [CART_KEY]);
 
   // Save cart to localStorage whenever items change
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(items));
-  }, [items]);
+    localStorage.setItem(CART_KEY, JSON.stringify(items));
+  }, [items, CART_KEY]);
 
   const addItem = (product: Omit<CartItem, 'quantity'>) => {
     setItems(currentItems => {
@@ -69,7 +88,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
         const existingKey = item.variation_id ? `${item.id}_${item.variation_id}` : item.id;
         return existingKey === itemKey;
       });
-      
+
       if (existingItem) {
         // Check stock before adding
         if (existingItem.quantity >= product.stock) {
@@ -82,7 +101,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
             : item;
         });
       }
-      
+
       return [...currentItems, { ...product, quantity: 1 }];
     });
   };
@@ -118,7 +137,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   };
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-  
+
   const totalPrice = items.reduce(
     (total, item) => {
       const price = item.price_mxn || 0; // Protección contra undefined

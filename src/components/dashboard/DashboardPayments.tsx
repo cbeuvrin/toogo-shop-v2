@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CreditCard, MessageCircle, DollarSign, Settings, Shield, AlertTriangle, Crown } from "lucide-react";
+import { CreditCard, MessageCircle, DollarSign, Settings, Shield, AlertTriangle, Crown, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -18,11 +18,13 @@ interface PaymentConfig {
   mercadopago: {
     enabled: boolean;
     publicKey: string;
+    accessToken: string; // Added for secure input
     hasAccessToken: boolean;
   };
   paypal: {
     enabled: boolean;
     clientId: string;
+    clientSecret: string; // Added for secure input
     hasClientSecret: boolean;
   };
   stripe: {
@@ -53,11 +55,13 @@ export const DashboardPayments = () => {
     mercadopago: {
       enabled: false,
       publicKey: "",
+      accessToken: "",
       hasAccessToken: false
     },
     paypal: {
       enabled: false,
       clientId: "",
+      clientSecret: "",
       hasClientSecret: false
     },
     stripe: {
@@ -86,20 +90,27 @@ export const DashboardPayments = () => {
       setLoading(true);
 
       // SECURITY: Use secure RPC instead of direct table access
-      // This follows principle of least privilege by only exposing display-safe data
       const { data, error } = await supabase
         .rpc('get_tenant_payment_display_config', { p_tenant_id: tenantId });
 
       if (error) throw error;
-
       const settings = data as unknown as PaymentDisplaySettings;
 
+      // 2. Check existence of SECRET credentials (in safe separate table)
+      // We don't need the actual value, just to know if it's configured
+      const { data: secretDataRaw } = await supabase
+        .from('tenant_payment_secrets' as any)
+        .select('mercadopago_access_token, paypal_client_secret')
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+
+      const secretData = secretDataRaw as any;
+
+      const hasMpSecret = !!secretData?.mercadopago_access_token;
+      const hasPaypalSecret = !!secretData?.paypal_client_secret;
+
       if (settings) {
-        // SECURITY NOTE: settings contains ONLY public/display-safe keys
-        // - mercadopago_public_key: PUBLIC key (not secret) for frontend
-        // - paypal_client_id: PUBLIC identifier (not secret) for frontend
-        // - Secret credentials are stored in Supabase secrets and never exposed to frontend
-        console.log('Received secure payment config (public keys only)');
+        console.log('Received payment config');
         setConfig(prev => ({
           ...prev,
           whatsapp: {
@@ -110,15 +121,17 @@ export const DashboardPayments = () => {
           mercadopago: {
             enabled: !!settings.mercadopago_public_key,
             publicKey: settings.mercadopago_public_key || '',
-            hasAccessToken: false // Secret token stored in Supabase secrets (not returned by RPC)
+            accessToken: '', // Never expose secret to frontend state
+            hasAccessToken: hasMpSecret
           },
           paypal: {
             enabled: !!settings.paypal_client_id,
             clientId: settings.paypal_client_id || '',
-            hasClientSecret: false // Secret stored in Supabase secrets (not returned by RPC)
+            clientSecret: '', // Never expose secret to frontend state
+            hasClientSecret: hasPaypalSecret
           },
           stripe: {
-            enabled: false, // Will be implemented when Stripe is enabled
+            enabled: false,
             publicKey: '',
             hasSecretKey: false
           }
@@ -159,7 +172,7 @@ export const DashboardPayments = () => {
     try {
       setLoading(true);
 
-      // Update public settings in tenant_settings table using update() like useTenantSettings
+      // 1. Update PUBLIC settings in tenant_settings
       const { error: settingsError } = await supabase
         .from('tenant_settings')
         .update({
@@ -170,15 +183,50 @@ export const DashboardPayments = () => {
         })
         .eq('tenant_id', tenantId);
 
-      if (settingsError) {
-        console.error('Error saving payment config:', settingsError);
-        throw settingsError;
+      if (settingsError) throw settingsError;
+
+      // 2. Update SECRET settings in tenant_payment_secrets (if provided)
+      // Only upsert if we have secrets to save
+      if (config.mercadopago.accessToken || config.paypal.clientSecret) {
+
+        // Fetch existing first to merge (or use upsert with ignoreDuplicates: false)
+        // We construct the payload dynamically
+        const secretPayload: any = {
+          tenant_id: tenantId,
+          updated_at: new Date().toISOString()
+        };
+
+        if (config.mercadopago.accessToken) {
+          secretPayload.mercadopago_access_token = config.mercadopago.accessToken;
+        }
+
+        if (config.paypal.clientSecret) {
+          secretPayload.paypal_client_secret = config.paypal.clientSecret;
+        }
+
+        // Use upsert to handle both insert (first time) and update
+        const { error: secretError } = await supabase
+          .from('tenant_payment_secrets' as any)
+          .upsert(secretPayload, { onConflict: 'tenant_id' });
+
+        if (secretError) {
+          console.error('Error saving secrets:', secretError);
+          throw new Error("Error guardando credenciales secretas: " + secretError.message);
+        }
       }
 
       toast({
-        title: "Configuración de pago exitosa",
-        description: "Tu configuración de pagos se ha guardado correctamente.",
+        title: "Configuración guardada",
+        description: "Tus métodos de pago se han actualizado correctamente.",
       });
+
+      // Clear secret fields from state
+      setConfig(prev => ({
+        ...prev,
+        mercadopago: { ...prev.mercadopago, accessToken: '', hasAccessToken: prev.mercadopago.hasAccessToken || !!config.mercadopago.accessToken },
+        paypal: { ...prev.paypal, clientSecret: '', hasClientSecret: prev.paypal.hasClientSecret || !!config.paypal.clientSecret }
+      }));
+
     } catch (error: any) {
       console.error('Error saving payment config:', error);
       toast({
@@ -310,21 +358,35 @@ export const DashboardPayments = () => {
                 placeholder="APP_USR-..."
               />
             </div>
-            <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Access Token (Secreto):</strong> {config.mercadopago.hasAccessToken ? "✅ Configurado en secretos" : "❌ No configurado"}
-                <br />
-                ¿No sabes cómo obtener tus credenciales de MercadoPago?{" "}
+            <div>
+              <Label htmlFor="mp-access-token" className="flex items-center gap-2">
+                Access Token *
+                <span className="text-xs text-muted-foreground font-normal">(Requerido para procesar el pago)</span>
+              </Label>
+              <Input
+                id="mp-access-token"
+                type="password"
+                value={config.mercadopago.accessToken}
+                onChange={(e) => updateConfig("mercadopago", "accessToken", e.target.value)}
+                placeholder={config.mercadopago.hasAccessToken ? "•••••••••••••••• (Guardado)" : "Ingresa tu Access Token"}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Tu Access Token se guarda de forma segura. Déjalo en blanco si no deseas cambiarlo.
+              </p>
+            </div>
+            <div className="bg-blue-50 p-3 rounded-md border border-blue-100 text-sm text-blue-800">
+              <p className="flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                ¿No sabes cómo obtener tus credenciales?{" "}
                 <a
                   href="/ayuda/configurar-pagos?provider=mercadopago"
-                  className="text-primary hover:underline font-medium"
+                  className="underline font-semibold hover:text-blue-900"
                   target="_blank"
                 >
-                  Ver guía paso a paso →
+                  Ver guía
                 </a>
-              </AlertDescription>
-            </Alert>
+              </p>
+            </div>
           </CardContent>
         )}
       </Card>
@@ -372,21 +434,35 @@ export const DashboardPayments = () => {
                 placeholder="AYjcyDDkBKSM..."
               />
             </div>
-            <Alert>
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Client Secret (Secreto):</strong> {config.paypal.hasClientSecret ? "✅ Configurado en secretos" : "❌ No configurado"}
-                <br />
-                ¿No sabes cómo obtener tus credenciales de PayPal?{" "}
+            <div>
+              <Label htmlFor="paypal-client-secret" className="flex items-center gap-2">
+                Client Secret *
+                <span className="text-xs text-muted-foreground font-normal">(Requerido para procesar el pago)</span>
+              </Label>
+              <Input
+                id="paypal-client-secret"
+                type="password"
+                value={config.paypal.clientSecret}
+                onChange={(e) => updateConfig("paypal", "clientSecret", e.target.value)}
+                placeholder={config.paypal.hasClientSecret ? "•••••••••••••••• (Guardado)" : "Ingresa tu Client Secret"}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Tu Secret se guarda de forma segura. Déjalo en blanco si no deseas cambiarlo.
+              </p>
+            </div>
+            <div className="bg-blue-50 p-3 rounded-md border border-blue-100 text-sm text-blue-800">
+              <p className="flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                ¿No sabes cómo obtener tus credenciales?{" "}
                 <a
                   href="/ayuda/configurar-pagos?provider=paypal"
-                  className="text-primary hover:underline font-medium"
+                  className="underline font-semibold hover:text-blue-900"
                   target="_blank"
                 >
-                  Ver guía paso a paso →
+                  Ver guía
                 </a>
-              </AlertDescription>
-            </Alert>
+              </p>
+            </div>
           </CardContent>
         )}
       </Card>
