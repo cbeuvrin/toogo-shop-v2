@@ -1,11 +1,12 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building, DollarSign, TrendingUp, Shield, Settings, MessageSquare, Phone } from 'lucide-react';
+import { Users, Building, DollarSign, TrendingUp, Shield, Settings, MessageSquare, Phone, Store } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { AdminMetrics } from '@/components/admin/AdminMetrics';
 import { AdminUserManagement } from '@/components/admin/AdminUserManagement';
 import { AdminTenantManagement } from '@/components/admin/AdminTenantManagement';
@@ -28,7 +29,7 @@ const Admin = () => {
   useEffect(() => {
     const checkSuperAdminRole = async () => {
       if (!user) return;
-      
+
       try {
         const { data, error } = await supabase
           .from('user_roles')
@@ -107,7 +108,13 @@ const Admin = () => {
                 Gestión completa de usuarios, tenants y analytics
               </p>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-4">
+              <Button asChild variant="outline" className="text-sm">
+                <Link to="/dashboard">
+                  <Store className="w-4 h-4 mr-2" />
+                  Ir al Dashboard
+                </Link>
+              </Button>
               <div className="text-sm text-muted-foreground">
                 <span className="font-medium">Admin:</span> {user.email}
               </div>
