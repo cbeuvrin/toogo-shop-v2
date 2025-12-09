@@ -204,15 +204,15 @@ const Index = () => {
     </section>
 
     {/* WhatsApp Bot Section */}
-    <section className="py-8 lg:py-16 px-4 lg:px-6">
+    <section className="py-8 md:py-12 lg:py-16 px-4 lg:px-6">
       <div className="max-w-[95%] lg:max-w-[80%] mx-auto">
-        <div className="bg-white rounded-[30px] p-8 lg:p-16 shadow-lg border border-gray-100">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+        <div className="bg-white rounded-[20px] md:rounded-[30px] p-6 md:p-10 lg:p-16 shadow-lg border border-gray-100">
+          <div className="grid lg:grid-cols-2 gap-8 md:gap-12 lg:gap-20 items-center">
             {/* Left Column - Chat Interface */}
             <div className={`order-2 lg:order-1 flex justify-center transition-transform ${isVibrating ? 'animate-shake' : ''}`}>
-              <div className="w-full max-w-[350px] bg-white rounded-[2.5rem] shadow-2xl border-8 border-gray-900 overflow-hidden relative">
+              <div className="w-full max-w-[300px] sm:max-w-[350px] bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border-[6px] sm:border-8 border-gray-900 overflow-hidden relative">
                 {/* Phone Notch */}
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-40 h-6 bg-gray-900 rounded-b-3xl"></div>
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 sm:w-40 h-5 sm:h-6 bg-gray-900 rounded-b-3xl"></div>
 
                 {/* Chat Header */}
                 <div className="bg-[#075E54] p-4 pt-10 flex items-center gap-3 text-white">
@@ -275,14 +275,14 @@ const Index = () => {
 
             {/* Right Column - Text Content */}
             <div className="order-1 lg:order-2 space-y-6 text-center lg:text-left">
-              <div className="inline-block bg-green-100 text-green-700 font-semibold px-4 py-1 rounded-full text-sm mb-2">
+              <div className="inline-block bg-green-100 text-green-700 font-semibold px-4 py-1 rounded-full text-xs sm:text-sm mb-2">
                 NUEVO ✨
               </div>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
                 Habla con tu tienda<br />
                 <span className="text-[#25D366]">por WhatsApp</span>
               </h2>
-              <p className="text-lg lg:text-xl text-gray-600 leading-relaxed">
+              <p className="text-base sm:text-lg lg:text-xl text-gray-600 leading-relaxed">
                 Olvídate de paneles complicados. Con Toogo, gestionar tu negocio es tan fácil como chatear con un amigo.
               </p>
 
