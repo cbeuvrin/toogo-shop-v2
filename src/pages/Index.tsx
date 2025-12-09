@@ -193,125 +193,127 @@ const Index = () => {
     </section>
 
     {/* WhatsApp Bot Section */}
-    <section className="py-8 lg:py-16 px-4 lg:px-6 bg-gradient-to-b from-white to-purple-50">
+    <section className="py-8 lg:py-16 px-4 lg:px-6">
       <div className="max-w-[95%] lg:max-w-[80%] mx-auto">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          {/* Left Column - Chat Interface */}
-          <div className="order-2 lg:order-1 flex justify-center">
-            <div className="w-full max-w-[350px] bg-white rounded-[2.5rem] shadow-2xl border-8 border-gray-900 overflow-hidden relative">
-              {/* Phone Notch */}
-              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-40 h-6 bg-gray-900 rounded-b-3xl"></div>
+        <div className="bg-white rounded-[30px] p-8 lg:p-16 shadow-lg border border-gray-100">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {/* Left Column - Chat Interface */}
+            <div className="order-2 lg:order-1 flex justify-center">
+              <div className="w-full max-w-[350px] bg-white rounded-[2.5rem] shadow-2xl border-8 border-gray-900 overflow-hidden relative">
+                {/* Phone Notch */}
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-40 h-6 bg-gray-900 rounded-b-3xl"></div>
 
-              {/* Chat Header */}
-              <div className="bg-[#075E54] p-4 pt-10 flex items-center gap-3 text-white">
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                  <Store className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-sm">Mi Tienda Toogo</h3>
-                  <p className="text-xs text-green-100">En línea</p>
-                </div>
-              </div>
-
-              {/* Chat Messages */}
-              <div className="bg-[#E5DDD5] p-4 h-[400px] flex flex-col gap-4 overflow-y-auto bg-opacity-50" style={{ backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', backgroundSize: 'contain' }}>
-
-                {/* User Message */}
-                <div className="self-end bg-[#DCF8C6] p-3 rounded-lg rounded-tr-none shadow-sm max-w-[85%]">
-                  <p className="text-sm text-gray-800">Quiero subir el precio de los Sneakers a $1,200</p>
-                  <span className="text-[10px] text-gray-500 block text-right mt-1">10:42 AM <span className="text-blue-500">✓✓</span></span>
-                </div>
-
-                {/* Bot Reply */}
-                <div className="self-start bg-white p-3 rounded-lg rounded-tl-none shadow-sm max-w-[85%] flex gap-2">
+                {/* Chat Header */}
+                <div className="bg-[#075E54] p-4 pt-10 flex items-center gap-3 text-white">
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                    <Store className="w-6 h-6 text-white" />
+                  </div>
                   <div>
-                    <p className="text-sm text-gray-800 font-semibold mb-1">¡Entendido! 👟</p>
-                    <p className="text-sm text-gray-800">He actualizado el precio de <strong>Sneakers Urban</strong> a <strong>$1,200</strong>.</p>
-                    <div className="mt-2 bg-gray-100 p-2 rounded text-xs text-gray-600 border-l-4 border-green-500">
-                      Precio anterior: $950
-                    </div>
+                    <h3 className="font-semibold text-sm">Mi Tienda Toogo</h3>
+                    <p className="text-xs text-green-100">En línea</p>
                   </div>
                 </div>
 
-                {/* User Message 2 */}
-                <div className="self-end bg-[#DCF8C6] p-3 rounded-lg rounded-tr-none shadow-sm max-w-[85%] mt-2">
-                  <p className="text-sm text-gray-800">¿Cuánto he vendido hoy?</p>
-                  <span className="text-[10px] text-gray-500 block text-right mt-1">10:45 AM <span className="text-blue-500">✓✓</span></span>
+                {/* Chat Messages */}
+                <div className="bg-[#E5DDD5] p-4 h-[400px] flex flex-col gap-4 overflow-y-auto bg-opacity-50" style={{ backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', backgroundSize: 'contain' }}>
+
+                  {/* User Message */}
+                  <div className="self-end bg-[#DCF8C6] p-3 rounded-lg rounded-tr-none shadow-sm max-w-[85%]">
+                    <p className="text-sm text-gray-800">Quiero subir el precio de los Sneakers a $1,200</p>
+                    <span className="text-[10px] text-gray-500 block text-right mt-1">10:42 AM <span className="text-blue-500">✓✓</span></span>
+                  </div>
+
+                  {/* Bot Reply */}
+                  <div className="self-start bg-white p-3 rounded-lg rounded-tl-none shadow-sm max-w-[85%] flex gap-2">
+                    <div>
+                      <p className="text-sm text-gray-800 font-semibold mb-1">¡Entendido! 👟</p>
+                      <p className="text-sm text-gray-800">He actualizado el precio de <strong>Sneakers Urban</strong> a <strong>$1,200</strong>.</p>
+                      <div className="mt-2 bg-gray-100 p-2 rounded text-xs text-gray-600 border-l-4 border-green-500">
+                        Precio anterior: $950
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* User Message 2 */}
+                  <div className="self-end bg-[#DCF8C6] p-3 rounded-lg rounded-tr-none shadow-sm max-w-[85%] mt-2">
+                    <p className="text-sm text-gray-800">¿Cuánto he vendido hoy?</p>
+                    <span className="text-[10px] text-gray-500 block text-right mt-1">10:45 AM <span className="text-blue-500">✓✓</span></span>
+                  </div>
+
+                  {/* Bot Reply 2 */}
+                  <div className="self-start bg-white p-3 rounded-lg rounded-tl-none shadow-sm max-w-[85%]">
+                    <p className="text-sm text-gray-800">📅 <strong>Reporte de Hoy:</strong></p>
+                    <p className="text-sm text-gray-800 mt-1">Ventas totales: <strong>$8,450.00</strong></p>
+                    <p className="text-sm text-gray-800">Pedidos: <strong>12</strong></p>
+                    <p className="text-xs text-gray-500 mt-2 italic">Sigue así 🚀</p>
+                    <span className="text-[10px] text-gray-400 block text-right mt-1">10:45 AM</span>
+                  </div>
+
                 </div>
 
-                {/* Bot Reply 2 */}
-                <div className="self-start bg-white p-3 rounded-lg rounded-tl-none shadow-sm max-w-[85%]">
-                  <p className="text-sm text-gray-800">📅 <strong>Reporte de Hoy:</strong></p>
-                  <p className="text-sm text-gray-800 mt-1">Ventas totales: <strong>$8,450.00</strong></p>
-                  <p className="text-sm text-gray-800">Pedidos: <strong>12</strong></p>
-                  <p className="text-xs text-gray-500 mt-2 italic">Sigue así 🚀</p>
-                  <span className="text-[10px] text-gray-400 block text-right mt-1">10:45 AM</span>
-                </div>
-
-              </div>
-
-              {/* Input Area (Mock) */}
-              <div className="bg-white p-3 flex items-center gap-2 border-t">
-                <div className="w-6 h-6 rounded-full bg-gray-200"></div>
-                <div className="flex-1 h-8 bg-gray-100 rounded-full px-3 text-xs flex items-center text-gray-400">Escribe un mensaje...</div>
-                <div className="w-8 h-8 rounded-full bg-[#075E54] flex items-center justify-center">
-                  <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-white border-b-[5px] border-b-transparent ml-1"></div>
+                {/* Input Area (Mock) */}
+                <div className="bg-white p-3 flex items-center gap-2 border-t">
+                  <div className="w-6 h-6 rounded-full bg-gray-200"></div>
+                  <div className="flex-1 h-8 bg-gray-100 rounded-full px-3 text-xs flex items-center text-gray-400">Escribe un mensaje...</div>
+                  <div className="w-8 h-8 rounded-full bg-[#075E54] flex items-center justify-center">
+                    <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-white border-b-[5px] border-b-transparent ml-1"></div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Right Column - Text Content */}
-          <div className="order-1 lg:order-2 space-y-6 text-center lg:text-left">
-            <div className="inline-block bg-green-100 text-green-700 font-semibold px-4 py-1 rounded-full text-sm mb-2">
-              NUEVO ✨
-            </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
-              Habla con tu tienda<br />
-              <span className="text-[#25D366]">por WhatsApp</span>
-            </h2>
-            <p className="text-lg lg:text-xl text-gray-600 leading-relaxed">
-              Olvídate de paneles complicados. Con Toogo, gestionar tu negocio es tan fácil como chatear con un amigo.
-            </p>
+            {/* Right Column - Text Content */}
+            <div className="order-1 lg:order-2 space-y-6 text-center lg:text-left">
+              <div className="inline-block bg-green-100 text-green-700 font-semibold px-4 py-1 rounded-full text-sm mb-2">
+                NUEVO ✨
+              </div>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
+                Habla con tu tienda<br />
+                <span className="text-[#25D366]">por WhatsApp</span>
+              </h2>
+              <p className="text-lg lg:text-xl text-gray-600 leading-relaxed">
+                Olvídate de paneles complicados. Con Toogo, gestionar tu negocio es tan fácil como chatear con un amigo.
+              </p>
 
-            <ul className="space-y-4 text-left mx-auto lg:mx-0 max-w-md">
-              <li className="flex items-start">
-                <div className="bg-green-100 p-2 rounded-full mr-4 mt-1">
-                  <Zap className="w-4 h-4 text-green-600" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-900">Cambia precios al instante</h4>
-                  <p className="text-gray-600 text-sm">Solo escribe "Cambiar precio" y listo.</p>
-                </div>
-              </li>
-              <li className="flex items-start">
-                <div className="bg-purple-100 p-2 rounded-full mr-4 mt-1">
-                  <Store className="w-4 h-4 text-purple-600" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-900">Sube productos con una foto</h4>
-                  <p className="text-gray-600 text-sm">Envía la foto, precio y nombre. Nosotros la creamos.</p>
-                </div>
-              </li>
-              <li className="flex items-start">
-                <div className="bg-blue-100 p-2 rounded-full mr-4 mt-1">
-                  <Shield className="w-4 h-4 text-blue-600" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-gray-900">Consulta tus ventas</h4>
-                  <p className="text-gray-600 text-sm">Pregunta "¿cuánto vendí hoy?" y recibe un reporte.</p>
-                </div>
-              </li>
-            </ul>
+              <ul className="space-y-4 text-left mx-auto lg:mx-0 max-w-md">
+                <li className="flex items-start">
+                  <div className="bg-green-100 p-2 rounded-full mr-4 mt-1">
+                    <Zap className="w-4 h-4 text-green-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900">Cambia precios al instante</h4>
+                    <p className="text-gray-600 text-sm">Solo escribe "Cambiar precio" y listo.</p>
+                  </div>
+                </li>
+                <li className="flex items-start">
+                  <div className="bg-purple-100 p-2 rounded-full mr-4 mt-1">
+                    <Store className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900">Sube productos con una foto</h4>
+                    <p className="text-gray-600 text-sm">Envía la foto, precio y nombre. Nosotros la creamos.</p>
+                  </div>
+                </li>
+                <li className="flex items-start">
+                  <div className="bg-blue-100 p-2 rounded-full mr-4 mt-1">
+                    <Shield className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900">Consulta tus ventas</h4>
+                    <p className="text-gray-600 text-sm">Pregunta "¿cuánto vendí hoy?" y recibe un reporte.</p>
+                  </div>
+                </li>
+              </ul>
 
-            <div className="pt-4">
-              <Button onClick={() => {
-                trackLead('onboarding_started', { source: 'whatsapp_section' });
-                setOnboardingFlowType(undefined);
-                setShowOnboarding(true);
-              }} className="bg-[#25D366] hover:bg-[#128C7E] text-white rounded-full px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all">
-                Probar ahora
-              </Button>
+              <div className="pt-4">
+                <Button onClick={() => {
+                  trackLead('onboarding_started', { source: 'whatsapp_section' });
+                  setOnboardingFlowType(undefined);
+                  setShowOnboarding(true);
+                }} className="bg-[#25D366] hover:bg-[#128C7E] text-white rounded-full px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all">
+                  Probar ahora
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -319,7 +321,7 @@ const Index = () => {
     </section>
 
     {/* Video Section */}
-    <section className="py-8 lg:py-16 px-4 lg:px-6">
+    < section className="py-8 lg:py-16 px-4 lg:px-6" >
       <div className="max-w-[95%] lg:max-w-[80%] mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Text Content - Left Column */}
@@ -356,10 +358,10 @@ const Index = () => {
           </div>
         </div>
       </div>
-    </section>
+    </section >
 
     {/* Demo Section */}
-    <section className="py-8 lg:py-12 px-4 lg:px-6">
+    < section className="py-8 lg:py-12 px-4 lg:px-6" >
       <div className="max-w-[95%] lg:max-w-[80%] mx-auto">
         <div className="bg-gray-50 rounded-2xl lg:rounded-3xl p-8 lg:p-16 text-center">
           <div className="flex justify-center mb-6 lg:mb-8">
@@ -370,10 +372,10 @@ const Index = () => {
           </Link>
         </div>
       </div>
-    </section>
+    </section >
 
     {/* Testimonials Section */}
-    <section id="testimonios" className="py-8 lg:py-16 px-4 lg:px-6">
+    < section id="testimonios" className="py-8 lg:py-16 px-4 lg:px-6" >
       <div className="max-w-[95%] lg:max-w-[80%] mx-auto">
         <div className="text-center mb-8 lg:mb-12">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 lg:mb-4">Lo que dicen nuestros clientes</h2>
@@ -424,10 +426,10 @@ const Index = () => {
           </div>
         </div>
       </div>
-    </section>
+    </section >
 
     {/* Pricing Section */}
-    <section id="precios" className="py-8 lg:py-16 px-4 lg:px-6">
+    < section id="precios" className="py-8 lg:py-16 px-4 lg:px-6" >
       <div className="max-w-[95%] lg:max-w-[80%] mx-auto">
         <div className="text-center mb-8 lg:mb-12">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 lg:mb-4">Precios simples y transparentes</h2>
@@ -521,10 +523,10 @@ const Index = () => {
           </div>
         </div>
       </div>
-    </section>
+    </section >
 
     {/* Call to Action Section */}
-    <section className="py-8 lg:py-16 px-4 lg:px-6">
+    < section className="py-8 lg:py-16 px-4 lg:px-6" >
       <div className="max-w-[95%] lg:max-w-4xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
           {/* Left side - Image */}
@@ -553,10 +555,10 @@ const Index = () => {
           </div>
         </div>
       </div>
-    </section>
+    </section >
 
     {/* Swinging Image Section */}
-    <section className="py-8 lg:py-16 px-4 lg:px-6">
+    < section className="py-8 lg:py-16 px-4 lg:px-6" >
       <div className="max-w-[95%] lg:max-w-4xl mx-auto text-center">
         <div className="flex justify-center">
           <div className="animate-swing origin-top" style={{
@@ -566,10 +568,10 @@ const Index = () => {
           </div>
         </div>
       </div>
-    </section>
+    </section >
 
     {/* FAQ Section */}
-    <section className="py-8 lg:py-16 px-4 lg:px-6">
+    < section className="py-8 lg:py-16 px-4 lg:px-6" >
       <div className="max-w-[95%] lg:max-w-[80%] mx-auto">
         <div className="bg-white rounded-2xl lg:rounded-3xl p-6 lg:p-12 shadow-lg">
           <div className="text-center mb-8 lg:mb-12">
@@ -626,10 +628,10 @@ const Index = () => {
           </div>
         </div>
       </div>
-    </section>
+    </section >
 
     {/* Footer */}
-    <footer className="py-6 lg:py-16 px-4 lg:px-6">
+    < footer className="py-6 lg:py-16 px-4 lg:px-6" >
       <div className="max-w-[95%] lg:max-w-[80%] mx-auto">
         <div className="bg-white rounded-2xl lg:rounded-3xl p-4 lg:p-12 shadow-lg">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 lg:gap-8 mb-4 lg:mb-8">
@@ -677,15 +679,15 @@ const Index = () => {
           </div>
         </div>
       </div>
-    </footer>
+    </footer >
 
     {/* Floating scroll to top button */}
-    <button onClick={scrollToTop} className={`fixed bottom-4 left-4 md:bottom-6 md:left-6 bg-purple-600 hover:bg-purple-700 text-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 z-50 ${showScrollButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`} aria-label="Subir al inicio">
-      <ChevronUp className="w-6 h-6" />
-    </button>
+    < button onClick={scrollToTop} className={`fixed bottom-4 left-4 md:bottom-6 md:left-6 bg-purple-600 hover:bg-purple-700 text-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 z-50 ${showScrollButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`} aria - label="Subir al inicio" >
+    <ChevronUp className="w-6 h-6" />
+  </button >
 
-    {/* ChatBot with Mascot */}
-    <ChatBotContainer />
+  {/* ChatBot with Mascot */ }
+  < ChatBotContainer />
 
     <OnboardingModal open={showOnboarding} onOpenChange={open => {
       setShowOnboarding(open);
@@ -703,6 +705,6 @@ const Index = () => {
         <ContactSupportForm onSuccess={() => setIsContactModalOpen(false)} />
       </DialogContent>
     </Dialog>
-  </div>;
+  </div >;
 };
 export default Index;
