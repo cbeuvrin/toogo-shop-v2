@@ -1,0 +1,45 @@
+{
+  "rewrites": [
+    {
+      "source": "/blog/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot).*"
+        }
+      ],
+      "destination": "https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/blog-seo-handler?path=/blog/:slug"
+    },
+    {
+      "source": "/blog/:slug/",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot).*"
+        }
+      ],
+      "destination": "https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/blog-seo-handler?path=/blog/:slug/"
+    },
+    {
+      "source": "/blog/:slug",
+      "has": [
+        {
+          "type": "query",
+          "key": "preview",
+          "value": "crawler"
+        }
+      ],
+      "destination": "https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/blog-seo-handler?path=/blog/:slug"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/generate-sitemap"
+    },
+    {
+      "source": "/((?!robots\\.txt|assets/).*)",
+      "destination": "/"
+    }
+  ]
+}

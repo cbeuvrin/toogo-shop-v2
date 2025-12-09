@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="TOOGO Admin">
+    <link rel="icon" href="/favicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=optional">
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=optional" rel="stylesheet">
+    <title>Crea tu Tienda Online Gratis en 5 Minutos | TOOGO México - E-commerce Sin Programación</title>
+    <meta name="description" content="⚡ Crea tu tienda online profesional GRATIS en menos de 5 minutos con TOOGO. Sin programación ni conocimientos técnicos. Vende por WhatsApp, gestiona productos y acepta pagos desde un solo lugar. ¡Comienza hoy mismo! 🛍️">
+    <meta name="author" content="TOOGO" />
+    <meta name="keywords" content="crear tienda online gratis, ecommerce mexico, tienda virtual gratis, vender por whatsapp, negocio online, tienda sin programacion, ecommerce facil, tienda online, e-commerce, crear tienda virtual, vender online, negocio digital, comercio electrónico">
+    <meta name="google-site-verification" content="3ywO-pv5UGST6sN9z5CeXF33fkP71ch1Wm7Abs5mfJc" />
+    <meta property="fb:app_id" content="1595938024873627" />
+    <link rel="canonical" href="https://www.toogo.store/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.toogo.store/" />
+    <meta property="og:title" content="Crea tu Tienda Online Gratis en 5 Minutos | TOOGO México">
+    <meta property="og:description" content="⚡ Crea tu tienda online profesional GRATIS en menos de 5 minutos con TOOGO. Sin programación. Vende por WhatsApp, gestiona productos y acepta pagos. ¡Comienza hoy! 🛍️">
+    <meta property="og:image" content="https://www.toogo.store/assets/toogo-og-image.jpg">
+    <meta property="og:image:secure_url" content="https://www.toogo.store/assets/toogo-og-image.jpg">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1080">
+    <meta property="og:image:height" content="1080">
+    <meta property="og:image:alt" content="TOOGO - Tu tienda online en minutos">
+    <meta property="og:site_name" content="TOOGO">
+    <meta property="og:locale" content="es_MX">
+    
+    <!-- Build Version for Cache Invalidation -->
+    <meta name="build-version" content="3.0.0">
+    
+    <!-- DNS Preconnect for Faster Loading -->
+    <link rel="preconnect" href="https://herqxhfmsstbteahhxpr.supabase.co">
+    <link rel="dns-prefetch" href="https://herqxhfmsstbteahhxpr.supabase.co">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://www.toogo.store/" />
+    <meta name="twitter:title" content="Crea tu Tienda Online Gratis en 5 Minutos | TOOGO México">
+    <meta name="twitter:description" content="⚡ Crea tu tienda online profesional GRATIS en menos de 5 minutos con TOOGO. Sin programación. Vende por WhatsApp, gestiona productos y acepta pagos. ¡Comienza hoy! 🛍️">
+    <meta name="twitter:image" content="https://www.toogo.store/assets/toogo-og-image.jpg">
+    <meta name="twitter:image:alt" content="TOOGO - Tu tienda online en minutos">
+    <meta name="twitter:site" content="@lovable_dev" />
+    
+    <!-- Service Worker Cache Cleanup Helper -->
+    <script>
+      (function() {
+        try {
+          const usp = new URLSearchParams(location.search);
+          if (usp.get('nocache') === '1' && 'serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(async regs => {
+              for (const reg of regs) {
+                try { await reg.unregister(); } catch {}
+              }
+              if (window.caches && caches.keys) {
+                const keys = await caches.keys();
+                for (const k of keys) { try { await caches.delete(k); } catch {} }
+              }
+              const url = new URL(location.href);
+              url.searchParams.delete('nocache');
+              location.replace(url.toString());
+            });
+          }
+        } catch (e) {
+          console.warn('SW cleanup:', e);
+        }
+      })();
+    </script>
+    
+    <!-- Auto Cache Invalidation on New Build Version -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          const buildVersion = document.querySelector('meta[name="build-version"]')?.content;
+          const cachedVersion = localStorage.getItem('app-build-version');
+          
+          if (buildVersion && cachedVersion && buildVersion !== cachedVersion) {
+            console.log('🔄 Nueva versión detectada, limpiando cachés...');
+            registrations.forEach(reg => reg.unregister());
+            caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
+            localStorage.setItem('app-build-version', buildVersion);
+            window.location.reload();
+          } else if (buildVersion) {
+            localStorage.setItem('app-build-version', buildVersion);
+          }
+        });
+      }
+    </script>
+</head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

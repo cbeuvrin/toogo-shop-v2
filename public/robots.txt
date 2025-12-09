@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Disallow: /auth
+Disallow: /dashboard
+Disallow: /admin
+
+User-agent: Googlebot
+Allow: /
+Disallow: /auth
+Disallow: /dashboard
+Disallow: /admin
+
+User-agent: Bingbot
+Allow: /
+Disallow: /auth
+Disallow: /dashboard
+Disallow: /admin
+
+Sitemap: https://toogo.store/sitemap.xml
