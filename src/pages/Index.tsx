@@ -28,6 +28,7 @@ const Index = () => {
   const [onboardingFlowType, setOnboardingFlowType] = useState<"subdomain" | "domain" | undefined>(undefined);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isVibrating, setIsVibrating] = useState(false);
 
   // Initialize platform Facebook Pixel
   const { trackPageView, trackLead } = usePlatformFacebookPixel();
@@ -65,6 +66,16 @@ const Index = () => {
       window.history.replaceState({}, '', newUrl);
     }
   }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsVibrating(true);
+      setTimeout(() => setIsVibrating(false), 500); // Reset after 0.5s (animation duration)
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   console.log("Index component - loading:", loading, "user:", user);
 
   // Temporarily removing loading check to show images
@@ -198,7 +209,7 @@ const Index = () => {
         <div className="bg-white rounded-[30px] p-8 lg:p-16 shadow-lg border border-gray-100">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             {/* Left Column - Chat Interface */}
-            <div className="order-2 lg:order-1 flex justify-center">
+            <div className={`order-2 lg:order-1 flex justify-center transition-transform ${isVibrating ? 'animate-shake' : ''}`}>
               <div className="w-full max-w-[350px] bg-white rounded-[2.5rem] shadow-2xl border-8 border-gray-900 overflow-hidden relative">
                 {/* Phone Notch */}
                 <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-40 h-6 bg-gray-900 rounded-b-3xl"></div>
@@ -682,12 +693,12 @@ const Index = () => {
     </footer >
 
     {/* Floating scroll to top button */}
-    < button onClick={scrollToTop} className={`fixed bottom-4 left-4 md:bottom-6 md:left-6 bg-purple-600 hover:bg-purple-700 text-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 z-50 ${showScrollButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`} aria - label="Subir al inicio" >
-    <ChevronUp className="w-6 h-6" />
-  </button >
+    <button onClick={scrollToTop} className={`fixed bottom-4 left-4 md:bottom-6 md:left-6 bg-purple-600 hover:bg-purple-700 text-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 z-50 ${showScrollButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`} aria-label="Subir al inicio">
+      <ChevronUp className="w-6 h-6" />
+    </button>
 
-  {/* ChatBot with Mascot */ }
-  < ChatBotContainer />
+    {/* ChatBot with Mascot */}
+    < ChatBotContainer />
 
     <OnboardingModal open={showOnboarding} onOpenChange={open => {
       setShowOnboarding(open);

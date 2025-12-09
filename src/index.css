@@ -21,6 +21,16 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
   }
+
+  @keyframes shake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-5deg); }
+    75% { transform: rotate(5deg); }
+  }
+
+  .animate-shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  }
 }
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
