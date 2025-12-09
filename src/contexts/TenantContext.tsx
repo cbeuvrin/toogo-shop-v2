@@ -309,9 +309,25 @@ export const TenantProvider = ({ children }: TenantProviderProps) => {
 
         setAvailableTenants(validUserTenants);
 
-        // Set primary tenant (usually there's only one for regular users)
+        // Set primary tenant (prioritize domain match, then non-demo, then first available)
         if (validUserTenants.length > 0) {
-          setCurrentTenantId(validUserTenants[0].id);
+          let targetTenantId = validUserTenants[0].id;
+
+          // 1. If we are on a specific subdomain (tenantId is set), try to match it
+          const domainMatch = tenantId ? validUserTenants.find(t => t.id === tenantId) : null;
+
+          if (domainMatch) {
+            targetTenantId = domainMatch.id;
+          } else {
+            // 2. If no domain match, prefer any tenant that is NOT the Demo Store
+            const realTenant = validUserTenants.find(t => t.id !== DEMO_STORE_ID);
+            if (realTenant) {
+              targetTenantId = realTenant.id;
+            }
+          }
+
+          console.log('Setting initial tenant for regular user:', targetTenantId);
+          setCurrentTenantId(targetTenantId);
         }
 
         // Set user role (take the highest priority role)
