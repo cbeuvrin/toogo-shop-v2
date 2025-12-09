@@ -33,6 +33,18 @@ export const SmartHomePage = () => {
     }
   }, [isLoading, hostname]);
 
+  // Main TOOGO domain or Vercel preview should show landing page IMMEDIATELY
+  // avoiding waiting for useTenantByDomain loading state
+  if (hostname === 'toogo.store' || hostname === 'www.toogo.store' || hostname.includes('vercel.app')) {
+    // Exception: /tienda on vercel should show Tienda (demo)
+    if (hostname.includes('vercel.app') && pathname === '/tienda') {
+      console.log('🏪 [SmartHomePage] Vercel preview con /tienda - mostrando Tienda (demo)');
+      return <Tienda />;
+    }
+    console.log('🏠 [SmartHomePage] Dominio principal/preview detectado - mostrando Index (landing)');
+    return <Index />;
+  }
+
   // Show loading state (with fallback)
   if (isLoading && !fallbackToIndex) {
     console.log('⏳ [SmartHomePage] Mostrando loading state');
@@ -41,12 +53,6 @@ export const SmartHomePage = () => {
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
       </div>
     );
-  }
-
-  // Main TOOGO domain should show landing page
-  if (hostname === 'toogo.store' || hostname === 'www.toogo.store') {
-    console.log('🏠 [SmartHomePage] Dominio principal detectado - mostrando Index (landing)');
-    return <Index />;
   }
 
   // Lovable preview domains - show Tienda for /tienda, Index for everything else

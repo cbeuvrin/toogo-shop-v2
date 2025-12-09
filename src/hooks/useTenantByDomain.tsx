@@ -54,7 +54,7 @@ export const useTenantByDomain = () => {
     try {
       const cacheKey = `tenant-cache-${CACHE_VERSION}-${hostname}`;
       let cached = null;
-      
+
       try {
         cached = localStorage.getItem(cacheKey);
       } catch {
@@ -71,18 +71,18 @@ export const useTenantByDomain = () => {
           return null;
         }
       }
-      
+
       if (!cached) return null;
 
       const parsedCache: CachedTenant = JSON.parse(cached);
       const now = Date.now();
-      
+
       // Verificar si el cache sigue válido
       if (now - parsedCache.timestamp > CACHE_TTL) {
         try {
           localStorage.removeItem(cacheKey);
           sessionStorage.removeItem(cacheKey);
-        } catch {}
+        } catch { }
         return null;
       }
 
@@ -96,7 +96,7 @@ export const useTenantByDomain = () => {
           sessionStorage.removeItem(cacheKey);
           const memoryKey = `memory-tenant-${hostname}`;
           delete (window as any)[memoryKey];
-        } catch {}
+        } catch { }
         return null; // Force refresh to set subdomain_not_found error
       }
 
@@ -110,15 +110,15 @@ export const useTenantByDomain = () => {
   // Función híbrida para guardar cache
   const setCachedTenant = (hostname: string, tenantData: Tenant | null) => {
     try {
-      const cacheKey = `tenant-cache-${CACHE_VERSION}-${hostname}`;  
+      const cacheKey = `tenant-cache-${CACHE_VERSION}-${hostname}`;
       const cacheData: CachedTenant = {
         data: tenantData,
         timestamp: Date.now(),
         hostname
       };
-      
+
       const cacheString = JSON.stringify(cacheData);
-      
+
       // Intentar guardar en localStorage
       try {
         localStorage.setItem(cacheKey, cacheString);
@@ -146,20 +146,21 @@ export const useTenantByDomain = () => {
   // Función singleton para cargar tenant (solo se ejecuta una vez por hostname)
   const loadTenantByDomain = async (hostname: string, forceRefresh = false, hostOverride?: string) => {
     // 1. PRIMERO: Si ya tenemos datos válidos para este hostname, usar cache
-    if (globalTenantState.isInitialized && 
-        globalTenantState.hostname === hostname && 
-        Date.now() - globalTenantState.timestamp < CACHE_TTL && 
-        !forceRefresh) {
+    if (globalTenantState.isInitialized &&
+      globalTenantState.hostname === hostname &&
+      Date.now() - globalTenantState.timestamp < CACHE_TTL &&
+      !forceRefresh) {
       return;
     }
 
     // 2. SEGUNDO: Detectar dominios principales/desarrollo ANTES de verificar isLoading
     // Esto permite que estos dominios setéen isLoading=false inmediatamente sin RPC
-    if (!hostOverride && (hostname === 'toogo.store' || 
-        hostname === 'www.toogo.store' || 
-        hostname.includes('lovable.app') || 
-        hostname.includes('lovableproject.com') ||
-        hostname.includes('localhost'))) {
+    if (!hostOverride && (hostname === 'toogo.store' ||
+      hostname === 'www.toogo.store' ||
+      hostname.includes('lovable.app') ||
+      hostname.includes('lovableproject.com') ||
+      hostname.includes('localhost') ||
+      hostname.includes('vercel.app'))) {
       console.log('🏠 [useTenantByDomain] Dominio principal/desarrollo detectado. Omitiendo búsqueda de tenant.');
       notifyStateChange({
         tenant: null,
@@ -206,7 +207,7 @@ export const useTenantByDomain = () => {
 
       // SECURITY: Use the secure get_tenant_by_host function instead of direct table access
       console.log('🔎 [useTenantByDomain] Buscando tenant usando get_tenant_by_host RPC con host:', effectiveHost);
-      
+
       const { data: tenantData, error: lookupError } = await supabase
         .rpc('get_tenant_by_host', { p_host: effectiveHost });
 
@@ -234,7 +235,7 @@ export const useTenantByDomain = () => {
         console.log('🏪 [useTenantByDomain] Estableciendo error: subdomain_not_found');
         console.log('🏪 [useTenantByDomain] Esto debería mostrar SubdomainAvailablePage');
         console.log('🏪 [useTenantByDomain] =====================================================');
-        
+
         setCachedTenant(hostname, null);
         notifyStateChange({
           tenant: null,
@@ -246,11 +247,11 @@ export const useTenantByDomain = () => {
         });
         return;
       }
-      
-      console.log('✅ [useTenantByDomain] Resultado final:', tenant ? 
-        `Tenant encontrado: ${tenant.id} - ${tenant.name}` : 
+
+      console.log('✅ [useTenantByDomain] Resultado final:', tenant ?
+        `Tenant encontrado: ${tenant.id} - ${tenant.name}` :
         'No tenant found - mostrará landing');
-      
+
       setCachedTenant(hostname, tenant);
       notifyStateChange({
         tenant,
