@@ -116,11 +116,11 @@ const AyudaConfigurarPagos = () => {
                 Configurar MercadoPago
               </CardTitle>
               <CardDescription>
-                Necesitas obtener tu "Public Key" y tu "Access Token" desde el panel de desarrolladores.
+                Sigue esta guía detallada para aceptar pagos con tarjetas y efectivo (Oxxo).
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Paso 1 */}
+              {/* Paso 1: Crear Cuenta */}
               <div className="flex gap-4">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
@@ -128,20 +128,25 @@ const AyudaConfigurarPagos = () => {
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold mb-2">Ingresa a MercadoPago Developers</h3>
+                  <h3 className="font-semibold mb-2">Crear tu cuenta de Negocio</h3>
                   <p className="text-muted-foreground mb-3">
-                    Inicia sesión con tu cuenta de MercadoPago y ve al panel "Tus integraciones".
+                    Si ya tienes cuenta personal, te recomendamos crear una nueva exclusiva para tu negocio o convertir la actual a <strong>Cuenta de Vendedor</strong>.
                   </p>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground mb-3 space-y-1">
+                    <li>Entra a MercadoPago registro.</li>
+                    <li>Selecciona <strong>"Crear cuenta de empresa"</strong> o "Vendedor".</li>
+                    <li>Completa tus datos fiscales (RFC si estás en México es importante para reducir retenciones).</li>
+                  </ul>
                   <Button variant="outline" size="sm" asChild>
-                    <a href="https://www.mercadopago.com.mx/developers/panel" target="_blank" rel="noopener noreferrer">
-                      Ir al Panel de Developers
+                    <a href="https://www.mercadopago.com.mx/hub/registration/landing" target="_blank" rel="noopener noreferrer">
+                      Registrarse en MercadoPago
                       <ExternalLink className="ml-2 h-3 w-3" />
                     </a>
                   </Button>
                 </div>
               </div>
 
-              {/* Paso 2 */}
+              {/* Paso 2: Developers */}
               <div className="flex gap-4">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
@@ -149,14 +154,20 @@ const AyudaConfigurarPagos = () => {
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold mb-2">Crear una Aplicación</h3>
+                  <h3 className="font-semibold mb-2">Ir al Panel de Desarrolladores</h3>
                   <p className="text-muted-foreground mb-3">
-                    Haz clic en el botón <strong>"Crear aplicación"</strong>. Dale un nombre (ej: "Mi Tienda Online") y selecciona "Pagos Online" como tipo de solución.
+                    Una vez con tu sesión iniciada, necesitas ir al sitio especial para desarrolladores.
                   </p>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href="https://www.mercadopago.com.mx/developers/panel" target="_blank" rel="noopener noreferrer">
+                      Abrir MercadoPago Developers
+                      <ExternalLink className="ml-2 h-3 w-3" />
+                    </a>
+                  </Button>
                 </div>
               </div>
 
-              {/* Paso 3 */}
+              {/* Paso 3: Crear App */}
               <div className="flex gap-4">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
@@ -164,15 +175,19 @@ const AyudaConfigurarPagos = () => {
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold mb-2">Obtener Credenciales de Producción</h3>
-                  <p className="text-muted-foreground">
-                    Entra a la aplicación que creaste y busca en el menú lateral <strong>"Credenciales de producción"</strong>.
-                    Tendrás que activar tus credenciales llenando un formulario sobre tu negocio.
+                  <h3 className="font-semibold mb-2">Crear una Aplicación</h3>
+                  <p className="text-muted-foreground mb-2">
+                    En el panel, busca el botón <strong>"Crear aplicación"</strong>.
                   </p>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
+                    <li>Nombre: Pon el nombre de tu tienda (ej: "Mi Tienda Toogo").</li>
+                    <li>Tipo de integración: Selecciona <strong>"Pagos Online"</strong> o "Checkout Pro".</li>
+                    <li>¿Estás usando una plataforma de e-commerce?: Selecciona <strong>"No"</strong> (ya que estás integrando vía API directa con Toogo).</li>
+                  </ul>
                 </div>
               </div>
 
-              {/* Paso 4 */}
+              {/* Paso 4: Activar Credenciales */}
               <div className="flex gap-4">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
@@ -180,9 +195,29 @@ const AyudaConfigurarPagos = () => {
                   </div>
                 </div>
                 <div className="flex-1">
+                  <h3 className="font-semibold mb-2">Activar Credenciales de Producción</h3>
+                  <p className="text-muted-foreground mb-2">
+                    Por defecto estarás en modo "Prueba" (Sandbox). Para cobrar de verdad:
+                  </p>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 mb-3">
+                    <li>En el menú lateral de tu app, ve a <strong>"Credenciales de producción"</strong>.</li>
+                    <li>Te pedirá llenar un formulario: giro del negocio, sitio web (pon tu link de Toogo), etc.</li>
+                    <li>Al finalizar, se activarán las credenciales.</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Paso 5: Copiar Keys */}
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+                    5
+                  </div>
+                </div>
+                <div className="flex-1">
                   <h3 className="font-semibold mb-2">Copiar y Pegar en Toogo</h3>
                   <p className="text-muted-foreground mb-3">
-                    Verás dos claves importantes. Cópialas y pégalas en tu Dashboard de Toogo:
+                    Copia las claves de la sección <strong>Producción</strong> (¡No las de prueba!):
                   </p>
                   <div className="bg-muted/50 border rounded-lg p-4 space-y-4">
                     <div className="flex items-start gap-3">
@@ -199,21 +234,11 @@ const AyudaConfigurarPagos = () => {
                         <p className="font-medium">Access Token</p>
                         <p className="text-xs text-muted-foreground mb-1">Empieza con APP_USR-...</p>
                         <p className="text-sm">👉 Pégalo en el campo <strong>"Access Token (Secreto)"</strong></p>
-                        <Badge variant="outline" className="mt-1 bg-purple-50 text-purple-700 border-purple-200">
-                          Nuevo: Ahora puedes configurarlo tú mismo
-                        </Badge>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-
-              <Alert className="bg-blue-50 border-blue-200 mt-4">
-                <HelpCircle className="h-4 w-4 text-blue-600" />
-                <AlertDescription className="text-blue-800">
-                  Tu Access Token se guardará encriptado y nunca será visible para nadie más.
-                </AlertDescription>
-              </Alert>
             </CardContent>
           </Card>
         )}
@@ -227,11 +252,11 @@ const AyudaConfigurarPagos = () => {
                 Configurar PayPal
               </CardTitle>
               <CardDescription>
-                Necesitas un "Client ID" y un "Client Secret" desde PayPal Developer.
+                Guía completa para recibir pagos internacionales y con tarjeta vía PayPal.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Paso 1 */}
+              {/* Paso 1: Cuenta Business */}
               <div className="flex gap-4">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
@@ -239,9 +264,30 @@ const AyudaConfigurarPagos = () => {
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold mb-2">Ingresa a PayPal Developer Dashboard</h3>
+                  <h3 className="font-semibold mb-2">Crear Cuenta "Business"</h3>
                   <p className="text-muted-foreground mb-3">
-                    Inicia sesión con tu cuenta de PayPal Business.
+                    <strong>IMPORTANTE:</strong> Las cuentas personales NO funcionan para vender en web. Debes registrarte como Negocio (Business).
+                  </p>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href="https://www.paypal.com/mx/business" target="_blank" rel="noopener noreferrer">
+                      Crear Cuenta Business en PayPal
+                      <ExternalLink className="ml-2 h-3 w-3" />
+                    </a>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Paso 2: Developer Dashboard */}
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+                    2
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-2">Ir a PayPal Developers</h3>
+                  <p className="text-muted-foreground mb-3">
+                    Inicia sesión con tu cuenta Business en el portal de desarrolladores.
                   </p>
                   <Button variant="outline" size="sm" asChild>
                     <a href="https://developer.paypal.com/dashboard/applications/live" target="_blank" rel="noopener noreferrer">
@@ -252,23 +298,7 @@ const AyudaConfigurarPagos = () => {
                 </div>
               </div>
 
-              {/* Paso 2 */}
-              <div className="flex gap-4">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                    2
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold mb-2">Crear una App (Live)</h3>
-                  <p className="text-muted-foreground mb-3">
-                    En la pestaña <strong>"Apps & Credentials"</strong>, asegúrate de estar en modo <strong>"Live"</strong> (no Sandbox).
-                    Haz clic en "Create App" y dale un nombre.
-                  </p>
-                </div>
-              </div>
-
-              {/* Paso 3 */}
+              {/* Paso 3: Crear App Live */}
               <div className="flex gap-4">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
@@ -276,9 +306,29 @@ const AyudaConfigurarPagos = () => {
                   </div>
                 </div>
                 <div className="flex-1">
+                  <h3 className="font-semibold mb-2">Crear App en modo "Live"</h3>
+                  <p className="text-muted-foreground mb-2">
+                    En la pestaña <strong>"Apps & Credentials"</strong>, verás un switch que dice "Sandbox" y "Live".
+                  </p>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 mb-3">
+                    <li>Cambia el switch a <strong>"Live"</strong> (esto es vital para cobros reales).</li>
+                    <li>Haz clic en <strong>"Create App"</strong>.</li>
+                    <li>Ponle el nombre de tu tienda y confirma.</li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Paso 4: Credenciales */}
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+                    4
+                  </div>
+                </div>
+                <div className="flex-1">
                   <h3 className="font-semibold mb-2">Copiar Credenciales</h3>
                   <p className="text-muted-foreground mb-3">
-                    Verás el "Client ID". Para ver el "Sensible", haz clic en el enlace "Secret" o "Show".
+                    Dentro de la App que acabas de crear verás tus claves.
                   </p>
                   <div className="bg-muted/50 border rounded-lg p-4 space-y-4">
                     <div className="flex items-start gap-3">
@@ -292,7 +342,7 @@ const AyudaConfigurarPagos = () => {
                       <Lock className="h-5 w-5 text-purple-600 mt-0.5" />
                       <div>
                         <p className="font-medium">Client Secret</p>
-                        <p className="text-xs text-muted-foreground mb-1">Si está oculto, dale clic a "Show"</p>
+                        <p className="text-xs text-muted-foreground mb-1">Puede estar oculto, haz clic en "Show".</p>
                         <p className="text-sm">👉 Pégalo en el campo <strong>"Client Secret (Secreto)"</strong></p>
                       </div>
                     </div>
@@ -312,11 +362,11 @@ const AyudaConfigurarPagos = () => {
                 Configurar Stripe
               </CardTitle>
               <CardDescription>
-                Necesitas la "Publishable Key" y la "Secret Key" desde el Dashboard de Stripe.
+                La plataforma de pagos más robusta. Requiere validar tu identidad y negocio.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Paso 1 */}
+              {/* Paso 1: Registro */}
               <div className="flex gap-4">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
@@ -324,20 +374,24 @@ const AyudaConfigurarPagos = () => {
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold mb-2">Ingresa a Stripe Developers</h3>
-                  <p className="text-muted-foreground mb-3">
-                    Ve a tu Dashboard de Stripe y busca la sección "Developers" (o Desarrolladores).
+                  <h3 className="font-semibold mb-2">Crear y Activar Cuenta</h3>
+                  <p className="text-muted-foreground mb-2">
+                    Si no tienes cuenta, regístrate. Al entrar, lo primero es <strong>Activar la cuenta</strong>.
                   </p>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 mb-3">
+                    <li>Stripe te pedirá datos muy específicos de tu negocio y cuenta bancaria para depositarte.</li>
+                    <li>Debes verificar tu email y completar todo el formulario de activación.</li>
+                  </ul>
                   <Button variant="outline" size="sm" asChild>
-                    <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noopener noreferrer">
-                      Ir a API Keys de Stripe
+                    <a href="https://dashboard.stripe.com/register" target="_blank" rel="noopener noreferrer">
+                      Registrarse en Stripe
                       <ExternalLink className="ml-2 h-3 w-3" />
                     </a>
                   </Button>
                 </div>
               </div>
 
-              {/* Paso 2 */}
+              {/* Paso 2: Developers */}
               <div className="flex gap-4">
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
@@ -345,9 +399,30 @@ const AyudaConfigurarPagos = () => {
                   </div>
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold mb-2">Copiar Claves (API Keys)</h3>
+                  <h3 className="font-semibold mb-2">Ir a API Keys</h3>
                   <p className="text-muted-foreground mb-3">
-                    Asegúrate de no estar en "Test Mode" si vas a vender de verdad. Busca las "Standard keys".
+                    En el Dashboard, busca en la esquina superior derecha o en el menú: <strong>Developers (Desarrolladores) &gt; API Keys</strong>.
+                  </p>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noopener noreferrer">
+                      Ir directo a API Keys
+                      <ExternalLink className="ml-2 h-3 w-3" />
+                    </a>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Paso 3: Claves Standard */}
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+                    3
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-2">Copiar Claves Standard</h3>
+                  <p className="text-muted-foreground mb-3">
+                    Asegúrate de desactivar el switch de <strong>"Test Mode"</strong> para ver las claves reales.
                   </p>
                   <div className="bg-muted/50 border rounded-lg p-4 space-y-4">
                     <div className="flex items-start gap-3">
@@ -365,7 +440,7 @@ const AyudaConfigurarPagos = () => {
                         <p className="text-xs text-muted-foreground mb-1">Empieza con sk_live_...</p>
                         <p className="text-sm">👉 Haz clic en "Reveal live key" y pega el código en <strong>"Secret Key (Secreto)"</strong></p>
                         <Badge variant="outline" className="mt-1 bg-purple-50 text-purple-700 border-purple-200">
-                          ¡Guárdalo bien! Stripe solo te lo muestra una vez.
+                          ¡Ojo! Stripe solo te lo muestra una vez.
                         </Badge>
                       </div>
                     </div>
