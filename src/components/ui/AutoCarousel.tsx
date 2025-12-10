@@ -10,19 +10,21 @@ interface AutoCarouselProps {
   isBestSellers?: boolean;
   delay?: number;
   onProductClick?: (product: any) => void;
+  onViewMore?: () => void;
   onToggleFavorite?: (productId: string) => void;
   favorites?: string[];
   hoverColor?: string;
   cardBgColor?: string;
 }
 
-export const AutoCarousel = ({ 
-  title, 
-  products, 
-  showReviews = false, 
-  isBestSellers = false, 
+export const AutoCarousel = ({
+  title,
+  products,
+  showReviews = false,
+  isBestSellers = false,
   delay = 0,
   onProductClick,
+  onViewMore,
   onToggleFavorite,
   favorites = [],
   hoverColor,
@@ -42,7 +44,12 @@ export const AutoCarousel = ({
         <div className="relative">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-            <div className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 cursor-pointer transition-colors">
+            <div
+              className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 cursor-pointer transition-colors"
+              onClick={() => {
+                if (onViewMore) onViewMore();
+              }}
+            >
               <span className="text-sm font-medium">Ver más</span>
               <ArrowRight className="w-4 h-4" />
             </div>
@@ -50,7 +57,7 @@ export const AutoCarousel = ({
           <div className="w-full h-px bg-black"></div>
         </div>
       )}
-      
+
       <Carousel
         plugins={[autoplayPlugin]}
         className="w-full"
@@ -64,9 +71,9 @@ export const AutoCarousel = ({
         <CarouselContent className="-ml-5 md:-ml-6">
           {products.map((product) => (
             <CarouselItem key={product.id} className="pl-5 md:pl-6 basis-[170px] md:basis-[260px] lg:basis-[260px]">
-              <ProductCard 
-                product={product} 
-                showReviews={showReviews} 
+              <ProductCard
+                product={product}
+                showReviews={showReviews}
                 isBestSeller={isBestSellers}
                 onProductClick={onProductClick}
                 onToggleFavorite={onToggleFavorite}

@@ -34,6 +34,8 @@ interface TenantSettings {
   share_title?: string;
   share_description?: string;
   share_image_url?: string;
+  terms_text?: string;
+  privacy_text?: string;
 }
 
 export const useTenantSettings = (overrideTenantId?: string) => {
@@ -73,7 +75,7 @@ export const useTenantSettings = (overrideTenantId?: string) => {
     try {
       setIsLoading(true);
       console.log('Loading tenant settings for tenant:', tenantId);
-      
+
       const { data, error } = await supabase
         .from('tenant_settings')
         .select('*')
@@ -91,10 +93,10 @@ export const useTenantSettings = (overrideTenantId?: string) => {
         setSettings(data);
       } else {
         console.log('No settings found');
-        
+
         // Only attempt to create default settings if user is authenticated and authorized
         const isAuthorized = user && (isSuperAdmin || userRole === 'tenant_admin');
-        
+
         if (!isAuthorized) {
           console.log('User not authorized to create tenant settings, returning null');
           setSettings(null);
@@ -105,7 +107,7 @@ export const useTenantSettings = (overrideTenantId?: string) => {
             exchange_rate_mode: 'manual',
             exchange_rate_value: 20.0,
           };
-          
+
           const { data: newSettings, error: insertError } = await supabase
             .from('tenant_settings')
             .insert(defaultSettings)
@@ -203,7 +205,7 @@ export const useTenantSettings = (overrideTenantId?: string) => {
 
       // Update tenant_settings with new logo URL
       const success = await updateSettings({ logo_url: cacheBustedUrl });
-      
+
       if (success) {
         // Force reload settings to ensure sync
         await loadSettings();
@@ -272,7 +274,7 @@ export const useTenantSettings = (overrideTenantId?: string) => {
 
       // Update tenant_settings with new share image URL
       const success = await updateSettings({ share_image_url: cacheBustedUrl });
-      
+
       if (success) {
         // Force reload settings to ensure sync
         await loadSettings();
