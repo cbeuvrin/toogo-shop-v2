@@ -33,7 +33,7 @@ serve(async (req) => {
 
   try {
     logStep('Function started');
-    
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const resendApiKey = Deno.env.get('RESEND_API_KEY')!;
@@ -84,14 +84,14 @@ serve(async (req) => {
     // Prioritize tenant custom template over system template
     const vendorTemplate = systemVendorTemplate;
     const customerTemplate = tenantSettings?.custom_email_template_customer || systemCustomerTemplate;
-    
-    logStep('Using customer template from', { 
-      source: tenantSettings?.custom_email_template_customer ? 'tenant_settings (custom)' : 'system_settings (default)' 
+
+    logStep('Using customer template from', {
+      source: tenantSettings?.custom_email_template_customer ? 'tenant_settings (custom)' : 'system_settings (default)'
     });
 
     // Get vendor email
     const { data: vendorUser, error: vendorError } = await supabase.auth.admin.getUserById(tenant.owner_user_id);
-    
+
     if (vendorError || !vendorUser?.user?.email) {
       logStep('Error fetching vendor email', vendorError);
       throw new Error('Vendor email not found');
@@ -195,17 +195,51 @@ serve(async (req) => {
       `,
     });
 
-    logStep('Emails sent successfully', { 
+    logStep('Emails sent successfully', {
       vendorEmailId: vendorEmailResult.data?.id,
-      customerEmailId: customerEmailResult.data?.id 
+      customerEmailId: customerEmailResult.data?.id
     });
+
+    // Send WhatsApp notification if enabled
+    let waSent = false;
+    try {
+      const { data: whatsappUser } = await supabase
+        .from('whatsapp_users')
+        .select('phone_number, notify_on_new_order')
+        .eq('tenant_id', requestBody.tenant_id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (whatsappUser?.notify_on_new_order && whatsappUser?.phone_number) {
+        logStep('Sending WhatsApp notification', { to: whatsappUser.phone_number });
+
+        const whatsappMessage = `🔔 *Nueva Orden Recibida*\n\n` +
+          `👤 Cliente: ${requestBody.customer_name}\n` +
+          `💰 Total: $${requestBody.total_amount}\n` +
+          `📦 Items:\n${requestBody.order_items.map(i => `• ${i.quantity}x ${i.product_name}`).join('\n')}\n\n` +
+          `Ver detalles en el dashboard.`;
+
+        await supabase.functions.invoke('whatsapp-send', {
+          body: {
+            to: whatsappUser.phone_number,
+            message: whatsappMessage,
+            tenantId: requestBody.tenant_id,
+            responseType: 'text'
+          }
+        });
+        waSent = true;
+      }
+    } catch (waError) {
+      console.error('Error sending WhatsApp notification:', waError);
+    }
 
     return new Response(JSON.stringify({
       success: true,
       vendor_email_sent: !!vendorEmailResult.data?.id,
       customer_email_sent: !!customerEmailResult.data?.id,
       vendor_email_id: vendorEmailResult.data?.id,
-      customer_email_id: customerEmailResult.data?.id
+      customer_email_id: customerEmailResult.data?.id,
+      whatsapp_sent: waSent
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -214,10 +248,10 @@ serve(async (req) => {
   } catch (error: any) {
     logStep('Error in send-order-notifications', error);
     console.error('Error in send-order-notifications function:', error);
-    
-    return new Response(JSON.stringify({ 
+
+    return new Response(JSON.stringify({
       error: error.message,
-      success: false 
+      success: false
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -21,7 +21,7 @@ serve(async (req) => {
   }
 
   try {
-    const { tenantId, message, conversationId, imageUrl } = await req.json();
+    const { tenantId, message, conversationId, imageUrl, messageId } = await req.json();
 
     if (!tenantId || !message) {
       throw new Error('tenantId and message are required');
@@ -30,11 +30,11 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const googleApiKey = Deno.env.get('GOOGLE_AI_API_KEY')!;
-    
+
     if (!googleApiKey) {
       throw new Error('GOOGLE_AI_API_KEY is required');
     }
-    
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     console.log('🤖 Processing AI request for tenant:', tenantId);
@@ -51,7 +51,7 @@ serve(async (req) => {
     // Obtener historial de conversación (últimos 10 mensajes)
     let historyContext = '';
     let lastImageUrlFromHistory = '';
-    
+
     if (conversationId) {
       const { data: conversationHistory } = await supabase
         .from('whatsapp_messages')
@@ -87,7 +87,7 @@ serve(async (req) => {
               .select('tenant_id')
               .eq('id', imgMsg.conversation_id)
               .single();
-            
+
             if (conv && conv.tenant_id === tenantId) {
               lastImageUrlFromHistory = imgMsg.image_url;
               console.log('🖼️ Found recent image from tenant (last 24h):', lastImageUrlFromHistory);
@@ -165,6 +165,13 @@ NUNCA subas un banner sin confirmar primero la posición con el vendedor.
 - Si NO encuentras ninguno, dile: "No encontré productos con ese nombre. ¿Puedes verificar el nombre o darme el SKU?"
 - **NUNCA pidas el SKU si el usuario ya te dio el nombre - ¡Búscalo primero!**
 
+🎫 **GESTIÓN DE CUPONES DE DESCUENTO:**
+- Puedes CREAR cupones nuevos (tipo porcentaje o monto fijo).
+- Puedes LISTAR los cupones existentes.
+- Puedes DESACTIVAR o ELIMINAR cupones.
+- Info necesaria para crear: Código (ej: "VERANO20"), Tipo (porcentaje/fijo), Valor (ej: 20 o 200).
+- Opcionales: Compra mínima, Días de expiración (default 30).
+
 ⚠️ **REGLA CRÍTICA SOBRE IDs DE PRODUCTOS:**
 - SIEMPRE usa el ID EXACTO que devuelve list_products (campo "id")
 - NUNCA inventes o asumas un ID de producto
@@ -214,6 +221,18 @@ IMPORTANTE:
 - Responde en español de forma profesional y conversacional
 - Si no tienes información o no puedes hacer algo, explícalo claramente
 
+🖼️ **PARA MOSTRAR UNA IMAGEN AL USUARIO:**
+Si los resultados de `list_products` (u otra herramienta) incluyen una URL de imagen (`imageUrl`) y quieres que el usuario la vea visualmente en WhatsApp:
+1. Menciona el producto en tu respuesta de texto.
+2. AL FINAL de tu respuesta, en una línea nueva y separada, escribe EXACTAMENTE:
+"IMAGE_URL: <la_url_de_la_imagen>"
+
+Ejemplo:
+"Aquí tienes los Tenis Nike que buscabas. Cuestan $2500.
+IMAGE_URL: https://.../tenis.jpg"
+
+El sistema detectará esta línea y enviará la imagen real por WhatsApp. Solo envía UNA imagen por mensaje (la más relevante).
+
 **FLUJO DE GENERACIÓN DE IMÁGENES:**
 1. Vendedor pide imagen: "Genera un banner de verano"
 2. Usas generate_image con el prompt
@@ -222,6 +241,22 @@ IMPORTANTE:
 5. Si quiere usarla como banner, PREGUNTA LA POSICIÓN (1ro, 2do, 3ro, 4to)
 6. Si no entiende, explícale que es un carrusel de 4 banners
 7. Una vez confirmada la posición, usas manage_banners con el sort correcto
+
+🧠 **ANÁLISIS DE SENTIMIENTO - OBLIGATORIO:**
+Analiza el mensaje del usuario y determina su sentimiento.
+Al FINAL de tu respuesta (después de cualquier IMAGE_URL), añade una línea con:
+"SENTIMENT: <valor>"
+
+Valores permitidos:
+- positive (feliz, agradecido, satisfecho)
+- neutral (pregunta normal, informativo)
+- negative (triste, decepcionado)
+- angry (enojado, molesto, quejas)
+- purchase_intent (interesado en comprar, preguntando precios o stock con intención)
+
+Ejemplo:
+"Claro, aquí tienes la información.
+SENTIMENT: neutral"
 
 ${historyContext ? `\n**Contexto de conversación reciente:**\n${historyContext}\n` : ''}
 ${lastImageUrlFromHistory ? `\n🖼️ **ÚLTIMA IMAGEN DEL HISTORIAL (úsala para asignar a productos):**\n${lastImageUrlFromHistory}\n` : ''}
@@ -337,6 +372,49 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
               discountPercent: {
                 type: 'number',
                 description: 'Alternativamente: porcentaje de descuento (ej: 20 para 20% off)'
+              }
+            },
+            required: ['action']
+          }
+        }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'manage_coupons',
+          description: 'Gestiona cupones de descuento: listar, crear, eliminar o activar/desactivar',
+          parameters: {
+            type: 'object',
+            properties: {
+              action: {
+                type: 'string',
+                enum: ['list', 'create', 'delete', 'toggle'],
+                description: 'Acción a realizar: listar, crear, eliminar o activar/desactivar un cupón'
+              },
+              couponId: {
+                type: 'string',
+                description: 'ID del cupón (para delete o toggle)'
+              },
+              code: {
+                type: 'string',
+                description: 'Código del cupón (para create, ej: "VERANO20")'
+              },
+              discountType: {
+                type: 'string',
+                enum: ['percentage', 'fixed'],
+                description: 'Tipo de descuento (percentage o fixed)'
+              },
+              discountValue: {
+                type: 'number',
+                description: 'Valor del descuento (ej: 20 para 20% o 200 para $200 MXN)'
+              },
+              minPurchase: {
+                type: 'number',
+                description: 'Monto de compra mínima para aplicar el cupón'
+              },
+              expiresInDays: {
+                type: 'number',
+                description: 'Número de días desde hoy en que el cupón expirará (default: 30)'
               }
             },
             required: ['action']
@@ -681,7 +759,10 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
         case 'list_products': {
           let query = supabase
             .from('products')
-            .select('id, title, price_mxn, sale_price_mxn, stock, status, sku')
+            .select(`
+              id, title, price_mxn, sale_price_mxn, stock, status, sku,
+              product_images(url, sort)
+            `)
             .eq('tenant_id', tenantId);
 
           if (args.status) query = query.eq('status', args.status);
@@ -691,11 +772,22 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
           query = query.limit(args.limit || 10);
 
           const { data } = await query;
-          result = data?.map(p => ({
-            ...p,
-            onSale: p.sale_price_mxn !== null,
-            discount: p.sale_price_mxn ? Math.round((1 - p.sale_price_mxn / p.price_mxn) * 100) + '%' : null
-          })) || [];
+          result = data?.map(p => {
+            // Obtener imagen principal (sort 0) o la primera disponible
+            const mainImage = p.product_images?.sort((a: any, b: any) => (a.sort || 0) - (b.sort || 0))[0];
+
+            return {
+              id: p.id,
+              title: p.title,
+              price: p.price_mxn,
+              stock: p.stock,
+              status: p.status,
+              sku: p.sku,
+              imageUrl: mainImage?.url || null,
+              onSale: p.sale_price_mxn !== null,
+              discount: p.sale_price_mxn ? Math.round((1 - p.sale_price_mxn / p.price_mxn) * 100) + '%' : null
+            };
+          }) || [];
           break;
         }
 
@@ -716,23 +808,23 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
           let imageResult = null;
           if (args.imageUrl) {
             console.log('🖼️ Validating image URL before update:', args.imageUrl.substring(0, 100));
-            
+
             // VALIDACIÓN 1: Rechazar URLs base64 (datos inline, no URLs reales)
             if (args.imageUrl.startsWith('data:')) {
               console.log('❌ Rejected base64 image - not a real URL');
-              result = { 
-                success: false, 
-                error: 'No puedo usar imágenes en formato base64. Por favor envía la imagen de nuevo como archivo.' 
+              result = {
+                success: false,
+                error: 'No puedo usar imágenes en formato base64. Por favor envía la imagen de nuevo como archivo.'
               };
               break;
             }
-            
+
             // VALIDACIÓN 2: Verificar que es una URL de nuestro storage
             if (!args.imageUrl.includes('herqxhfmsstbteahhxpr.supabase.co/storage')) {
               console.log('❌ Invalid image URL domain:', args.imageUrl);
-              result = { 
-                success: false, 
-                error: 'URL de imagen no válida. Solo puedo usar imágenes de nuestra conversación. Por favor envía la imagen de nuevo.' 
+              result = {
+                success: false,
+                error: 'URL de imagen no válida. Solo puedo usar imágenes de nuestra conversación. Por favor envía la imagen de nuevo.'
               };
               break;
             }
@@ -742,18 +834,18 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
               const checkResponse = await fetch(args.imageUrl, { method: 'HEAD' });
               if (!checkResponse.ok) {
                 console.log('❌ Image URL returns 404:', args.imageUrl, checkResponse.status);
-                result = { 
-                  success: false, 
-                  error: `La imagen ya no está disponible (error ${checkResponse.status}). Por favor envíala de nuevo.` 
+                result = {
+                  success: false,
+                  error: `La imagen ya no está disponible (error ${checkResponse.status}). Por favor envíala de nuevo.`
                 };
                 break;
               }
               console.log('✅ Image URL is valid and accessible');
             } catch (e) {
               console.log('❌ Error checking image URL:', e);
-              result = { 
-                success: false, 
-                error: 'No pude verificar la imagen. Por favor envíala de nuevo.' 
+              result = {
+                success: false,
+                error: 'No pude verificar la imagen. Por favor envíala de nuevo.'
               };
               break;
             }
@@ -777,8 +869,8 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
             imageResult = imgError ? { imageUpdated: false, imageError: imgError.message } : { imageUpdated: true, imageUrl: args.imageUrl };
           }
 
-          result = error 
-            ? { success: false, error: error.message } 
+          result = error
+            ? { success: false, error: error.message }
             : { success: true, ...imageResult };
           break;
         }
@@ -797,14 +889,14 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
             })) || [];
           } else if (args.action === 'set_sale') {
             let salePrice = args.salePrice;
-            
+
             if (args.discountPercent && !salePrice) {
               const { data: product } = await supabase
                 .from('products')
                 .select('price_mxn')
                 .eq('id', args.productId)
                 .single();
-              
+
               if (product) {
                 salePrice = Math.round(product.price_mxn * (1 - args.discountPercent / 100));
               }
@@ -948,10 +1040,10 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
               if (error) {
                 result = { success: false, error: error.message };
               } else {
-                result = { 
-                  success: true, 
-                  banner: { 
-                    id: bannerId, 
+                result = {
+                  success: true,
+                  banner: {
+                    id: bannerId,
                     imageUrl: args.imageUrl,
                     sort: args.sort || 0
                   }
@@ -999,7 +1091,7 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
 
         case 'generate_image': {
           console.log('🎨 Generating image with prompt:', args.prompt);
-          
+
           try {
             // Usar Google Gemini 3 Pro Image directamente
             const imageResponse = await fetch(
@@ -1009,7 +1101,7 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   contents: [{ parts: [{ text: args.prompt }] }],
-                  generationConfig: { 
+                  generationConfig: {
                     responseModalities: ['IMAGE', 'TEXT']
                   }
                 })
@@ -1022,15 +1114,15 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
               result = { success: false, error: 'No se pudo generar la imagen' };
             } else {
               const imageData = await imageResponse.json();
-              
+
               // Google devuelve la imagen en candidates[0].content.parts
               const imageParts = imageData.candidates?.[0]?.content?.parts || [];
               const inlineDataPart = imageParts.find((p: any) => p.inlineData);
-              
+
               if (inlineDataPart?.inlineData?.data) {
                 const base64Data = inlineDataPart.inlineData.data;
                 const mimeType = inlineDataPart.inlineData.mimeType || 'image/png';
-                
+
                 // Convertir base64 a bytes
                 const imageBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
                 const extension = mimeType.includes('jpeg') ? 'jpg' : 'png';
@@ -1080,22 +1172,22 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
             if (!originalImageResponse.ok) {
               throw new Error('No se pudo descargar la imagen original');
             }
-            
+
             const imageArrayBuffer = await originalImageResponse.arrayBuffer();
             const imageUint8Array = new Uint8Array(imageArrayBuffer);
-            
+
             // Convertir a base64
             let binaryString = '';
             for (let i = 0; i < imageUint8Array.length; i++) {
               binaryString += String.fromCharCode(imageUint8Array[i]);
             }
             const base64ImageData = btoa(binaryString);
-            
+
             const contentType = originalImageResponse.headers.get('content-type') || 'image/png';
             const mimeType = contentType.split(';')[0].trim();
-            
+
             console.log('📷 Image downloaded, size:', imageUint8Array.length, 'mime:', mimeType);
-            
+
             // 2. Enviar a Google AI con el prompt de edición
             const editResponse = await fetch(
               `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${googleApiKey}`,
@@ -1106,11 +1198,11 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
                   contents: [{
                     parts: [
                       { text: args.editPrompt },
-                      { 
-                        inlineData: { 
-                          mimeType: mimeType, 
-                          data: base64ImageData 
-                        } 
+                      {
+                        inlineData: {
+                          mimeType: mimeType,
+                          data: base64ImageData
+                        }
                       }
                     ]
                   }],
@@ -1252,7 +1344,7 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
 
       // Segunda llamada con resultados de function call (formato Google)
       console.log('🔧 Making final AI call with function result...');
-      
+
       const finalResponse = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${googleApiKey}`,
         {
@@ -1278,7 +1370,7 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
       }
 
       const finalData = await finalResponse.json();
-      
+
       // Parsear respuesta final de Google
       const finalCandidate = finalData.candidates?.[0];
       const finalParts = finalCandidate?.content?.parts || [];
@@ -1288,21 +1380,49 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
         console.warn('⚠️ AI returned empty content, using fallback');
         responseText = 'Procesé tu solicitud correctamente. ¿Hay algo más en lo que pueda ayudarte?';
       }
-      
+
       console.log('✅ Final response text length:', responseText.length);
 
-      // Detectar si se generó una imagen para enviarla
+      // Detectar token SENTIMENT en el texto de respuesta
+      const sentimentRegex = /SENTIMENT:\s*(positive|neutral|negative|angry|purchase_intent)/i;
+      const sentimentMatch = responseText.match(sentimentRegex);
+
+      if (sentimentMatch && messageId) {
+        const sentiment = sentimentMatch[1].toLowerCase();
+        responseText = responseText.replace(sentimentRegex, '').trim(); // Limpiar el token
+        console.log('🧠 Extracted sentiment:', sentiment, 'for message:', messageId);
+
+        // Actualizar el sentimiento en la base de datos (mensaje entrante)
+        // No esperamos a que termine para no bloquear la respuesta
+        supabase.from('whatsapp_messages')
+          .update({ sentiment })
+          .eq('id', messageId)
+          .then(({ error }) => {
+            if (error) console.error('Error updating sentiment:', error);
+          });
+      }
+
+      // Detectar token IMAGE_URL en el texto de respuesta
       let generatedImageUrl = null;
-      if (result && typeof result === 'object' && 'imageUrl' in result && result.success) {
+      const imageTokenRegex = /IMAGE_URL:\s*(https?:\/\/[^\s]+)/i;
+      const imageMatch = responseText.match(imageTokenRegex);
+
+      if (imageMatch) {
+        generatedImageUrl = imageMatch[1];
+        responseText = responseText.replace(imageTokenRegex, '').trim(); // Limpiar el token del mensaje visible
+        console.log('🖼️ Extracted image URL from response text:', generatedImageUrl);
+      }
+      // Fallback a imagen generada por herramientas (ej: generate_image)
+      else if (result && typeof result === 'object' && 'imageUrl' in result && result.success) {
         generatedImageUrl = result.imageUrl;
       }
 
       console.log('🎉 Returning response with image:', !!generatedImageUrl);
 
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           response: responseText,
-          generatedImageUrl 
+          generatedImageUrl
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -1312,7 +1432,7 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
 
     // Respuesta directa sin function calls
     const directResponse = textPart?.text || 'No pude procesar tu mensaje. ¿Podrías intentarlo de nuevo?';
-    
+
     return new Response(
       JSON.stringify({ response: directResponse }),
       {
@@ -1322,7 +1442,7 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
 
   } catch (error) {
     console.error('❌ AI Agent error:', error);
-    
+
     return new Response(
       JSON.stringify({ error: error.message }),
       {

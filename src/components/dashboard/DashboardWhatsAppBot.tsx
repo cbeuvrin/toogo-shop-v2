@@ -21,6 +21,7 @@ interface WhatsAppUser {
   phone_number: string;
   is_active: boolean;
   is_verified?: boolean;
+  notify_on_new_order?: boolean;
   created_at: string;
 }
 
@@ -297,6 +298,29 @@ export const DashboardWhatsAppBot = () => {
     } catch (error: any) {
       console.error("Error toggling active:", error);
       toast.error("Error al cambiar el estado del bot");
+    }
+  };
+
+  const toggleNotifications = async () => {
+    if (!whatsappUser) return;
+
+    try {
+      const { error } = await supabase
+        .from("whatsapp_users")
+        .update({ notify_on_new_order: !whatsappUser.notify_on_new_order })
+        .eq("id", whatsappUser.id);
+
+      if (error) throw error;
+
+      toast.success(
+        !whatsappUser.notify_on_new_order
+          ? "Notificaciones activadas"
+          : "Notificaciones desactivadas"
+      );
+      await loadWhatsAppConfig();
+    } catch (error: any) {
+      console.error("Error toggling notifications:", error);
+      toast.error("Error al configurar notificaciones");
     }
   };
 
@@ -577,6 +601,31 @@ export const DashboardWhatsAppBot = () => {
                     {whatsappUser.is_active ? "Desactivar" : "Activar"}
                   </Button>
                 </div>
+
+                {/* Notifications Config */}
+                <div className="flex items-center justify-between p-4 bg-muted rounded-lg border border-purple-100">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Notificar nuevos pedidos:</span>
+                    {whatsappUser.notify_on_new_order ? (
+                      <Badge variant="default" className="gap-1 bg-purple-600 hover:bg-purple-700">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Activado
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="gap-1">
+                        <XCircle className="h-3 w-3" />
+                        Desactivado
+                      </Badge>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleNotifications}
+                  >
+                    {whatsappUser.notify_on_new_order ? "Desactivar" : "Activar"}
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -708,6 +757,6 @@ export const DashboardWhatsAppBot = () => {
           )}
         </CardContent>
       </Card>
-    </div>
+    </div >
   );
 };

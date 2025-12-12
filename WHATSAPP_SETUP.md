@@ -38,11 +38,12 @@ whatsapp-send          // Envía respuestas (interno)
 
 ### 🔐 Secrets Configurados
 
-- ✅ `META_WHATSAPP_TOKEN` - Token de acceso de WhatsApp Business API
-- ✅ `META_PHONE_NUMBER_ID` - ID del número de WhatsApp
-- ✅ `META_VERIFY_TOKEN` - Token de verificación del webhook
-- ✅ `OPENAI_API_KEY` - Para transcripción (Whisper) y TTS
-- ✅ `LOVABLE_API_KEY` - Para IA conversacional (Gemini)
+- ✅ `TWILIO_ACCOUNT_SID` - SID de cuenta de Twilio
+- ✅ `TWILIO_AUTH_TOKEN` - Token de autenticación de Twilio
+- ✅ `TWILIO_WHATSAPP_NUMBER` - Número de WhatsApp de Twilio (Sender)
+- ✅ `OPENAI_API_KEY` - Para transcripción (Whisper), TTS y DALL-E
+- ✅ `GOOGLE_AI_API_KEY` - Para IA conversacional (Gemini 2.5 Pro)
+- ✅ `SUPABASE_URL` & `SUPABASE_SERVICE_ROLE_KEY` - Para base de datos y storage
 
 ---
 
@@ -50,39 +51,34 @@ whatsapp-send          // Envía respuestas (interno)
 
 ### 1️⃣ Prerrequisitos
 
-- Cuenta de [Meta for Developers](https://developers.facebook.com)
-- WhatsApp Business API aprobada
-- Número de teléfono verificado en Meta
+- Cuenta de [Twilio](https://www.twilio.com)
+- Número de WhatsApp habilitado en Twilio (Sender)
+- Proyecto de Supabase configurado
 
-### 2️⃣ Configurar Webhook en Meta
+### 2️⃣ Configurar Webhook en Twilio
 
-1. Ve a [Meta for Developers](https://developers.facebook.com)
-2. Selecciona tu aplicación de WhatsApp Business
-3. En el menú lateral, ve a **WhatsApp → Configuration**
-4. En la sección **Webhook**:
-   - **Callback URL**: Copia desde el dashboard de Toogo (Admin → WhatsApp)
-   - **Verify Token**: Usa el valor que configuraste en `META_VERIFY_TOKEN`
-5. Haz clic en **Verify and Save**
-6. En **Webhook Fields**, suscríbete a:
-   - ✅ `messages`
-   - ✅ `message_status` (opcional)
+1. Ve a la [Consola de Twilio](https://console.twilio.com)
+2. Navega a **Messaging** > **Senders** > **WhatsApp Senders**
+3. Selecciona tu número (o Sandbox)
+4. En **Endpoint Configuration** -> **Webhook URL for incoming messages**:
+   - URL: `https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/whatsapp-webhook`
+   - Method: `POST` (Twilio usará `multipart/form-data`)
+5. Guarda los cambios.
 
-### 3️⃣ Registrar Número de WhatsApp
+### 3️⃣ Configurar Variables de Entorno (Supabase Secrets)
 
-1. Inicia sesión como **Superadmin** en Toogo
-2. Ve a **Admin → WhatsApp**
-3. Ingresa tu número de WhatsApp Business (formato: `+521234567890`)
-4. Haz clic en **Registrar**
-5. Copia la **Webhook URL** y configúrala en Meta (paso anterior)
+Asegúrate de que tus Edge Functions tengan estos secretos:
+
+- `TWILIO_ACCOUNT_SID`: Tu Account SID de Twilio
+- `TWILIO_AUTH_TOKEN`: Tu Auth Token de Twilio
+- `TWILIO_WHATSAPP_NUMBER`: El número de Twilio (ej. `+14155238886`)
+- `OPENAI_API_KEY`: Para transcripciones y audio
+- `LOVABLE_API_KEY`: Para el agente de IA
 
 ### 4️⃣ Verificar Configuración
 
-1. Envía un mensaje de prueba desde otro número al WhatsApp Business
-2. Ve a **Admin → WhatsApp → Conversaciones**
-3. Deberías ver:
-   - ✅ Mensaje entrante
-   - ✅ Respuesta automática del bot
-   - ✅ Logs de transcripción (si enviaste audio)
+1. Envía un mensaje de prueba a tu número de Twilio WhatsApp.
+2. Deberías recibir una respuesta automática.
 
 ---
 
