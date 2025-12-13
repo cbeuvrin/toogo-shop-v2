@@ -163,7 +163,15 @@ const Tienda = () => {
           });
         } else {
           // Use regular RPC for other domains (with optional host override)
-          const effectiveHost = hostOverride || hostname;
+          let effectiveHost = hostOverride || hostname;
+
+          // Auto-strip 'www.' for store data lookup (Normalization)
+          // This ensures www.choeventos.com matches choeventos.com in DB
+          if (effectiveHost.startsWith('www.') && !effectiveHost.includes('toogo.store')) {
+            console.log('🔄 [Tienda] Normalizando host: quitando www.');
+            effectiveHost = effectiveHost.replace('www.', '');
+          }
+
           console.log('🔍 [Tienda] Using host:', effectiveHost, hostOverride ? '(override)' : '(current)');
           result = await supabase.rpc('get_public_store_data', {
             p_host: effectiveHost
