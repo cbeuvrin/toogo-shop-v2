@@ -184,7 +184,15 @@ export const useTenantByDomain = () => {
       console.log('🔍 [useTenantByDomain] Iniciando búsqueda de tenant para hostname:', hostname);
 
       // Check if we have a host override (for sandbox/preview mode)
-      const effectiveHost = hostOverride || hostname;
+      let effectiveHost = hostOverride || hostname;
+
+      // Auto-strip 'www.' for tenant lookups (Normalization)
+      // This ensures www.choeventos.com matches choeventos.com in DB
+      if (effectiveHost.startsWith('www.') && !effectiveHost.includes('toogo.store')) {
+        console.log('🔄 [useTenantByDomain] Normalizando host: quitando www.');
+        effectiveHost = effectiveHost.replace('www.', '');
+      }
+
       console.log('🔍 [useTenantByDomain] Effective host:', effectiveHost, hostOverride ? '(override)' : '(current)');
 
       // Verificar cache local primero
