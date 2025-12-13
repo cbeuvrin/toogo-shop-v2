@@ -620,11 +620,12 @@ const Tienda = () => {
     </div>;
   }
 
-  // Show StoreNotFound only for custom domains (not toogo.store subdomains)
-  if (!finalTenantId && !hostname.endsWith('.toogo.store')) {
+  // Show StoreNotFound if no tenant/data found after loading
+  // This prevents the "White Screen" on subdomains when RPC fails or returns no data
+  if (!finalTenantId && !storeData?.ok) {
     // Check if in sandbox environment without host override
     const isSandbox = hostname.includes('lovableproject.com') || hostname.includes('localhost');
-    const isTenantNotFound = storeData?.error === 'tenant_not_found';
+    const isTenantNotFound = storeData?.error === 'tenant_not_found' || !storeData;
 
     if (isSandbox && isTenantNotFound && !forcedTenantId && !hostOverride) {
       return (
@@ -646,6 +647,7 @@ const Tienda = () => {
       );
     }
 
+    // Now correctly show StoreNotFound for ALL domains (including toogo.store) if data is missing
     return <StoreNotFound domain={hostname} />;
   }
 
