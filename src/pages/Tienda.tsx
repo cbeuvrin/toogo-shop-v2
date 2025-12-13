@@ -30,7 +30,7 @@ import { useFavicon } from "@/hooks/useFavicon";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
 import { useToast } from "@/hooks/use-toast";
 import { useStoreMeta } from "@/hooks/useStoreMeta";
-import { StoreFooter } from "@/components/store/StoreFooter";
+
 
 const Tienda = () => {
   console.log("Tienda component mounted - checking for error 0d764bd6208d24366cbc2d3834335d4c");
@@ -142,6 +142,51 @@ const Tienda = () => {
       }
     }
   }, []);
+
+  // Legal Modal State
+  const [legalModalOpen, setLegalModalOpen] = useState<string | null>(null);
+
+  // Helper to get legal content (migrated from StoreFooter)
+  const getLegalContent = (type: string) => {
+    const storeName = storeData?.tenant?.name || "Tienda";
+
+    if (type === 'terms') {
+      if (effectiveSettings?.terms_text) {
+        return <div className="text-sm text-gray-600 whitespace-pre-wrap">{effectiveSettings.terms_text}</div>;
+      }
+      return (
+        <div className="space-y-4 text-sm text-gray-600">
+          <p>Bienvenido a {storeName}. Al utilizar nuestro sitio web, aceptas cumplir con los siguientes términos y condiciones de uso.</p>
+          <h3 className="font-semibold text-gray-900 mt-4">1. Uso del Sitio</h3>
+          <p>El contenido de las páginas de este sitio web es para tu información y uso general únicamente. Está sujeto a cambios sin previo aviso.</p>
+          <h3 className="font-semibold text-gray-900 mt-4">2. Productos y Precios</h3>
+          <p>Nos esforzamos por mostrar con precisión los colores y las imágenes de nuestros productos. Sin embargo, no podemos garantizar que la visualización del monitor de tu computadora de cualquier color sea precisa. Nos reservamos el derecho de limitar las cantidades de cualquier producto o servicio que ofrecemos.</p>
+          <h3 className="font-semibold text-gray-900 mt-4">3. Envíos y Devoluciones</h3>
+          <p>Los envíos están sujetos a la disponibilidad del producto y a la zona de cobertura. Las devoluciones se aceptarán de acuerdo con nuestra política de devoluciones vigente, siempre que el producto esté en su estado original.</p>
+          <h3 className="font-semibold text-gray-900 mt-4">4. Propiedad Intelectual</h3>
+          <p>Este sitio web contiene material que es propiedad nuestra o licenciado a nosotros. Este material incluye, pero no se limita a, el diseño, la apariencia, el estilo y los gráficos.</p>
+        </div>
+      );
+    }
+
+    if (type === 'privacy') {
+      if (effectiveSettings?.privacy_text) {
+        return <div className="text-sm text-gray-600 whitespace-pre-wrap">{effectiveSettings.privacy_text}</div>;
+      }
+      return (
+        <div className="space-y-4 text-sm text-gray-600">
+          <p>{storeName} respeta tu privacidad y se compromete a proteger los datos personales que nos proporcionas.</p>
+          <h3 className="font-semibold text-gray-900 mt-4">1. Recolección de Información</h3>
+          <p>Recopilamos información cuando te registras en nuestro sitio, realizas un pedido o te suscribes a nuestro boletín. La información recopilada incluye tu nombre, dirección de correo electrónico, dirección postal y número de teléfono.</p>
+          <h3 className="font-semibold text-gray-900 mt-4">2. Uso de la Información</h3>
+          <p>Cualquier información que recopilamos de ti puede ser utilizada para: personalizar tu experiencia, mejorar nuestro sitio web, mejorar el servicio al cliente y procesar transacciones.</p>
+          <h3 className="font-semibold text-gray-900 mt-4">3. Protección de Información</h3>
+          <p>Implementamos una variedad de medidas de seguridad para mantener la seguridad de tu información personal cuando realizas un pedido o accedes a tu información personal.</p>
+        </div>
+      );
+    }
+    return null;
+  };
 
   // Save favorites to localStorage
   useEffect(() => {
@@ -736,6 +781,18 @@ const Tienda = () => {
               <button onClick={scrollToContact} className="block py-3 text-lg text-gray-700 hover:text-gray-900 border-b border-gray-100 w-full text-left">
                 Contacto
               </button>
+              <button
+                onClick={() => { setLegalModalOpen('terms'); setIsMobileMenuOpen(false); }}
+                className="block py-3 text-lg text-gray-700 hover:text-gray-900 border-b border-gray-100 w-full text-left"
+              >
+                Términos y Condiciones
+              </button>
+              <button
+                onClick={() => { setLegalModalOpen('privacy'); setIsMobileMenuOpen(false); }}
+                className="block py-3 text-lg text-gray-700 hover:text-gray-900 border-b border-gray-100 w-full text-left"
+              >
+                Política de Privacidad
+              </button>
               <Link to="/dashboard" className="block py-3 text-lg text-gray-700 hover:text-gray-900 border-b border-gray-100" onClick={() => setIsMobileMenuOpen(false)}>Configuración de mi tienda</Link>
             </nav>
           </div>
@@ -1027,10 +1084,19 @@ const Tienda = () => {
       iconScale={effectiveSettings?.footer_icon_scale || 1.0}
     />
 
-    <StoreFooter
-      tenant={tenant}
-      settings={effectiveSettings}
-    />
+    {/* Legal Modal */}
+    <Dialog open={!!legalModalOpen} onOpenChange={() => setLegalModalOpen(null)}>
+      <DialogContent className="max-w-2xl max-h-[80vh] rounded-[15px]">
+        <DialogHeader>
+          <DialogTitle>
+            {legalModalOpen === 'terms' ? 'Términos y Condiciones' : 'Política de Privacidad'}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="h-[60vh] overflow-y-auto pr-4 mt-4">
+          {legalModalOpen && getLegalContent(legalModalOpen)}
+        </div>
+      </DialogContent>
+    </Dialog>
 
     {/* Mobile Bottom Navigation - Only visible on mobile */}
     <MobileBottomNav
