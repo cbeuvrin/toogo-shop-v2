@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 
 export const LoadingScreen = () => {
@@ -21,12 +20,20 @@ export const LoadingScreen = () => {
 
     return (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white">
-            <div className="relative w-32 h-32 md:w-40 md:h-40 mb-8">
+            <div className="relative w-32 h-32 md:w-40 md:h-40 mb-8 flex items-center justify-center">
+                {/* Fallback CSS Spinner if image fails or delays */}
+                <div className="absolute inset-0 border-4 border-gray-100 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+
                 {/* Base Mascot Image (Grayscale/Faded) */}
                 <img
                     src="/assets/mascot-toogo.png"
                     alt="Toogo Mascot Background"
                     className="absolute inset-0 w-full h-full object-contain opacity-30 grayscale"
+                    onError={(e) => {
+                        // Hide image on error to keep spinner visible
+                        (e.target as HTMLImageElement).style.display = 'none';
+                    }}
                 />
 
                 {/* Liquid Fill Effect Container */}
@@ -41,12 +48,10 @@ export const LoadingScreen = () => {
                         src="/assets/mascot-toogo.png"
                         alt="Toogo Mascot Filling"
                         className="absolute inset-0 w-full h-full object-contain animate-float-gentle"
+                        onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                        }}
                     />
-
-                    {/* Liquid Waveline Overlay (Optional visual flair) */}
-                    <div className="absolute bottom-0 left-0 w-full h-2 bg-blue-400 opacity-50 blur-sm animate-pulse"
-                        style={{ bottom: `${progress}%`, transition: 'bottom 0.03s linear' }}>
-                    </div>
                 </div>
             </div>
 
