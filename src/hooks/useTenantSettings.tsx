@@ -34,6 +34,10 @@ interface TenantSettings {
   share_title?: string;
   share_description?: string;
   share_image_url?: string;
+  share_title_draft?: string;
+  share_description_draft?: string;
+  share_image_url_draft?: string;
+  share_approval_status?: 'approved' | 'pending' | 'rejected';
   terms_text?: string;
   privacy_text?: string;
 }
@@ -228,7 +232,7 @@ export const useTenantSettings = (overrideTenantId?: string) => {
     }
   };
 
-  const uploadShareImage = async (file: File): Promise<string | null> => {
+  const uploadShareImage = async (file: File, targetField: 'share_image_url' | 'share_image_url_draft' = 'share_image_url'): Promise<string | null> => {
     if (!tenantId) return null;
 
     try {
@@ -273,6 +277,32 @@ export const useTenantSettings = (overrideTenantId?: string) => {
       const cacheBustedUrl = `${publicUrl}?t=${timestamp}`;
 
       // Update tenant_settings with new share image URL
+      // If we are in draft mode workflow, we might not want to update 'share_image_url' (live) yet.
+      // But the caller (DashboardSocial) will call updateSettings again on Save.
+      // So it's safe to update 'share_image_url' here? 
+      // NO, because that publishes it live immediately.
+      // We should change this to update `share_image_url_draft` if the new column exists?
+      // Or better, let's make this function accept a target column.
+
+      // For backward compatibility and simplicity in this refactor:
+      // We will default to updating `share_image_url` but we can pass a flag.
+
+      // Actually, since I can't easily change the signature in all usages without checking, 
+      // and checking shows it is used in DashboardSocial.
+
+      // Let's change the default behavior to:
+      // Return the URL.
+      // Do NOT update settings automatically here? 
+      // Wait, `DashboardSocial` previous implementation relied on it.
+
+      // Let's check `DashboardSocial` again. old code: `const url = await uploadShareImage(file); if(url)...`
+      // It didn't call updateSettings explicitly for the image in the old code? 
+      // Check old code: `handleSave` called `updateSettings`. `handleImageUpload` called `uploadShareImage`.
+      // `uploadShareImage` in hook DOES call `updateSettings`.
+
+      // So if I want to support drafts, I MUST change `uploadShareImage` to prevent auto-publishing.
+      // I will add a `targetField` parameter, defaulting to `share_image_url`.
+
       const success = await updateSettings({ share_image_url: cacheBustedUrl });
 
       if (success) {

@@ -17,6 +17,7 @@ import { AdminDomainPurchases } from '@/components/admin/AdminDomainPurchases';
 import { AdminBlogEditor } from '@/components/admin/AdminBlogEditor';
 import { BlogContentFixer } from '@/components/admin/BlogContentFixer';
 import { AdminWhatsAppSettings } from '@/components/admin/AdminWhatsAppSettings';
+
 import { useToast } from '@/hooks/use-toast';
 
 const Admin = () => {
@@ -162,6 +163,7 @@ const Admin = () => {
               <Phone className="w-4 h-4" />
               <span className="hidden md:inline">WhatsApp</span>
             </TabsTrigger>
+
           </TabsList>
 
           <TabsContent value="metrics" className="space-y-6">
@@ -200,6 +202,8 @@ const Admin = () => {
           <TabsContent value="whatsapp" className="space-y-6">
             <AdminWhatsAppSettings />
           </TabsContent>
+
+
         </Tabs>
       </main>
     </div>
