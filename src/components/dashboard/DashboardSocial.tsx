@@ -65,8 +65,7 @@ export const DashboardSocial = () => {
     const success = await updateSettings({
       share_title: shareTitle || null,
       share_description: shareDescription || null,
-      share_image_url: shareImageUrl || null,
-      share_approval_status: 'approved' // Auto-approve
+      share_image_url: shareImageUrl || null
     });
     setIsSaving(false);
     if (success) {
