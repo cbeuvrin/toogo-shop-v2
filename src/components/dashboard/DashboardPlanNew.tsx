@@ -53,7 +53,7 @@ export const DashboardPlanNew = () => {
   const { currentTenantId, availableTenants } = useTenantContext();
   const { user } = useAuth();
   const { plan, restrictions } = usePlanRestrictions();
-  
+
   // Get the actual subdomain from the tenant's primary_host
   const currentTenant = availableTenants.find(t => t.id === currentTenantId);
   const subdomain = currentTenant?.primary_host?.replace('.toogo.store', '') || 'tutienda';
@@ -177,15 +177,15 @@ export const DashboardPlanNew = () => {
 
     const breakdown = {
       domain: {
-        name: domainOpt === 'keep' 
+        name: domainOpt === 'keep'
           ? `${subdomain}.toogo.store`
           : domain || 'tudominio.com',
         price: domainPrice,
-        description: domainOpt === 'keep' 
+        description: domainOpt === 'keep'
           ? 'Subdominio incluido gratis'
           : domainOpt === 'buy'
-          ? 'Registro de dominio por 1 año'
-          : 'Transferencia de dominio'
+            ? 'Registro de dominio por 1 año'
+            : 'Transferencia de dominio'
       },
       plan: {
         name: 'Plan Basic',
@@ -193,8 +193,8 @@ export const DashboardPlanNew = () => {
         description: selectedPlan.billing_cycle === 'annual'
           ? 'Plan Basic - 12 meses (2 meses gratis)'
           : selectedPlan.billing_cycle === 'semi_annual'
-          ? 'Plan Basic - 6 meses (1 mes gratis)'
-          : 'Plan Basic - 1 mes',
+            ? 'Plan Basic - 6 meses (1 mes gratis)'
+            : 'Plan Basic - 1 mes',
         features: [
           '🛍️ Productos ilimitados',
           '🌐 Dominio personalizado',
@@ -222,7 +222,7 @@ export const DashboardPlanNew = () => {
     };
 
     const data = {
-      domain: domainOpt === 'keep' 
+      domain: domainOpt === 'keep'
         ? `${subdomain}.toogo.store`
         : domain || '',
       tenantName: currentTenant?.name || subdomain,
@@ -233,13 +233,12 @@ export const DashboardPlanNew = () => {
         email: user?.email || '',
         firstName: user?.user_metadata?.first_name || user?.user_metadata?.firstName || '',
         lastName: user?.user_metadata?.last_name || user?.user_metadata?.lastName || ''
-      }
+      },
+      tenantId: currentTenantId // Critical: Pass tenantId to update existing tenant instead of creating new one
     };
 
     console.log('[DashboardPlanNew] Purchase data created:', {
       tenantId: currentTenantId,
-      userId: user?.id,
-      userEmail: user?.email,
       purchaseData: data
     });
 
@@ -302,7 +301,7 @@ export const DashboardPlanNew = () => {
     <div className="space-y-6">
       {/* Cancellation Banner */}
       {currentTenantId && <CancellationBanner tenantId={currentTenantId} />}
-      
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Current Plan */}
         <Card className="md:col-span-2 lg:col-span-2">
@@ -315,8 +314,8 @@ export const DashboardPlanNew = () => {
                 </CardTitle>
                 <CardDescription>Tu plan actual</CardDescription>
               </div>
-              <Badge 
-                variant="secondary" 
+              <Badge
+                variant="secondary"
                 className={isBasicPlan ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}
               >
                 {isBasicPlan ? 'Basic Activo' : 'Gratuito'}
@@ -375,7 +374,7 @@ export const DashboardPlanNew = () => {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
                     <CreditCard className="w-4 h-4 text-green-500" />
                     <div className="flex-1">
@@ -384,9 +383,9 @@ export const DashboardPlanNew = () => {
                     </div>
                   </div>
 
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
+                  <Button
+                    variant="outline"
+                    className="w-full"
                     onClick={() => setShowPaymentHistoryDialog(true)}
                   >
                     <Calendar className="w-4 h-4 mr-2" />
@@ -394,7 +393,7 @@ export const DashboardPlanNew = () => {
                   </Button>
                 </>
               )}
-              
+
               {!subscription && (
                 <div className="text-center py-4">
                   <p className="text-sm text-muted-foreground">
@@ -523,10 +522,9 @@ export const DashboardPlanNew = () => {
                   ) : (
                     <X className="w-4 h-4 text-gray-400" />
                   )}
-                  <span 
-                    className={`text-sm ${
-                      feature.included ? 'text-foreground' : 'text-muted-foreground'
-                    }`}
+                  <span
+                    className={`text-sm ${feature.included ? 'text-foreground' : 'text-muted-foreground'
+                      }`}
                   >
                     {feature.name}
                   </span>
@@ -538,7 +536,7 @@ export const DashboardPlanNew = () => {
                 </div>
               ))}
             </div>
-            
+
             {/* Cancel Plan Button for Pro Users */}
             {isProPlan && (
               <div className="border-t pt-4 mt-4">
@@ -562,8 +560,8 @@ export const DashboardPlanNew = () => {
               {isBasicPlan ? 'Estado del Plan' : 'Mejorar Plan'}
             </CardTitle>
             <CardDescription>
-              {isBasicPlan 
-                ? 'Ya tienes acceso a todas las funcionalidades premium' 
+              {isBasicPlan
+                ? 'Ya tienes acceso a todas las funcionalidades premium'
                 : 'Desbloquea todas las funcionalidades premium'
               }
             </CardDescription>
@@ -601,7 +599,7 @@ export const DashboardPlanNew = () => {
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Flujo de selección de dominio antes del pago */}
       <Dialog open={showDomainChoiceDialog} onOpenChange={setShowDomainChoiceDialog}>
         <DialogContent className="max-w-lg">
@@ -685,7 +683,7 @@ export const DashboardPlanNew = () => {
               Tus últimos 10 pagos realizados
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-3 max-h-[400px] overflow-y-auto">
             {paymentHistory.length === 0 && (
               <div className="text-center py-8">
@@ -694,7 +692,7 @@ export const DashboardPlanNew = () => {
                 </p>
               </div>
             )}
-            
+
             {paymentHistory.map((payment) => (
               <div key={payment.id} className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="flex items-center gap-3">

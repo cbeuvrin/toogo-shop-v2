@@ -69,12 +69,12 @@ serve(async (req) => {
     }
 
     // Get domain and plan pricing
-  const domainResponse = await supabase.functions.invoke('openprovider-domains', {
-    body: { 
-      action: 'check-availability',
-      domain: requestData.domain 
-    }
-  });
+    const domainResponse = await supabase.functions.invoke('openprovider-domains', {
+      body: {
+        action: 'check-availability',
+        domain: requestData.domain
+      }
+    });
 
     if (domainResponse.error || !domainResponse.data?.available) {
       throw new Error('Domain not available or error checking availability');
@@ -93,17 +93,17 @@ serve(async (req) => {
       throw new Error('Failed to get pricing information');
     }
 
-    const basicPlanPriceMXN = requestData.planType === 'annual' 
+    const basicPlanPriceMXN = requestData.planType === 'annual'
       ? (pricingData.setting_value?.plans?.basic_annual?.price_mxn || 2990)
       : (pricingData.setting_value?.plans?.basic_monthly?.price_mxn || 299);
 
     // Re-validate coupon on backend if provided
     let finalDiscount = 0;
     let validatedCoupon = null;
-    
+
     if (requestData.couponCode && requestData.discountAmount && requestData.discountAmount > 0) {
       console.log('Re-validating coupon on backend:', requestData.couponCode);
-      
+
       const couponValidation = await supabase.functions.invoke('validate-coupon', {
         body: {
           code: requestData.couponCode,
@@ -116,9 +116,9 @@ serve(async (req) => {
       if (!couponValidation.error && couponValidation.data?.isValid) {
         validatedCoupon = couponValidation.data.coupon;
         finalDiscount = round2(couponValidation.data.discountAmount);
-        console.log('Coupon validated successfully on backend:', { 
-          code: requestData.couponCode, 
-          discount: finalDiscount 
+        console.log('Coupon validated successfully on backend:', {
+          code: requestData.couponCode,
+          discount: finalDiscount
         });
       } else {
         console.warn('Coupon validation failed on backend:', couponValidation.error);
@@ -130,9 +130,9 @@ serve(async (req) => {
     const planAfterDiscount = round2(Math.max(0, basicPlanPriceMXN - finalDiscount));
     const totalPriceMXN = round2(domainPriceMXN + planAfterDiscount);
 
-    console.log('Payment breakdown (rounded):', { 
-      domainPriceMXN, 
-      basicPlanPriceMXN, 
+    console.log('Payment breakdown (rounded):', {
+      domainPriceMXN,
+      basicPlanPriceMXN,
       finalDiscount,
       planAfterDiscount,
       totalPriceMXN,
@@ -167,7 +167,7 @@ serve(async (req) => {
     console.log('Creating MercadoPago payment:', paymentPayload);
 
     // Create MercadoPago payment using SDK
-    const client = new MercadoPagoConfig({ 
+    const client = new MercadoPagoConfig({
       accessToken: mercadopagoToken,
       options: { timeout: 5000 }
     });
@@ -196,7 +196,7 @@ serve(async (req) => {
       // Intelligent retry for code 4037 (Invalid transaction_amount)
       if (error.cause?.[0]?.code === 4037) {
         console.log('Retrying payment with recalculated transaction_amount...');
-        
+
         // Retry with recalculated amount
         paymentResult = await paymentClient.create({
           body: {
@@ -222,98 +222,133 @@ serve(async (req) => {
 
     // If payment is approved, create the tenant and domain
     if (paymentResult.status === 'approved') {
-      console.log('Payment approved, creating tenant and domain...');
+      console.log('Payment approved, processing tenant...');
 
-      // Create tenant with purchased domain as primary_host
-      const { data: newTenant, error: tenantError } = await supabase
-        .from('tenants')
-        .insert({
-          name: requestData.tenantName,
-          primary_host: requestData.domain,
-          extra_hosts: [`${requestData.tenantName}.toogo.store`],
-          plan: 'basic',
-          status: 'active',
-          owner_user_id: user.id
-        })
-        .select()
-        .single();
+      let tenantId = (requestData as any).tenantId; // Check if tenantId was passed for upgrade
+      let newTenant;
 
-      if (tenantError) {
-        console.error('Error creating tenant:', tenantError);
-        throw new Error('Failed to create tenant');
-      }
+      if (tenantId) {
+        console.log(`[UPGRADE] Updating existing tenant: ${tenantId}`);
+        // Update existing tenant (Upgrade Plan + Add Domain)
+        const { data: updatedTenant, error: updateError } = await supabase
+          .from('tenants')
+          .update({
+            plan: 'basic', // Upgrade to basic
+            primary_host: requestData.domain, // Set new domain as primary
+            // Append new domain to extra_hosts if not present, keeping original domain
+            extra_hosts: requestData.tenantName
+              ? [`${requestData.tenantName}.toogo.store`, requestData.domain] // Ensure both are present
+              : undefined
+          })
+          .eq('id', tenantId)
+          .select()
+          .single();
 
-      // Create user role
-      await supabase
-        .from('user_roles')
-        .insert({
-          user_id: user.id,
-          tenant_id: newTenant.id,
-          role: 'tenant_admin'
-        });
-
-      // Initialize visual_editor_data with contact info from purchase
-      console.log('Initializing visual_editor_data for basic plan tenant');
-      const visualEditorData = [
-        {
-          tenant_id: newTenant.id,
-          element_type: 'contact',
-          element_id: 'store_contact',
-          data: {
-            phone: '',
-            email: requestData.userInfo.email || user.email || '',
-            address: '',
-            hours: 'Lunes a Viernes: 9:00 AM - 6:00 PM',
-            whatsapp: '',
-            facebook: '',
-            instagram: ''
-          }
-        },
-        {
-          tenant_id: newTenant.id,
-          element_type: 'logo',
-          element_id: 'main_logo',
-          data: {
-            url: '',
-            alt: `Logo de ${requestData.tenantName}`
-          }
-        },
-        {
-          tenant_id: newTenant.id,
-          element_type: 'banner',
-          element_id: 'banner_1',
-          data: {
-            imageUrl: '/assets/default-banner.jpg',
-            sort: 0
-          }
+        if (updateError) {
+          console.error('Error updating tenant:', updateError);
+          throw new Error('Failed to update tenant');
         }
-      ];
-
-      const { error: visualError } = await supabase
-        .from('visual_editor_data')
-        .insert(visualEditorData);
-
-      if (visualError) {
-        console.error('Error initializing visual_editor_data:', visualError);
-        // Don't fail the transaction, just log the error
+        newTenant = updatedTenant;
+        console.log(`[UPGRADE] Tenant updated successfully: ${newTenant.id}`);
       } else {
-        console.log('Visual editor data initialized successfully');
+        console.log('[NEW] Creating new tenant...');
+        // Create tenant with purchased domain as primary_host
+        const { data: createdTenant, error: tenantError } = await supabase
+          .from('tenants')
+          .insert({
+            name: requestData.tenantName,
+            primary_host: requestData.domain,
+            extra_hosts: [`${requestData.tenantName}.toogo.store`],
+            plan: 'basic',
+            status: 'active',
+            owner_user_id: user.id
+          })
+          .select()
+          .single();
+
+        if (tenantError) {
+          console.error('Error creating tenant:', tenantError);
+          throw new Error('Failed to create tenant');
+        }
+        newTenant = createdTenant;
       }
+
+      // Create user role ONLY for new tenants
+      if (!tenantId) {
+        await supabase
+          .from('user_roles')
+          .insert({
+            user_id: user.id,
+            tenant_id: newTenant.id,
+            role: 'tenant_admin'
+          });
+      }
+
+      // Initialize visual_editor_data ONLY for new tenants
+      if (!tenantId) {
+        console.log('Initializing visual_editor_data for basic plan tenant');
+        const visualEditorData = [
+          {
+            tenant_id: newTenant.id,
+            element_type: 'contact',
+            element_id: 'store_contact',
+            data: {
+              phone: '',
+              email: requestData.userInfo.email || user.email || '',
+              address: '',
+              hours: 'Lunes a Viernes: 9:00 AM - 6:00 PM',
+              whatsapp: '',
+              facebook: '',
+              instagram: ''
+            }
+          },
+          {
+            tenant_id: newTenant.id,
+            element_type: 'logo',
+            element_id: 'main_logo',
+            data: {
+              url: '',
+              alt: `Logo de ${requestData.tenantName}`
+            }
+          },
+          {
+            tenant_id: newTenant.id,
+            element_type: 'banner',
+            element_id: 'banner_1',
+            data: {
+              imageUrl: '/assets/default-banner.jpg',
+              sort: 0
+            }
+          }
+        ];
+
+        const { error: visualError } = await supabase
+          .from('visual_editor_data')
+          .insert(visualEditorData);
+
+        if (visualError) {
+          console.error('Error initializing visual_editor_data:', visualError);
+        } else {
+          console.log('Visual editor data initialized successfully');
+        }
+      }
+
+
 
       // Handle domain based on option
       if (requestData.domainOption === 'dns-only') {
         // User is bringing their own domain - set up DNS instructions
         console.log(`[DNS-Only] Usuario traerá su propio dominio: ${requestData.domain}`);
-        
+
         // 1. Update tenant with dominio pendiente (no asignarlo aún)
         await supabase
           .from('tenants')
-          .update({ 
+          .update({
             primary_host: null, // No asignarlo hasta verificar DNS
             status: 'active'
           })
           .eq('id', newTenant.id);
-        
+
         // 2. Crear registro en domain_purchases con status 'dns_pending'
         await supabase
           .from('domain_purchases')
@@ -329,7 +364,7 @@ serve(async (req) => {
               created_via: 'onboarding'
             }
           });
-        
+
         // 3. Llamar a complete-domain-setup para agregar el dominio a Vercel
         console.log(`[DNS-Only] Configurando dominio en Vercel: ${requestData.domain}`);
         const setupResponse = await supabase.functions.invoke('complete-domain-setup', {
@@ -338,13 +373,13 @@ serve(async (req) => {
             tenant_id: newTenant.id
           }
         });
-        
+
         if (setupResponse.error) {
           console.error('[DNS-Only] Error en complete-domain-setup:', setupResponse.error);
         } else {
           console.log('[DNS-Only] Dominio agregado a Vercel:', setupResponse.data);
         }
-        
+
         // 4. Enviar email con instrucciones DNS
         await supabase.functions.invoke('send-dns-instructions', {
           body: {
@@ -354,13 +389,13 @@ serve(async (req) => {
             tenant_name: requestData.tenantName
           }
         });
-        
+
         console.log(`[DNS-Only] Instrucciones DNS enviadas a ${requestData.userInfo.email}`);
-        
+
       } else if (domainPriceMXN > 0) {
         // Register or transfer domain via Openprovider
         const domainAction = requestData.domainOption === 'transfer' ? 'transfer' : 'purchase';
-        
+
         const domainPayload: any = {
           action: domainAction,
           domain: requestData.domain,
@@ -468,9 +503,9 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in embedded payment:', error);
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: error.message,
-      success: false 
+      success: false
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

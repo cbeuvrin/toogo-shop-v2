@@ -62,7 +62,7 @@ serve(async (req) => {
     // 2. Agregar dominio a Vercel
     // Note: DNS nameservers are already configured via nsGroup during domain purchase
     console.log('[Complete Setup] Step 2: Adding domain to Vercel...');
-    
+
     try {
       const vercelToken = Deno.env.get('VERCEL_API_TOKEN');
       const vercelProjectId = Deno.env.get('VERCEL_PROJECT_ID');
@@ -87,10 +87,10 @@ serve(async (req) => {
       );
 
       const responseBody = await addDomainResponse.json();
-      
+
       if (!addDomainResponse.ok) {
         console.error('[Complete Setup] Vercel API error for root domain:', responseBody);
-        
+
         // Si el dominio ya existe, considerarlo como éxito
         if (responseBody.error?.code === 'domain_already_in_use') {
           console.log('[Complete Setup] ✅ Domain already added to Vercel, continuing...');
@@ -117,7 +117,7 @@ serve(async (req) => {
       );
 
       const wwwData = await addWwwResponse.json();
-      
+
       if (addWwwResponse.ok) {
         console.log(`[Complete Setup] ✅ www.${domain} added to Vercel project`);
       } else {
@@ -128,36 +128,36 @@ serve(async (req) => {
         step: 'vercel_domain_setup',
         status: 'completed',
         message: `Dominios agregados a Vercel: ${domain} y www.${domain}`,
-        details: { 
-          domain: domainData, 
-          www: wwwData, 
-          vercel_project_id: vercelProjectId 
+        details: {
+          domain: domainData,
+          www: wwwData,
+          vercel_project_id: vercelProjectId
         }
       });
 
     } catch (error) {
       console.error('[Complete Setup] ❌ Error configuring Vercel domain:', error);
-      
+
       steps.push({
         step: 'vercel_domain_setup',
         status: 'error',
         message: `Error al agregar dominio a Vercel: ${error.message}`,
-        details: { 
+        details: {
           error: error.message,
           note: 'Domain can be added manually in Vercel dashboard if needed'
         }
       });
-      
+
       // No lanzar error - el setup puede continuar sin este paso
     }
 
     // 2.4. Verificar estado del DNS en Vercel antes de crear registros
     console.log('[Complete Setup] Step 2.4: Checking DNS status in Vercel...');
-    
+
     try {
       const vercelToken = Deno.env.get('VERCEL_API_TOKEN');
       const vercelTeamId = Deno.env.get('VERCEL_TEAM_ID');
-      
+
       // Verificar estado actual del dominio en Vercel
       const domainInfoResponse = await fetch(
         `https://api.vercel.com/v9/domains/${domain}?teamId=${vercelTeamId}`,
@@ -165,7 +165,7 @@ serve(async (req) => {
       );
 
       const domainInfo = await domainInfoResponse.json();
-      
+
       // Verificar si DNS está activo en Vercel
       // verified: true significa que Vercel detectó los NS y la zona está lista para crear registros
       const isDnsActive = (
@@ -180,7 +180,7 @@ serve(async (req) => {
         console.log('[Complete Setup] ServiceType:', domainInfo.serviceType);
         console.log('[Complete Setup] Nameservers:', domainInfo.nameservers);
         console.log('[Complete Setup] Verified:', domainInfo.verified);
-        
+
         steps.push({
           step: 'vercel_dns_check',
           status: 'skipped',
@@ -191,7 +191,7 @@ serve(async (req) => {
             next_action: 'Sistema reintentará automáticamente cada 15 minutos'
           }
         });
-        
+
         // Actualizar estado a dns_pending
         await supabase.from('domain_purchases').update({
           status: 'dns_pending',
@@ -202,14 +202,14 @@ serve(async (req) => {
             detected_nameservers: domainInfo.nameservers
           }
         }).eq('id', domainPurchaseId);
-        
+
         // Retornar early - no crear registros aún
         return new Response(JSON.stringify({
           success: false,
           reason: 'dns_not_active_yet',
           domain: domain,
           steps
-        }), { 
+        }), {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
@@ -217,7 +217,7 @@ serve(async (req) => {
 
       // DNS ACTIVO - continuar con crear registros
       console.log('[Complete Setup] ✅ DNS zone is active in Vercel');
-      
+
       steps.push({
         step: 'vercel_dns_check',
         status: 'completed',
@@ -227,17 +227,17 @@ serve(async (req) => {
           nameservers: domainInfo.nameservers
         }
       });
-      
+
     } catch (error) {
       console.error('[Complete Setup] ❌ Error checking DNS status:', error);
-      
+
       steps.push({
         step: 'vercel_dns_check',
         status: 'error',
         message: `Error al verificar DNS: ${error.message}`,
         details: { error: error.message }
       });
-      
+
       // No lanzar error - continuar con el proceso
     }
 
@@ -250,9 +250,9 @@ serve(async (req) => {
 
       // Crear múltiples A records con las nuevas IPs recomendadas por Vercel (2024-2025)
       const vercelIPs = ['76.76.21.98', '76.76.21.142', '76.76.21.164'];
-      
+
       console.log(`[Complete Setup] Creating A records for ${domain} with new Vercel IPs...`);
-      
+
       let createdRecords = 0;
       for (const ip of vercelIPs) {
         const createARecordResponse = await fetch(
@@ -271,9 +271,9 @@ serve(async (req) => {
             })
           }
         );
-        
+
         const aRecordData = await createARecordResponse.json();
-        
+
         if (!createARecordResponse.ok && aRecordData.error?.code !== 'record_already_exists') {
           console.error(`[Complete Setup] Error creating A record for IP ${ip}:`, aRecordData);
           // No lanzar error, continuar con las otras IPs
@@ -282,7 +282,7 @@ serve(async (req) => {
           createdRecords++;
         }
       }
-      
+
       console.log(`[Complete Setup] ✅ ${createdRecords}/${vercelIPs.length} A records created for ${domain}`);
 
       // Crear CNAME record para www
@@ -305,12 +305,12 @@ serve(async (req) => {
       );
 
       const cnameData = await createCNAMEResponse.json();
-      
+
       if (!createCNAMEResponse.ok) {
         // Si es invalid_zone, marcar como dns_pending (no failed)
         if (cnameData.error?.code === 'invalid_zone') {
           console.log('[Complete Setup] DNS zone not active (invalid_zone error)');
-          
+
           await supabase.from('domain_purchases').update({
             status: 'dns_pending',
             metadata: {
@@ -319,17 +319,17 @@ serve(async (req) => {
               message: 'Zona DNS aún no activa. Sistema reintentará automáticamente.'
             }
           }).eq('id', domainPurchaseId);
-          
+
           throw new Error('DNS zone not active yet (invalid_zone)');
         }
-        
+
         // Otros errores - continuar como antes
         if (cnameData.error?.code !== 'record_already_exists') {
           console.error('[Complete Setup] Error creating CNAME record:', cnameData);
           throw new Error(`Failed to create CNAME record: ${JSON.stringify(cnameData)}`);
         }
       }
-      
+
       console.log(`[Complete Setup] ✅ CNAME record created for www.${domain}`);
 
       steps.push({
@@ -354,12 +354,12 @@ serve(async (req) => {
 
     } catch (error) {
       console.error('[Complete Setup] ❌ Error creating DNS records:', error);
-      
+
       steps.push({
         step: 'vercel_dns_records',
         status: 'error',
         message: `Error al crear registros DNS en Vercel: ${error.message}`,
-        details: { 
+        details: {
           error: error.message,
           note: 'DNS records pueden crearse manualmente en Vercel dashboard'
         }
@@ -397,11 +397,11 @@ serve(async (req) => {
 
       if (!redirectResponse.ok) {
         const errorData = await redirectResponse.json();
-        
+
         // Si el dominio ya existe, intentar actualizar la configuración
         if (errorData.error?.code === 'domain_already_exists' || errorData.error?.code === 'domain_already_in_use') {
           console.log('[Complete Setup] www domain already exists, updating redirect...');
-          
+
           const updateResponse = await fetch(
             `https://api.vercel.com/v9/projects/${vercelProjectId}/domains/www.${domain}${vercelTeamId ? `?teamId=${vercelTeamId}` : ''}`,
             {
@@ -446,7 +446,7 @@ serve(async (req) => {
 
     } catch (error) {
       console.error('[Complete Setup] ❌ Error configuring www redirect:', error);
-      
+
       steps.push({
         step: 'www_redirect',
         status: 'warning',
@@ -468,7 +468,7 @@ serve(async (req) => {
 
     if (!existingOrder || forceAll) {
       console.log('[Complete Setup] Step 2: Creating payment order...');
-      
+
       try {
         // Obtener email del usuario
         const { data: userData } = await supabase.auth.admin.getUserById(ownerUserId);
@@ -513,7 +513,78 @@ serve(async (req) => {
       });
     }
 
-    // 4. Bootstrap tenant inline (sin edge function)
+    // 4. Update tenant extra_hosts (Crucial for tenant resolution)
+    console.log('[Complete Setup] Step 4: Updating tenant extra_hosts...');
+
+    try {
+      // 1. Fetch current tenant hosts
+      const { data: tenantData, error: tenantFetchError } = await supabase
+        .from('tenants')
+        .select('extra_hosts, plan')
+        .eq('id', tenantId)
+        .single();
+
+      if (tenantFetchError) throw tenantFetchError;
+
+      const currentHosts = tenantData.extra_hosts || [];
+      const newHosts = [domain, `www.${domain}`];
+
+      // 2. Merge and deduplicate
+      const updatedHosts = [...new Set([...currentHosts, ...newHosts])];
+
+      // 3. Update if there are changes
+      // Check if plan needs upgrade (free -> basic)
+      const currentPlan = tenantData.plan;
+      const shouldUpgradePlan = currentPlan === 'free';
+      const shouldUpdateHosts = updatedHosts.length !== currentHosts.length;
+
+      if (shouldUpdateHosts || shouldUpgradePlan) {
+        const updatePayload: any = {};
+
+        if (shouldUpdateHosts) {
+          updatePayload.extra_hosts = updatedHosts;
+        }
+
+        if (shouldUpgradePlan) {
+          console.log(`[Complete Setup] Upgrading tenant plan from ${currentPlan} to basic`);
+          updatePayload.plan = 'basic';
+        }
+
+        const { error: updateError } = await supabase
+          .from('tenants')
+          .update(updatePayload)
+          .eq('id', tenantId);
+
+        if (updateError) throw updateError;
+
+        console.log(`[Complete Setup] ✅ Updated tenant: hosts=[${shouldUpdateHosts ? newHosts.join(', ') : 'unchanged'}], plan=${shouldUpgradePlan ? 'basic' : 'unchanged'}`);
+
+        steps.push({
+          step: 'update_tenant_data',
+          status: 'completed',
+          message: `Datos actualizados: ${shouldUpdateHosts ? 'Dominios vinculados' : ''} ${shouldUpgradePlan ? 'Plan actualizado a Básico' : ''}`
+        });
+      } else {
+        console.log('[Complete Setup] Tenant data already up to date');
+        steps.push({
+          step: 'update_tenant_data',
+          status: 'skipped',
+          message: 'Datos de la tienda ya estaban actualizados'
+        });
+      }
+
+    } catch (error) {
+      console.error('[Complete Setup] ❌ Error updating tenant hosts:', error);
+      steps.push({
+        step: 'update_tenant_hosts',
+        status: 'error',
+        message: `Error al vincular dominios a la tienda: ${error.message}`,
+        details: { error: error.message }
+      });
+      // Do not throw, continue process
+    }
+
+    // 5. Bootstrap tenant inline (sin edge function)
     const { data: productCheck } = await supabase
       .from('products')
       .select('id')
@@ -522,8 +593,8 @@ serve(async (req) => {
       .maybeSingle();
 
     if (!productCheck || forceAll) {
-      console.log('[Complete Setup] Step 3: Bootstrapping tenant inline...');
-      
+      console.log('[Complete Setup] Step 5: Bootstrapping tenant inline...');
+
       try {
         // 1. Crear tenant_settings si no existe
         const { data: hasSettings } = await supabase
@@ -531,7 +602,7 @@ serve(async (req) => {
           .select('id')
           .eq('tenant_id', tenantId)
           .maybeSingle();
-        
+
         if (!hasSettings) {
           await supabase.from('tenant_settings').insert({
             tenant_id: tenantId,
@@ -550,7 +621,7 @@ serve(async (req) => {
           .from('categories')
           .select('id', { count: 'exact', head: true })
           .eq('tenant_id', tenantId);
-        
+
         if (!catCount || catCount === 0) {
           await supabase.from('categories').insert({
             tenant_id: tenantId,
@@ -574,7 +645,7 @@ serve(async (req) => {
             status: 'active',
             product_type: 'simple'
           }).select().single();
-          
+
           if (newProduct) {
             console.log('[Bootstrap] Created example product');
           }
@@ -586,7 +657,7 @@ serve(async (req) => {
           .select('id')
           .eq('tenant_id', tenantId)
           .maybeSingle();
-        
+
         if (!onboard) {
           await supabase.from('user_onboarding_progress').insert({
             tenant_id: tenantId,
@@ -629,10 +700,10 @@ serve(async (req) => {
     // 6. Actualizar metadata del domain_purchase
     const hasErrors = steps.some(s => s.status === 'error');
     const currentMetadata = (purchase.metadata as any) || {};
-    const existingErrorHistory = Array.isArray(currentMetadata.error_history) 
-      ? currentMetadata.error_history 
+    const existingErrorHistory = Array.isArray(currentMetadata.error_history)
+      ? currentMetadata.error_history
       : [];
-    
+
     // Agregar nuevos errores al INICIO del array (más recientes primero)
     const newErrors = steps
       .filter(s => s.status === 'error')
@@ -657,15 +728,15 @@ serve(async (req) => {
     let finalStatus = 'active';
     if (hasErrors) {
       // Si hay errores de DNS pending, usar dns_pending en vez de failed
-      const hasDnsPendingStep = steps.some(s => 
+      const hasDnsPendingStep = steps.some(s =>
         s.step === 'vercel_dns_check' && s.status === 'skipped'
       );
       finalStatus = hasDnsPendingStep ? 'dns_pending' : 'failed';
     }
-    
+
     await supabase
       .from('domain_purchases')
-      .update({ 
+      .update({
         metadata: completionMetadata,
         status: finalStatus
       })
@@ -696,7 +767,7 @@ serve(async (req) => {
   } catch (error: any) {
     console.error('[Complete Setup] Fatal error:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error.message,
         details: error.toString()
       }),

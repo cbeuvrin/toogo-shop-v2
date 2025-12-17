@@ -14,11 +14,11 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
 
-[auth.jwt.aud]
-default = "authenticated"
+# [auth.jwt.aud]
+# default = "authenticated"
 
-[edge_functions]
-enabled = true
+# [edge_functions]
+# enabled = true
 
 [functions.bootstrap-complete-tenant]
 verify_jwt = true

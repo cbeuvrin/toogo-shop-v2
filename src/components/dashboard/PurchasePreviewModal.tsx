@@ -3,13 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, CreditCard, Calendar, Zap, Tag, X } from 'lucide-react';
+import { CheckCircle, CreditCard, Calendar, Zap, Tag, X, Lock } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { EmbeddedPaymentForm } from '@/components/EmbeddedPaymentForm';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCoupons } from '@/hooks/useCoupons';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PurchaseBreakdown {
   domain: {
@@ -68,12 +69,41 @@ export const PurchasePreviewModal: React.FC<PurchasePreviewModalProps> = ({
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
-  
+  const [password, setPassword] = useState('');
+  const [isPasswordVerified, setIsPasswordVerified] = useState(false);
+  const [isValidatingPassword, setIsValidatingPassword] = useState(false);
+
   const { validateCoupon } = useCoupons();
   const formatPrice = (price: number) => `$${price.toLocaleString()} MXN`;
-  
+
   // Utility to round to 2 decimals
   const round2 = (n: number): number => Math.round(n * 100) / 100;
+
+  const handleVerifyPassword = async () => {
+    if (!password) return;
+
+    setIsValidatingPassword(true);
+    try {
+      // Re-authenticate to verify identity
+      const { error } = await supabase.auth.signInWithPassword({
+        email: purchaseData?.userInfo.email || '',
+        password: password
+      });
+
+      if (error) {
+        toast.error('Contraseña incorrecta');
+        setPassword('');
+      } else {
+        toast.success('Identidad verificada');
+        setIsPasswordVerified(true);
+      }
+    } catch (error) {
+      console.error('Error verifying password:', error);
+      toast.error('Error al verificar contraseña');
+    } finally {
+      setIsValidatingPassword(false);
+    }
+  };
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -118,14 +148,14 @@ export const PurchasePreviewModal: React.FC<PurchasePreviewModalProps> = ({
 
   const handlePaymentSuccess = (paymentResult: any) => {
     console.log('Payment successful:', paymentResult);
-    
+
     // Redirigir a la página de "Tienda en Construcción"
     const queryParams = new URLSearchParams({
       domain: purchaseData?.domain || '',
       email: purchaseData?.userInfo.email || '',
       order_id: paymentResult.id || paymentResult.order_id || 'N/A'
     });
-    
+
     window.location.href = `/store-being-created?${queryParams.toString()}`;
   };
 
@@ -205,7 +235,7 @@ export const PurchasePreviewModal: React.FC<PurchasePreviewModalProps> = ({
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">{breakdown.plan.description}</p>
-                  
+
                   {/* Auto billing indicator */}
                   {breakdown.plan.auto_billing && (
                     <div className="flex items-center gap-1 mt-1">
@@ -324,11 +354,11 @@ export const PurchasePreviewModal: React.FC<PurchasePreviewModalProps> = ({
                 <span className="font-medium text-blue-800">Información de Facturación</span>
               </div>
               <p className="text-sm text-blue-700">
-                {breakdown.plan.billing_cycle === 'annual' 
+                {breakdown.plan.billing_cycle === 'annual'
                   ? 'Renovación automática cada año'
                   : breakdown.plan.billing_cycle === 'semi_annual'
-                  ? 'Renovación automática cada 6 meses'
-                  : 'Renovación automática cada mes'}
+                    ? 'Renovación automática cada 6 meses'
+                    : 'Renovación automática cada mes'}
               </p>
               <p className="text-xs text-blue-600 mt-1">
                 Puedes cancelar en cualquier momento desde tu dashboard
@@ -356,6 +386,56 @@ export const PurchasePreviewModal: React.FC<PurchasePreviewModalProps> = ({
                 Pagar Ahora
               </Button>
             </div>
+          ) : !isPasswordVerified ? (
+            <Card className="border-orange-200 bg-orange-50">
+              <CardContent className="p-4 space-y-4">
+                <div className="flex items-center gap-2 text-orange-800">
+                  <div className="p-2 bg-orange-100 rounded-full">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Confirmar Identidad</h3>
+                    <p className="text-sm text-orange-700">Ingresa tu contraseña para continuar</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="verify-password">Contraseña</Label>
+                  <Input
+                    id="verify-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    onKeyDown={(e) => e.key === 'Enter' && handleVerifyPassword()}
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowPaymentForm(false)}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleVerifyPassword}
+                    disabled={isValidatingPassword || !password}
+                    className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+                  >
+                    {isValidatingPassword ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                        Verificando...
+                      </>
+                    ) : (
+                      'Confirmar'
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-4">
               <Separator />

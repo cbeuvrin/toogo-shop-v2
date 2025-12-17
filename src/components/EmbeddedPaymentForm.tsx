@@ -17,6 +17,7 @@ interface EmbeddedPaymentFormProps {
   purchaseData: {
     domain: string;
     tenantName: string;
+    tenantId?: string; // Optional tenant ID for upgrades
     planType: 'monthly' | 'semi_annual' | 'annual';
     userInfo: {
       email: string;
@@ -52,7 +53,7 @@ export const EmbeddedPaymentForm: React.FC<EmbeddedPaymentFormProps> = ({
   // Debug logs
   console.log('EmbeddedPaymentForm props:', { amount, description, purchaseData });
   console.log('MercadoPago initialization status:', (window as any).MercadoPago ? 'Loaded' : 'Not loaded');
-  
+
   // Validation: Check if userInfo exists
   if (!purchaseData?.userInfo?.email) {
     console.error('[EmbeddedPaymentForm] Missing user information:', purchaseData);
@@ -88,13 +89,13 @@ export const EmbeddedPaymentForm: React.FC<EmbeddedPaymentFormProps> = ({
 
         console.log('[EmbeddedPaymentForm] MercadoPago public key loaded successfully');
         setMpPublicKey(publicKey);
-        
+
         // Initialize MercadoPago with the fetched key
         initMercadoPago(publicKey, {
           locale: 'es-MX',
           advancedFraudPrevention: false
         });
-        
+
         console.log('[EmbeddedPaymentForm] MercadoPago SDK initialized');
       } catch (error) {
         console.error('[EmbeddedPaymentForm] Error loading MercadoPago configuration:', error);
@@ -140,6 +141,7 @@ export const EmbeddedPaymentForm: React.FC<EmbeddedPaymentFormProps> = ({
       const response = await supabase.functions.invoke('process-embedded-payment', {
         body: {
           ...purchaseData,
+          tenantId: purchaseData.tenantId, // Ensure tenantId is passed explicitly
           couponCode,
           discountAmount,
           appliedTo,
@@ -179,7 +181,7 @@ export const EmbeddedPaymentForm: React.FC<EmbeddedPaymentFormProps> = ({
 
   const onError = (error: any) => {
     console.error('Payment form error:', error);
-    
+
     // Check for specific MercadoPago errors
     if (error?.message?.includes('Could not fetch site ID')) {
       console.error('MercadoPago site ID error - check public key validity');
@@ -188,7 +190,7 @@ export const EmbeddedPaymentForm: React.FC<EmbeddedPaymentFormProps> = ({
       setPaymentStatus('error');
       toast.error('Error en el formulario de pago');
     }
-    
+
     onPaymentError(error);
   };
 
@@ -224,8 +226,8 @@ export const EmbeddedPaymentForm: React.FC<EmbeddedPaymentFormProps> = ({
           <p className="text-red-600 mb-4">
             Hubo un problema al procesar tu pago. Por favor, inténtalo de nuevo.
           </p>
-          <Button 
-            onClick={() => setPaymentStatus('idle')} 
+          <Button
+            onClick={() => setPaymentStatus('idle')}
             variant="outline"
             className="mr-2"
           >
@@ -312,19 +314,19 @@ export const EmbeddedPaymentForm: React.FC<EmbeddedPaymentFormProps> = ({
             <CreditCard className="w-5 h-5 text-primary" />
             <h3 className="font-medium">Datos de tu tarjeta</h3>
           </div>
-          
+
           {/* Términos y Condiciones */}
           <div className="flex items-start space-x-2 p-4 bg-muted/50 rounded-lg mb-4 border">
-            <Checkbox 
-              id="payment-terms" 
+            <Checkbox
+              id="payment-terms"
               checked={acceptedTerms}
               onCheckedChange={(checked) => setAcceptedTerms(!!checked)}
             />
             <label htmlFor="payment-terms" className="text-sm leading-relaxed cursor-pointer">
               Al procesar este pago, confirmo que he leído y acepto los{' '}
-              <a 
-                href="/terminos-condiciones" 
-                target="_blank" 
+              <a
+                href="/terminos-condiciones"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary underline hover:text-primary/80 font-medium"
                 onClick={(e) => e.stopPropagation()}
@@ -332,9 +334,9 @@ export const EmbeddedPaymentForm: React.FC<EmbeddedPaymentFormProps> = ({
                 Términos y Condiciones
               </a>
               {' '}y la{' '}
-              <a 
-                href="/politica-privacidad" 
-                target="_blank" 
+              <a
+                href="/politica-privacidad"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary underline hover:text-primary/80 font-medium"
                 onClick={(e) => e.stopPropagation()}
@@ -363,7 +365,7 @@ export const EmbeddedPaymentForm: React.FC<EmbeddedPaymentFormProps> = ({
               </div>
             </div>
           )}
-          
+
           <div className={`min-h-[300px] ${!isFormReady ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}>
             {acceptedTerms ? (
               mpPublicKey && amount > 0 && (
@@ -401,7 +403,7 @@ export const EmbeddedPaymentForm: React.FC<EmbeddedPaymentFormProps> = ({
           >
             {/* Barra deslizante animada */}
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-slide-right" />
-            
+
             {/* Contenido del botón */}
             <div className="relative flex items-center justify-center gap-2 z-10">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
