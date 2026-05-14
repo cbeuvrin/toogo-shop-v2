@@ -114,6 +114,21 @@ export const DashboardPlanNew = () => {
     }
   }, [showPaymentHistoryDialog, currentTenantId]);
 
+  // Escuchar evento global para abrir el dialog de compra/transferencia
+  // directamente desde otros lugares (ej: DashboardMisDominios).
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.action === "buy") {
+        setShowDomainDialog(true);
+      } else if (detail?.action === "transfer") {
+        setShowTransferDialog(true);
+      }
+    };
+    window.addEventListener("openDomainDialog", handler);
+    return () => window.removeEventListener("openDomainDialog", handler);
+  }, []);
+
   // Simplified plan data
   const plans: Plan[] = [
     {

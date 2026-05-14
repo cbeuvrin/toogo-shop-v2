@@ -51,6 +51,19 @@ export const DashboardMisDominios = ({ onSwitchSubTab }: DashboardMisDominiosPro
   const [loading, setLoading] = useState(true);
   const [activeRenewal, setActiveRenewal] = useState<DomainRenewal | null>(null);
 
+  /**
+   * Cambia al sub-tab "Mi Plan" Y emite un evento custom que DashboardPlanNew escucha
+   * para abrir directamente el dialog correspondiente (comprar o transferir).
+   * Evita que el usuario tenga que buscar/clickear de nuevo después de cambiar de tab.
+   */
+  const triggerDomainAction = (action: "buy" | "transfer") => {
+    onSwitchSubTab?.("mi-plan");
+    // Damos un pequeño delay para que DashboardPlanNew se monte antes del evento.
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("openDomainDialog", { detail: { action } }));
+    }, 150);
+  };
+
   const loadRenewals = async () => {
     if (!currentTenantId) return;
     setLoading(true);
@@ -181,15 +194,13 @@ export const DashboardMisDominios = ({ onSwitchSubTab }: DashboardMisDominiosPro
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col sm:flex-row gap-3">
-            <Button onClick={() => onSwitchSubTab?.("mi-plan")} className="bg-purple-600 hover:bg-purple-700 flex-1">
+            <Button onClick={() => triggerDomainAction("buy")} className="bg-purple-600 hover:bg-purple-700 flex-1">
               <ShoppingCart className="w-4 h-4 mr-2" />
               Comprar dominio nuevo
-              <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
-            <Button onClick={() => onSwitchSubTab?.("mi-plan")} variant="outline" className="flex-1 border-purple-300 text-purple-700 hover:bg-purple-50">
+            <Button onClick={() => triggerDomainAction("transfer")} variant="outline" className="flex-1 border-purple-300 text-purple-700 hover:bg-purple-50">
               <ArrowRightLeft className="w-4 h-4 mr-2" />
               Transferir mi dominio
-              <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </CardContent>
         </Card>
@@ -292,7 +303,7 @@ export const DashboardMisDominios = ({ onSwitchSubTab }: DashboardMisDominiosPro
         })}
       </div>
 
-      {/* Comprar dominio propio o transferir — atajo a la sección completa en "Mi Plan" */}
+      {/* Comprar dominio propio o transferir — abre el dialog directamente */}
       <Card className="border-2 border-dashed border-purple-200 bg-gradient-to-br from-purple-50 to-white">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
@@ -307,21 +318,19 @@ export const DashboardMisDominios = ({ onSwitchSubTab }: DashboardMisDominiosPro
         </CardHeader>
         <CardContent className="flex flex-col sm:flex-row gap-3">
           <Button
-            onClick={() => onSwitchSubTab?.("mi-plan")}
+            onClick={() => triggerDomainAction("buy")}
             className="bg-purple-600 hover:bg-purple-700 flex-1"
           >
             <ShoppingCart className="w-4 h-4 mr-2" />
             Comprar dominio nuevo
-            <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
           <Button
-            onClick={() => onSwitchSubTab?.("mi-plan")}
+            onClick={() => triggerDomainAction("transfer")}
             variant="outline"
             className="flex-1 border-purple-300 text-purple-700 hover:bg-purple-50"
           >
             <ArrowRightLeft className="w-4 h-4 mr-2" />
             Transferir mi dominio
-            <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </CardContent>
       </Card>
