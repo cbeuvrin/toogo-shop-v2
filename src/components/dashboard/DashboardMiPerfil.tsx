@@ -43,7 +43,7 @@ export const DashboardMiPerfil = ({ activeSubTab, onSubTabChange }: DashboardMiP
         </TabsContent>
 
         <TabsContent value="mis-dominios">
-          <DashboardMisDominios />
+          <DashboardMisDominios onSwitchSubTab={onSubTabChange} />
         </TabsContent>
 
         <TabsContent value="cupones">

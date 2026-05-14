@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Globe, Calendar, ExternalLink, Loader2, RefreshCw, CheckCircle2, AlertCircle } from "lucide-react";
+import { Globe, Calendar, ExternalLink, Loader2, RefreshCw, CheckCircle2, AlertCircle, ShoppingCart, ArrowRightLeft, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenantContext } from "@/contexts/TenantContext";
 import { toast } from "sonner";
@@ -37,7 +37,15 @@ const statusBadge = (status: string, daysLeft: number) => {
   return <Badge className="bg-green-100 text-green-800 border-green-300">Activo</Badge>;
 };
 
-export const DashboardMisDominios = () => {
+interface DashboardMisDominiosProps {
+  /**
+   * Callback opcional para cambiar a otra sub-pestaña del dashboard.
+   * Usado por la card "Comprar dominio propio" para llevar al usuario a "Mi Plan".
+   */
+  onSwitchSubTab?: (tab: "mis-datos" | "usuarios" | "mi-plan" | "mis-dominios" | "cupones" | "whatsapp-bot" | "legal") => void;
+}
+
+export const DashboardMisDominios = ({ onSwitchSubTab }: DashboardMisDominiosProps = {}) => {
   const { currentTenantId } = useTenantContext();
   const [renewals, setRenewals] = useState<DomainRenewal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,14 +158,42 @@ export const DashboardMisDominios = () => {
   }
 
   if (renewals.length === 0) {
+    // Sin dominios: solo mostramos el CTA para comprar/transferir como banner principal
     return (
-      <Card>
-        <CardContent className="py-12 text-center text-muted-foreground">
-          <Globe className="w-12 h-12 mx-auto mb-3 opacity-50" />
-          <p className="font-medium">Aún no tienes dominios registrados</p>
-          <p className="text-sm mt-1">Cuando compres o transfieras un dominio, aparecerá aquí.</p>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            <Globe className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p className="font-medium">Aún no tienes dominios registrados</p>
+            <p className="text-sm mt-1">Cuando compres o transfieras un dominio, aparecerá aquí.</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-2 border-dashed border-purple-200 bg-gradient-to-br from-purple-50 to-white">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Globe className="w-5 h-5 text-purple-600" />
+              Comprar dominio propio o transferir
+            </CardTitle>
+            <CardDescription>
+              Pasa de <span className="font-mono">mitienda.toogo.store</span> a tu propio dominio personalizado
+              como <span className="font-mono">mitienda.com</span>. Tu tienda se mantiene intacta y configuramos todo automáticamente.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col sm:flex-row gap-3">
+            <Button onClick={() => onSwitchSubTab?.("mi-plan")} className="bg-purple-600 hover:bg-purple-700 flex-1">
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Comprar dominio nuevo
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+            <Button onClick={() => onSwitchSubTab?.("mi-plan")} variant="outline" className="flex-1 border-purple-300 text-purple-700 hover:bg-purple-50">
+              <ArrowRightLeft className="w-4 h-4 mr-2" />
+              Transferir mi dominio
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
@@ -255,6 +291,40 @@ export const DashboardMisDominios = () => {
           );
         })}
       </div>
+
+      {/* Comprar dominio propio o transferir — atajo a la sección completa en "Mi Plan" */}
+      <Card className="border-2 border-dashed border-purple-200 bg-gradient-to-br from-purple-50 to-white">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Globe className="w-5 h-5 text-purple-600" />
+            Comprar dominio propio o transferir
+          </CardTitle>
+          <CardDescription>
+            Pasa de <span className="font-mono">mitienda.toogo.store</span> a tu propio dominio personalizado
+            como <span className="font-mono">mitienda.com</span>. Tu tienda se mantiene intacta y configuramos
+            todo automáticamente.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col sm:flex-row gap-3">
+          <Button
+            onClick={() => onSwitchSubTab?.("mi-plan")}
+            className="bg-purple-600 hover:bg-purple-700 flex-1"
+          >
+            <ShoppingCart className="w-4 h-4 mr-2" />
+            Comprar dominio nuevo
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+          <Button
+            onClick={() => onSwitchSubTab?.("mi-plan")}
+            variant="outline"
+            className="flex-1 border-purple-300 text-purple-700 hover:bg-purple-50"
+          >
+            <ArrowRightLeft className="w-4 h-4 mr-2" />
+            Transferir mi dominio
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Modal embedded de pago — el cliente paga sin salir del dashboard */}
       {activeRenewal && (
