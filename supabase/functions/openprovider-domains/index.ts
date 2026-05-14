@@ -123,6 +123,11 @@ function parseXMLResponse(xmlString: string): any {
     // Parse domain
     const domainMatch = dataContent.match(/<domain>(.*?)<\/domain>/);
     if (domainMatch) data.domain = domainMatch[1];
+
+    // Parse expiration date (returned by createDomainRequest / retrieveDomainRequest)
+    // Openprovider returns it as "YYYY-MM-DD HH:MM:SS" or "YYYY-MM-DD"
+    const expirationMatch = dataContent.match(/<expirationDate>(.*?)<\/expirationDate>/);
+    if (expirationMatch) data.expirationDate = expirationMatch[1].trim();
     
     // Parse simple price (for checkDomainRequest)
     const priceMatch = dataContent.match(/<price>([\d.]+)<\/price>/);
@@ -521,8 +526,39 @@ async function handlePurchaseDomain(requestData: any) {
     const domain = sanitizeDomain(rawDomain);
     const domainName = domain.split('.')[0];
     const extension = getTldKey(domain);
-    
+
     console.log(`[Purchase] Processing domain: ${domain} (name: ${domainName}, ext: ${extension}) for tenant: ${tenantId}`);
+
+    // IDEMPOTENCIA: si ya existe una compra para este (domain, tenant) en estado
+    // activo/procesando/pendiente, no permitir crear otra. Evita cobrar dos veces si
+    // el usuario clickea "Comprar" varias veces o si hay timeouts de red.
+    const { data: existingPurchase } = await supabase
+      .from('domain_purchases')
+      .select('id, status, openprovider_domain_id, created_at')
+      .eq('domain', domain)
+      .eq('tenant_id', tenantId)
+      .in('status', ['processing', 'pending', 'active', 'dns_pending'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingPurchase) {
+      console.log(`[Purchase] Idempotent: ya existe compra ${existingPurchase.id} para ${domain} (status=${existingPurchase.status})`);
+
+      // Si está activo, devolvemos éxito (idempotente). Si está en proceso, también
+      // devolvemos éxito para que el cliente espere — no relanzamos la compra.
+      return json({
+        status: 'success',
+        idempotent: true,
+        message: existingPurchase.status === 'active'
+          ? 'Este dominio ya está registrado y activo para tu tienda.'
+          : 'La compra de este dominio ya está en proceso. Espera unos minutos.',
+        domain,
+        existing_purchase_id: existingPurchase.id,
+        existing_status: existingPurchase.status,
+        openprovider_domain_id: existingPurchase.openprovider_domain_id,
+      });
+    }
 
     // Create DB record
     const { data: domainRecord, error: dbError } = await supabase
@@ -570,14 +606,22 @@ async function handlePurchaseDomain(requestData: any) {
         throw new Error('No domain ID returned from Openprovider');
       }
 
+      // Calcular fecha de expiración: usar la que devuelve Openprovider o asumir +1 año.
+      const now = new Date();
+      const fallbackExpiry = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate()).toISOString();
+      const expiresAt = purchaseData.data?.expirationDate
+        ? new Date(purchaseData.data.expirationDate.replace(' ', 'T') + 'Z').toISOString()
+        : fallbackExpiry;
+
       // Update record with domain ID but keep status as pending
       // The complete-domain-setup function will change it to 'active' after all steps
       await supabase
         .from('domain_purchases')
-        .update({ 
+        .update({
           status: 'pending',
           openprovider_domain_id: purchaseData.data.id,
           openprovider_handle: DEFAULT_CUSTOMER_HANDLE.handle_id,
+          expires_at: expiresAt,
           metadata: {
             openprovider_response: purchaseData,
             purchased_at: new Date().toISOString()
@@ -585,7 +629,40 @@ async function handlePurchaseDomain(requestData: any) {
         })
         .eq('id', domainRecord.id);
 
-      console.log(`[Purchase] Domain registered successfully: ${domain} (ID: ${purchaseData.data.id})`);
+      // Crear registro en domain_renewals para tracking automático de renovaciones.
+      // El precio de renovación se asume igual al precio de compra inicial (mismo TLD, mismo markup).
+      const priceMxn = (() => {
+        if (domain.endsWith('.com.mx')) return 590;
+        if (domain.endsWith('.com')) return 290;
+        if (domain.endsWith('.info')) return 290;
+        if (domain.endsWith('.store')) return 1740;
+        if (domain.endsWith('.online')) return 390;
+        if (domain.endsWith('.xyz')) return 290;
+        if (domain.endsWith('.site')) return 590;
+        if (domain.endsWith('.shop')) return 1290;
+        if (domain.endsWith('.net')) return 390;
+        if (domain.endsWith('.mx')) return 590;
+        return 290;
+      })();
+
+      const { error: renewalErr } = await supabase.from('domain_renewals').insert({
+        tenant_id: tenantId,
+        domain: domain,
+        domain_purchase_id: domainRecord.id,
+        auto_renew: false,
+        next_renewal_date: expiresAt,
+        status: 'scheduled',
+        amount_mxn: priceMxn,
+        price_mxn: priceMxn,
+        metadata: { created_from: 'initial_purchase' }
+      });
+
+      if (renewalErr) {
+        console.warn('[Purchase] Could not create renewal record:', renewalErr);
+        // No bloqueamos el flujo — el registro se puede crear después
+      }
+
+      console.log(`[Purchase] Domain registered: ${domain} (ID: ${purchaseData.data.id}, expires: ${expiresAt})`);
 
       // Trigger complete-domain-setup automatically after successful purchase
       console.log(`[Purchase] Triggering complete-domain-setup for ${domain}...`);
@@ -677,8 +754,34 @@ async function handleTransferDomain(requestData: any) {
     const domain = sanitizeDomain(rawDomain);
     const domainName = domain.split('.')[0];
     const extension = getTldKey(domain);
-    
+
     console.log(`[Transfer] Initiating transfer for: ${domain}`);
+
+    // IDEMPOTENCIA: mismo principio que en handlePurchaseDomain — no permitir
+    // disparar dos transfers concurrentes para el mismo (domain, tenant).
+    const { data: existingTransfer } = await supabase
+      .from('domain_purchases')
+      .select('id, status, openprovider_domain_id, created_at')
+      .eq('domain', domain)
+      .eq('tenant_id', tenantId)
+      .in('status', ['processing', 'pending', 'active', 'dns_pending'])
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existingTransfer) {
+      console.log(`[Transfer] Idempotent: ya existe registro ${existingTransfer.id} para ${domain} (status=${existingTransfer.status})`);
+      return json({
+        status: 'success',
+        idempotent: true,
+        message: existingTransfer.status === 'active'
+          ? 'Este dominio ya está transferido y activo en tu tienda.'
+          : 'La transferencia de este dominio ya está en proceso.',
+        domain,
+        existing_purchase_id: existingTransfer.id,
+        existing_status: existingTransfer.status,
+      });
+    }
 
     // Create DB record
     const { data: domainRecord, error: dbError } = await supabase
@@ -721,13 +824,21 @@ async function handleTransferDomain(requestData: any) {
       billingHandle: DEFAULT_CUSTOMER_HANDLE.handle_id
     });
 
+      // Calcular fecha de expiración: la transfer también devuelve expirationDate.
+      const transferNow = new Date();
+      const transferFallbackExpiry = new Date(transferNow.getFullYear() + 1, transferNow.getMonth(), transferNow.getDate()).toISOString();
+      const transferExpiresAt = transferData.data?.expirationDate
+        ? new Date(transferData.data.expirationDate.replace(' ', 'T') + 'Z').toISOString()
+        : transferFallbackExpiry;
+
       // Update record
       await supabase
         .from('domain_purchases')
-        .update({ 
+        .update({
           status: 'active',
           openprovider_domain_id: transferData.data?.id,
           openprovider_handle: DEFAULT_CUSTOMER_HANDLE.handle_id,
+          expires_at: transferExpiresAt,
           metadata: {
             transfer_initiated_at: new Date().toISOString(),
             openprovider_response: transferData
@@ -735,7 +846,38 @@ async function handleTransferDomain(requestData: any) {
         })
         .eq('id', domainRecord.id);
 
-      console.log(`[Transfer] Transfer initiated for ${domain}`);
+      // Crear registro de renewal igual que en compra
+      const transferPriceMxn = (() => {
+        if (domain.endsWith('.com.mx')) return 590;
+        if (domain.endsWith('.com')) return 290;
+        if (domain.endsWith('.info')) return 290;
+        if (domain.endsWith('.store')) return 1740;
+        if (domain.endsWith('.online')) return 390;
+        if (domain.endsWith('.xyz')) return 290;
+        if (domain.endsWith('.site')) return 590;
+        if (domain.endsWith('.shop')) return 1290;
+        if (domain.endsWith('.net')) return 390;
+        if (domain.endsWith('.mx')) return 590;
+        return 290;
+      })();
+
+      const { error: transferRenewalErr } = await supabase.from('domain_renewals').insert({
+        tenant_id: tenantId,
+        domain: domain,
+        domain_purchase_id: domainRecord.id,
+        auto_renew: false,
+        next_renewal_date: transferExpiresAt,
+        status: 'scheduled',
+        amount_mxn: transferPriceMxn,
+        price_mxn: transferPriceMxn,
+        metadata: { created_from: 'transfer' }
+      });
+
+      if (transferRenewalErr) {
+        console.warn('[Transfer] Could not create renewal record:', transferRenewalErr);
+      }
+
+      console.log(`[Transfer] Transfer initiated for ${domain} (expires: ${transferExpiresAt})`);
 
       return json({
         status: 'success',

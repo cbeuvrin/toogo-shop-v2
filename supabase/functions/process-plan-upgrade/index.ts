@@ -9,7 +9,7 @@ const corsHeaders = {
 
 interface UpgradeRequest {
   plan_id: string;
-  billing_cycle: 'monthly' | 'annual';
+  billing_cycle: 'monthly' | 'semi_annual' | 'annual';
 }
 
 serve(async (req) => {
@@ -59,7 +59,7 @@ serve(async (req) => {
 
     // Find tenant_admin role first
     let userRole = userRoles.find(r => r.role === 'tenant_admin');
-    
+
     // If no tenant_admin role, check if superadmin exists
     if (!userRole) {
       const superAdminRole = userRoles.find(r => r.role === 'superadmin');
@@ -70,7 +70,7 @@ serve(async (req) => {
     }
 
     const tenantId = userRole.tenant_id;
-    
+
     if (!tenantId) {
       throw new Error('El rol de tenant_admin no tiene un tenant_id asociado');
     }
@@ -95,9 +95,9 @@ serve(async (req) => {
           ok: false,
           error: 'Ya tienes un plan activo. Por favor cancela tu plan actual primero.'
         }),
-        { 
+        {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400 
+          status: 400
         }
       );
     }
@@ -130,7 +130,7 @@ serve(async (req) => {
 
     // Get MercadoPago access token from environment (secret)
     const mercadoPagoAccessToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
-    
+
     if (!mercadoPagoAccessToken) {
       console.error('MERCADOPAGO_ACCESS_TOKEN secret not found');
       throw new Error('No se encontró el token de MercadoPago. Contacta al administrador.');
@@ -139,7 +139,7 @@ serve(async (req) => {
     console.log('MercadoPago token retrieved from secrets');
 
     // Create MercadoPago subscription using SDK
-    const client = new MercadoPagoConfig({ 
+    const client = new MercadoPagoConfig({
       accessToken: mercadoPagoAccessToken,
       options: { timeout: 5000 }
     });
@@ -147,17 +147,20 @@ serve(async (req) => {
 
     console.log('Creating MercadoPago subscription');
 
+    const billingLabel = billing_cycle === 'monthly' ? 'Mensual' : billing_cycle === 'semi_annual' ? 'Semestral' : 'Anual';
+    const billingFrequency = billing_cycle === 'monthly' ? 1 : billing_cycle === 'semi_annual' ? 6 : 12;
+
     const mpData = await preapprovalClient.create({
       body: {
-        reason: `Plan Pro Toogo - ${billing_cycle === 'monthly' ? 'Mensual' : 'Anual'}`,
+        reason: `Plan Pro Toogo - ${billingLabel}`,
         auto_recurring: {
-          frequency: billing_cycle === 'monthly' ? 1 : 12,
+          frequency: billingFrequency,
           frequency_type: 'months',
           transaction_amount: planConfig.price_mxn,
           currency_id: 'MXN'
         },
         back_url: `${Deno.env.get('SUPABASE_URL')}/dashboard/plan`,
-        notification_url: 'https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/mercadopago-webhook',
+        notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
         payer_email: user.email
       }
     });
@@ -176,9 +179,9 @@ serve(async (req) => {
         payment_url: mpData.init_point,
         subscription_id: mpData.id
       }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
+        status: 200
       }
     );
 
@@ -189,9 +192,9 @@ serve(async (req) => {
         ok: false,
         error: error.message || 'Error al procesar el upgrade'
       }),
-      { 
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400 
+        status: 400
       }
     );
   }

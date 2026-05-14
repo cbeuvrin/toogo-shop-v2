@@ -20,6 +20,7 @@ const PoliticaPrivacidad = React.lazy(() => import("./pages/PoliticaPrivacidad")
 const LiberacionResponsabilidad = React.lazy(() => import("./pages/LiberacionResponsabilidad"));
 const StoreBeingCreated = React.lazy(() => import("./pages/StoreBeingCreated"));
 const AyudaConfigurarPagos = React.lazy(() => import("./pages/AyudaConfigurarPagos"));
+const MercadopagoConnected = React.lazy(() => import("./pages/MercadopagoConnected"));
 const Blog = React.lazy(() => import("./pages/Blog"));
 const BlogPost = React.lazy(() => import("./pages/BlogPost"));
 const Soporte = React.lazy(() => import("./pages/Soporte"));
@@ -46,6 +47,7 @@ export const AppRoutes = () => {
                 <Route path="/politica-privacidad" element={<PoliticaPrivacidad />} />
                 <Route path="/liberacion-responsabilidad" element={<LiberacionResponsabilidad />} />
                 <Route path="/ayuda/configurar-pagos" element={<AyudaConfigurarPagos />} />
+                <Route path="/mercadopago-connected" element={<MercadopagoConnected />} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
                 <Route path="/soporte" element={<Soporte />} />

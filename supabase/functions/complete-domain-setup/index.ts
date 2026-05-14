@@ -248,10 +248,12 @@ serve(async (req) => {
       const vercelToken = Deno.env.get('VERCEL_API_TOKEN');
       const vercelTeamId = Deno.env.get('VERCEL_TEAM_ID');
 
-      // Crear múltiples A records con las nuevas IPs recomendadas por Vercel (2024-2025)
-      const vercelIPs = ['76.76.21.98', '76.76.21.142', '76.76.21.164'];
+      // Vercel ahora usa una única IP Anycast oficial.
+      // Las 3 IPs anteriores (76.76.21.98/.142/.164) fueron deprecadas.
+      // Ref: https://vercel.com/docs/projects/domains/working-with-domains
+      const vercelIPs = ['76.76.21.21'];
 
-      console.log(`[Complete Setup] Creating A records for ${domain} with new Vercel IPs...`);
+      console.log(`[Complete Setup] Creating A record for ${domain} with Vercel Anycast IP...`);
 
       let createdRecords = 0;
       for (const ip of vercelIPs) {
@@ -517,37 +519,43 @@ serve(async (req) => {
     console.log('[Complete Setup] Step 4: Updating tenant extra_hosts...');
 
     try {
-      // 1. Fetch current tenant hosts
+      // 1. Fetch current tenant hosts and primary_host
       const { data: tenantData, error: tenantFetchError } = await supabase
         .from('tenants')
-        .select('extra_hosts, plan')
+        .select('extra_hosts, primary_host')
         .eq('id', tenantId)
         .single();
 
       if (tenantFetchError) throw tenantFetchError;
 
       const currentHosts = tenantData.extra_hosts || [];
-      const newHosts = [domain, `www.${domain}`];
+      const currentPrimary = tenantData.primary_host;
+      const newAliases = [`www.${domain}`];
 
-      // 2. Merge and deduplicate
-      const updatedHosts = [...new Set([...currentHosts, ...newHosts])];
+      // Si el primary_host actual es el subdominio (.toogo.store) o no es el nuevo dominio,
+      // moverlo a extra_hosts para que el middleware haga 301 redirect hacia el nuevo dominio.
+      const previousPrimaryIsSubdomain = currentPrimary && currentPrimary.endsWith('.toogo.store');
+      const shouldPromoteDomain = currentPrimary !== domain;
 
-      // 3. Update if there are changes
-      // Check if plan needs upgrade (free -> basic)
-      const currentPlan = tenantData.plan;
-      const shouldUpgradePlan = currentPlan === 'free';
-      const shouldUpdateHosts = updatedHosts.length !== currentHosts.length;
+      // Build the new extra_hosts: keep existing aliases, add www.domain,
+      // and demote the old primary_host (subdomain) so middleware redirects it.
+      const aliasesToKeep = [...currentHosts, ...newAliases];
+      if (shouldPromoteDomain && currentPrimary && currentPrimary !== domain) {
+        aliasesToKeep.push(currentPrimary);
+      }
+      const updatedHosts = [...new Set(aliasesToKeep)].filter(h => h && h !== domain);
 
-      if (shouldUpdateHosts || shouldUpgradePlan) {
+      const hostsChanged = JSON.stringify(updatedHosts.sort()) !== JSON.stringify([...currentHosts].sort());
+
+      if (shouldPromoteDomain || hostsChanged) {
         const updatePayload: any = {};
 
-        if (shouldUpdateHosts) {
-          updatePayload.extra_hosts = updatedHosts;
+        if (shouldPromoteDomain) {
+          updatePayload.primary_host = domain;
+          console.log(`[Complete Setup] Promoting domain to primary_host: ${currentPrimary || 'none'} → ${domain}`);
         }
-
-        if (shouldUpgradePlan) {
-          console.log(`[Complete Setup] Upgrading tenant plan from ${currentPlan} to basic`);
-          updatePayload.plan = 'basic';
+        if (hostsChanged) {
+          updatePayload.extra_hosts = updatedHosts;
         }
 
         const { error: updateError } = await supabase
@@ -557,12 +565,15 @@ serve(async (req) => {
 
         if (updateError) throw updateError;
 
-        console.log(`[Complete Setup] ✅ Updated tenant: hosts=[${shouldUpdateHosts ? newHosts.join(', ') : 'unchanged'}], plan=${shouldUpgradePlan ? 'basic' : 'unchanged'}`);
+        console.log(`[Complete Setup] ✅ Updated tenant: primary=${domain}, aliases=[${updatedHosts.join(', ')}]`);
+        if (previousPrimaryIsSubdomain) {
+          console.log(`[Complete Setup] 🔁 Subdomain ${currentPrimary} ahora redirige 301 → ${domain}`);
+        }
 
         steps.push({
           step: 'update_tenant_data',
           status: 'completed',
-          message: `Datos actualizados: ${shouldUpdateHosts ? 'Dominios vinculados' : ''} ${shouldUpgradePlan ? 'Plan actualizado a Básico' : ''}`
+          message: `Dominio principal: ${domain}. Subdominio configurado como alias con redirect 301.`
         });
       } else {
         console.log('[Complete Setup] Tenant data already up to date');

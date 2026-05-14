@@ -9,11 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/CartContext";
 import { CartSidebar } from "@/components/cart/CartSidebar";
-import { 
-  Search, 
-  ShoppingCart, 
-  Heart, 
-  Star, 
+import {
+  Search,
+  ShoppingCart,
+  Heart,
+  Star,
   MessageCircle,
   Home,
   ArrowLeft,
@@ -23,7 +23,7 @@ import {
   ChevronRight,
   MoreHorizontal
 } from "lucide-react";
-import { 
+import {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
@@ -42,6 +42,13 @@ import { useProducts } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { useFavicon } from "@/hooks/useFavicon";
+import { SimpleLiveTemplate } from "@/templates/layouts/SimpleLiveTemplate/SimpleLiveTemplate";
+import { FashionHeroTemplate } from "@/templates/layouts/FashionHeroTemplate/FashionHeroTemplate";
+import { TrendyFashionTemplate } from "@/templates/layouts/TrendyFashionTemplate/TrendyFashionTemplate";
+import { NatureTemplate } from "@/templates/layouts/NatureTemplate/NatureTemplate";
+import { PremiumBrandTemplate } from "@/templates/layouts/PremiumBrandTemplate/PremiumBrandTemplate";
+import { FashionTemplate } from "@/templates/layouts/FashionTemplate/FashionTemplate";
+import { MinimalTemplate } from "@/templates/layouts/MinimalTemplate/MinimalTemplate";
 
 interface Product {
   id: string;
@@ -77,9 +84,9 @@ const Catalogo = () => {
   const { products, isLoading: productsLoading } = useProducts();
   const { categories, isLoading: categoriesLoading } = useCategories();
   const { settings } = useTenantSettings();
-  
+
   const [tenantPlan, setTenantPlan] = useState<string>('');
-  
+
   const [enrichedProducts, setEnrichedProducts] = useState<Product[]>([]);
   const [publicLoaded, setPublicLoaded] = useState(false);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
@@ -89,14 +96,18 @@ const Catalogo = () => {
   const [contactData, setContactData] = useState<any>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [checkoutConfig, setCheckoutConfig] = useState<any>(null);
-  
+
   // Variation state
   const [currentPrice, setCurrentPrice] = useState(0);
   const [currentStock, setCurrentStock] = useState(0);
   const [canAddToCart, setCanAddToCart] = useState(false);
   const [modalVariations, setModalVariations] = useState<any[]>([]);
   const [selectedVariation, setSelectedVariation] = useState<any>(null);
-  
+
+  // Visual Data State
+  const [banners, setBanners] = useState<any[]>([]);
+  const [heroData, setHeroData] = useState<any>(null);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 20;
@@ -118,9 +129,9 @@ const Catalogo = () => {
   }, [currentTenantId]);
 
   // Set favicon for Basic/Premium plans
-  useFavicon({ 
-    logoUrl: settings?.logo_url, 
-    plan: tenantPlan 
+  useFavicon({
+    logoUrl: settings?.logo_url,
+    plan: tenantPlan
   });
 
   // Get initial search from URL params
@@ -128,24 +139,46 @@ const Catalogo = () => {
     const searchFromUrl = searchParams.get('search');
     const categoryFromUrl = searchParams.get('category');
     const pageFromUrl = searchParams.get('page');
-    
-    if (searchFromUrl) {
-      setSearchTerm(searchFromUrl);
-    }
-    if (categoryFromUrl) {
-      setSelectedCategory(categoryFromUrl);
-    }
-    if (pageFromUrl) {
-      setCurrentPage(parseInt(pageFromUrl, 10) || 1);
-    }
+
+    setSearchTerm(searchFromUrl || "");
+    setSelectedCategory(categoryFromUrl || "all");
+    setCurrentPage(pageFromUrl ? parseInt(pageFromUrl, 10) : 1);
   }, [searchParams]);
 
-  // Load contact data from visual_editor_data
+  // Load contact and visual data
   useEffect(() => {
     if (tenantId) {
       loadContactData();
+      loadVisualData();
     }
   }, [tenantId]);
+
+  const loadVisualData = async () => {
+    try {
+      const { data: visualData } = await supabase
+        .from('visual_editor_data')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .in('element_type', ['hero', 'banner']);
+
+      if (visualData) {
+        const heroItem = visualData.find(item => item.element_type === 'hero' && item.element_id === 'main_hero');
+        if (heroItem) setHeroData(heroItem.data);
+
+        const bannerItems = visualData.filter(item => item.element_type === 'banner');
+        if (bannerItems.length > 0) {
+          const sortedBanners = bannerItems.map(item => ({
+            id: item.element_id,
+            imageUrl: item.data?.imageUrl,
+            sort: item.data?.sort
+          })).sort((a, b) => a.sort - b.sort);
+          setBanners(sortedBanners);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading visual data:', error);
+    }
+  };
 
   // Filter products when enriched list or filters change
   useEffect(() => {
@@ -271,31 +304,31 @@ const Catalogo = () => {
         // Prepare checkout config from loaded settings
         const settings = result.data.settings || {};
         const methods: any[] = [];
-        
+
         if (settings.mercadopago_public_key) {
-          methods.push({ 
-            id: 'mercadopago', 
-            name: 'MercadoPago', 
-            enabled: true, 
-            icon: null 
+          methods.push({
+            id: 'mercadopago',
+            name: 'MercadoPago',
+            enabled: true,
+            icon: null
           });
         }
-        
+
         if (settings.paypal_client_id) {
-          methods.push({ 
-            id: 'paypal', 
-            name: 'PayPal', 
-            enabled: true, 
-            icon: null 
+          methods.push({
+            id: 'paypal',
+            name: 'PayPal',
+            enabled: true,
+            icon: null
           });
         }
-        
+
         if (settings.whatsapp_number) {
-          methods.push({ 
-            id: 'whatsapp', 
-            name: 'WhatsApp (Pago manual)', 
-            enabled: true, 
-            icon: null 
+          methods.push({
+            id: 'whatsapp',
+            name: 'WhatsApp (Pago manual)',
+            enabled: true,
+            icon: null
           });
         }
 
@@ -382,12 +415,12 @@ const Catalogo = () => {
           const category = categories.find(cat => cat.id === product.category_id);
           return category?.name.toLowerCase() === selectedCategory;
         }
-        
+
         // Also check categories array if available
         if (product.categories && product.categories.length > 0) {
           return product.categories.some(cat => cat.name.toLowerCase() === selectedCategory);
         }
-        
+
         // Products without categories should NOT appear in specific category filters
         return false;
       });
@@ -396,7 +429,7 @@ const Catalogo = () => {
     // Filter by search term
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(product => 
+      filtered = filtered.filter(product =>
         product.title.toLowerCase().includes(searchLower) ||
         product.description?.toLowerCase().includes(searchLower) ||
         product.features?.some(feature => feature.toLowerCase().includes(searchLower))
@@ -404,7 +437,7 @@ const Catalogo = () => {
     }
 
     setFilteredProducts(filtered);
-    
+
     // Reset to page 1 when filters change
     setCurrentPage(1);
   };
@@ -412,7 +445,7 @@ const Catalogo = () => {
   const handleCategoryChange = (categorySlug: string) => {
     setSelectedCategory(categorySlug);
     setCurrentPage(1);
-    
+
     // Update URL params
     const newParams = new URLSearchParams(searchParams);
     if (categorySlug === "all") {
@@ -427,7 +460,7 @@ const Catalogo = () => {
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
     setCurrentPage(1);
-    
+
     // Update URL params
     const newParams = new URLSearchParams(searchParams);
     if (value.trim()) {
@@ -455,7 +488,7 @@ const Catalogo = () => {
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
-      
+
       // Update URL params
       const newParams = new URLSearchParams(searchParams);
       if (page === 1) {
@@ -464,7 +497,7 @@ const Catalogo = () => {
         newParams.set('page', page.toString());
       }
       setSearchParams(newParams);
-      
+
       // Scroll to top of products
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -485,7 +518,7 @@ const Catalogo = () => {
   const getPageNumbers = () => {
     const pages = [];
     const maxPagesToShow = 5;
-    
+
     if (totalPages <= maxPagesToShow) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -494,16 +527,16 @@ const Catalogo = () => {
       const half = Math.floor(maxPagesToShow / 2);
       let start = Math.max(currentPage - half, 1);
       let end = Math.min(start + maxPagesToShow - 1, totalPages);
-      
+
       if (end - start < maxPagesToShow - 1) {
         start = Math.max(end - maxPagesToShow + 1, 1);
       }
-      
+
       for (let i = start; i <= end; i++) {
         pages.push(i);
       }
     }
-    
+
     return pages;
   };
 
@@ -518,7 +551,7 @@ const Catalogo = () => {
         });
         return;
       }
-      
+
       // Usar precio y stock de la variación
       addItem({
         id: product.id,
@@ -536,7 +569,7 @@ const Catalogo = () => {
       // Producto simple
       const basePrice = product.sale_price_mxn > 0 ? product.sale_price_mxn : product.price_mxn;
       const finalCartPrice = currentPrice > 0 ? currentPrice : basePrice;
-      
+
       if (!finalCartPrice || finalCartPrice <= 0) {
         toast({
           title: "Error",
@@ -559,7 +592,7 @@ const Catalogo = () => {
       title: "Producto agregado",
       description: `${product.title} se agregó al carrito`,
     });
-    
+
     setSelectedProduct(null);
   };
 
@@ -568,17 +601,17 @@ const Catalogo = () => {
       console.log('No WhatsApp number configured');
       return;
     }
-    
+
     // Use custom message template if available, otherwise use default
-    const messageTemplate = settings.whatsapp_message || 
+    const messageTemplate = settings.whatsapp_message ||
       `Hola 👋, quisiera más información sobre\n\n📦 {product_name}\nSKU: {sku}\nPrecio: ${'{price}'} MXN\n\n¿Está disponible y cuáles son las formas de pago?`;
-    
+
     // Process the template with product data
     const processedMessage = messageTemplate
       .replace(/{product_name}/g, product.title)
       .replace(/{sku}/g, (product.sku ?? '').toString().trim() || 'N/A')
       .replace(/{price}/g, String(product.price_mxn));
-    
+
     const whatsappUrl = `https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent(processedMessage)}`;
     window.open(whatsappUrl, '_blank');
   };
@@ -596,18 +629,18 @@ const Catalogo = () => {
     setSelectedProduct(product);
     setModalVariations([]);
     setSelectedVariation(null);
-    
+
     if (product.product_type === 'variable') {
       setCurrentStock(0);
       setCurrentPrice(0);
       setCanAddToCart(false);
-      
+
       // Load variations via RPC for public access
       try {
         const { data, error } = await supabase.rpc('get_product_variations_with_details', {
           product_id_param: product.id,
         });
-        
+
         if (!error && Array.isArray(data)) {
           const mapped = data.map((v: any) => ({
             id: v.id,
@@ -632,21 +665,21 @@ const Catalogo = () => {
 
   // Product Card Component
   const ProductCard = ({ product }: { product: Product }) => (
-    <Card 
+    <Card
       className="group overflow-hidden border-0 shadow-sm hover:shadow-md transition-all duration-300 bg-white hover:bg-black rounded-[30px] cursor-pointer"
       onClick={() => openProductModal(product)}
     >
-                <div className="relative aspect-square overflow-hidden bg-gray-50 rounded-[30px]">
-                  <div className="w-[94%] h-[94%] mx-auto mt-[3%] aspect-square overflow-hidden rounded-[30px]">
+      <div className="relative aspect-square overflow-hidden bg-gray-50 rounded-[30px]">
+        <div className="w-[94%] h-[94%] mx-auto mt-[3%] aspect-square overflow-hidden rounded-[30px]">
           <img
             src={product.images?.[0] || "/placeholder.svg"}
             alt={product.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
         </div>
-        
+
         {/* Favorite button */}
-        <button 
+        <button
           className="absolute top-4 right-4 w-8 h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100"
           onClick={(e) => {
             e.stopPropagation();
@@ -656,12 +689,12 @@ const Catalogo = () => {
           <Heart className="w-4 h-4 text-gray-600" />
         </button>
       </div>
-      
+
       <div className="p-4 space-y-2">
         <h3 className="font-medium text-sm text-gray-900 group-hover:text-white transition-colors duration-300 line-clamp-2">
           {product.title}
         </h3>
-        
+
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <p className="text-lg font-bold text-gray-900 group-hover:text-white transition-colors duration-300">
@@ -671,7 +704,7 @@ const Catalogo = () => {
               ${product.price_usd} USD
             </p>
           </div>
-          
+
           <div className="flex items-center gap-1">
             <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
             <span className="text-xs text-gray-600 group-hover:text-gray-300 transition-colors duration-300">
@@ -694,10 +727,148 @@ const Catalogo = () => {
     );
   }
 
+  // Check for Simple Live Template
+  const templateId = settings?.template_id || 'default';
+
+  if (templateId === 'simple_live') {
+    return (
+      <SimpleLiveTemplate
+        storeData={{ settings, tenant: { id: tenantId } }}
+        products={filteredProducts}
+        categories={categories}
+        featuredProducts={[]} // Not needed for catalog view
+        favorites={[]} // TODO: Add favorites logic if needed, or pass from context
+        toggleFavorite={() => { }} // Placeholder
+        addToCart={addToCart} // Reuse Catalogo's addToCart
+        view="catalog"
+        effectiveSettings={settings}
+        banners={banners}
+        welcomeTitle={heroData?.title}
+        welcomeMessage={heroData?.message}
+      />
+    );
+  }
+
+  if (templateId === 'fashion_hero') {
+    return (
+      <FashionHeroTemplate
+        storeData={{ settings, tenant: { id: tenantId } }}
+        products={filteredProducts}
+        categories={categories}
+        featuredProducts={[]}
+        favorites={[]}
+        toggleFavorite={() => { }}
+        addToCart={addToCart}
+        view="catalog"
+        effectiveSettings={settings}
+        banners={banners}
+        welcomeTitle={heroData?.title}
+        welcomeMessage={heroData?.message}
+      />
+    );
+  }
+
+  if (templateId === 'trendy_fashion') {
+    return (
+      <TrendyFashionTemplate
+        storeData={{ settings, tenant: { id: tenantId } }}
+        products={filteredProducts}
+        categories={categories}
+        favorites={[]}
+        toggleFavorite={() => { }}
+        addToCart={addToCart}
+        view="catalog"
+        effectiveSettings={settings}
+        banners={banners}
+        contactData={null}
+        welcomeTitle={heroData?.title}
+        welcomeMessage={heroData?.message}
+        heroShape={heroData?.shape}
+        heroShapeScale={heroData?.scale}
+      />
+    );
+  }
+
+  if (templateId === 'nature') {
+    return (
+      <NatureTemplate
+        storeData={{ settings, tenant: { id: tenantId } }}
+        products={filteredProducts}
+        categories={categories}
+        favorites={[]}
+        toggleFavorite={() => { }}
+        addToCart={addToCart}
+        view="catalog"
+        effectiveSettings={settings}
+        banners={banners}
+        contactData={null}
+        welcomeTitle={heroData?.title}
+        welcomeMessage={heroData?.message}
+      />
+    );
+  }
+
+  if (templateId === 'premium_brand') {
+    return (
+      <PremiumBrandTemplate
+        storeData={{ settings, tenant: { id: tenantId } }}
+        products={filteredProducts}
+        categories={categories}
+        favorites={[]}
+        toggleFavorite={() => { }}
+        addToCart={addToCart}
+        view="catalog"
+        effectiveSettings={settings}
+        banners={banners}
+        contactData={null}
+        welcomeTitle={heroData?.title}
+        welcomeMessage={heroData?.message}
+      />
+    );
+  }
+
+  if (templateId === 'fashion') {
+    return (
+      <FashionTemplate
+        storeData={{ settings, tenant: { id: tenantId } }}
+        products={filteredProducts}
+        categories={categories}
+        favorites={[]}
+        toggleFavorite={() => { }}
+        addToCart={addToCart}
+        view="catalog"
+        effectiveSettings={settings}
+        banners={banners}
+        contactData={null}
+        welcomeTitle={heroData?.title}
+        welcomeMessage={heroData?.message}
+      />
+    );
+  }
+
+  if (templateId === 'minimal') {
+    return (
+      <MinimalTemplate
+        storeData={{ settings, tenant: { id: tenantId } }}
+        products={filteredProducts}
+        categories={categories}
+        favorites={[]}
+        toggleFavorite={() => { }}
+        addToCart={addToCart}
+        view="catalog"
+        effectiveSettings={settings}
+        banners={banners}
+        contactData={null}
+        welcomeTitle={heroData?.title}
+        welcomeMessage={heroData?.message}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: settings?.store_background_color || '#f9fafb' }}>
       {/* Header */}
-      <header 
+      <header
         className="shadow-sm border-b border-gray-200 sticky top-0 z-40"
         style={{ backgroundColor: settings?.navbar_bg_color || '#ffffff' }}
       >
@@ -705,8 +876,8 @@ const Catalogo = () => {
           <div className="flex items-center justify-between h-16">
             {/* Back button and title */}
             <div className="flex items-center gap-4">
-              <Link 
-                to="/" 
+              <Link
+                to="/"
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
@@ -742,8 +913,8 @@ const Catalogo = () => {
 
             {/* Right side: Menu only */}
             <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="icon"
                 onClick={() => setIsMobileMenuOpen(true)}
               >
@@ -758,9 +929,9 @@ const Catalogo = () => {
               <div className="fixed right-0 top-0 h-full w-80 bg-white shadow-lg" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between p-4 border-b">
                   <h2 className="text-xl font-semibold text-gray-900">Menú</h2>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     <X className="h-5 w-5" />
@@ -768,8 +939,8 @@ const Catalogo = () => {
                 </div>
                 <div className="p-4">
                   <nav className="space-y-4">
-                    <Link 
-                      to="/tienda" 
+                    <Link
+                      to="/tienda"
                       className="block py-3 text-lg text-gray-700 hover:text-gray-900 border-b border-gray-100"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
@@ -778,8 +949,8 @@ const Catalogo = () => {
                     <button onClick={scrollToContact} className="block py-3 text-lg text-gray-700 hover:text-gray-900 border-b border-gray-100 w-full text-left">
                       Contacto
                     </button>
-                    <Link 
-                      to="/dashboard" 
+                    <Link
+                      to="/dashboard"
                       className="block py-3 text-lg text-gray-700 hover:text-gray-900 border-b border-gray-100"
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
@@ -814,6 +985,25 @@ const Catalogo = () => {
         </div>
       </header>
 
+      {/* Hero Section - Same as Home */}
+      {banners.length > 0 && (
+        <div className="relative w-full aspect-[4/3] md:aspect-[21/9] bg-gray-200 overflow-hidden mb-8">
+          <img
+            src={banners[0].imageUrl || "/placeholder.svg"}
+            alt="Hero"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-8 md:p-16">
+            <h1 className="text-white text-3xl md:text-5xl font-extrabold uppercase mb-2 max-w-2xl leading-tight">
+              {heroData?.title || settings?.welcome_title || "Catálogo"}
+            </h1>
+            <p className="text-white/90 text-sm md:text-lg max-w-xl font-medium">
+              {heroData?.message || settings?.welcome_message || "Explora nuestros productos"}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-[80%] mx-auto px-4 py-6">
         {/* Category Filters - Top horizontal */}
         <div className="mb-8">
@@ -828,7 +1018,7 @@ const Catalogo = () => {
               </button>
             )}
           </div>
-          
+
           <div className="flex flex-wrap gap-3 justify-center">
             <Button
               variant={selectedCategory === "all" ? "default" : "outline"}
@@ -837,19 +1027,19 @@ const Catalogo = () => {
             >
               Todos los productos
             </Button>
-            
+
             {categories
               .filter(category => category.showOnHome !== false) // Solo mostrar categorías visibles
               .map((category) => (
-              <Button
-                key={category.id}
-                variant={selectedCategory === category.name.toLowerCase() ? "default" : "outline"}
-                className="rounded-[30px]"
-                onClick={() => handleCategoryChange(category.name.toLowerCase())}
-              >
-                {category.name}
-              </Button>
-            ))}
+                <Button
+                  key={category.id}
+                  variant={selectedCategory === category.name.toLowerCase() ? "default" : "outline"}
+                  className="rounded-[30px]"
+                  onClick={() => handleCategoryChange(category.name.toLowerCase())}
+                >
+                  {category.name}
+                </Button>
+              ))}
           </div>
         </div>
 
@@ -858,7 +1048,7 @@ const Catalogo = () => {
           <div>
             <p className="text-gray-600">
               {searchTerm && `Resultados para "${searchTerm}"`}
-              {selectedCategory !== "all" && !searchTerm && 
+              {selectedCategory !== "all" && !searchTerm &&
                 `Categoría: ${categories.find(c => c.name.toLowerCase() === selectedCategory)?.name}`}
               {!searchTerm && selectedCategory === "all" && "Todos los productos"}
             </p>
@@ -894,10 +1084,10 @@ const Catalogo = () => {
           <>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {paginatedProducts.map((product) => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-              />
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                />
               ))}
             </div>
 
@@ -907,15 +1097,15 @@ const Catalogo = () => {
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
-                      <PaginationPrevious 
+                      <PaginationPrevious
                         onClick={goToPrevious}
                         className={currentPage === 1 ? 'pointer-events-none opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                       />
                     </PaginationItem>
-                    
+
                     {getPageNumbers().map((pageNum) => (
                       <PaginationItem key={pageNum}>
-                        <PaginationLink 
+                        <PaginationLink
                           onClick={() => goToPage(pageNum)}
                           isActive={currentPage === pageNum}
                           className="cursor-pointer"
@@ -924,15 +1114,15 @@ const Catalogo = () => {
                         </PaginationLink>
                       </PaginationItem>
                     ))}
-                    
+
                     {totalPages > 5 && currentPage < totalPages - 2 && (
                       <PaginationItem>
                         <PaginationEllipsis />
                       </PaginationItem>
                     )}
-                    
+
                     <PaginationItem>
-                      <PaginationNext 
+                      <PaginationNext
                         onClick={goToNext}
                         className={currentPage === totalPages ? 'pointer-events-none opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                       />
@@ -951,9 +1141,9 @@ const Catalogo = () => {
           {selectedProduct && (
             <>
               <DialogClose asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full hover:bg-gray-100"
                 >
                   <X className="h-4 w-4" />
@@ -962,24 +1152,24 @@ const Catalogo = () => {
               <DialogHeader>
                 <DialogTitle className="sr-only">Detalle del producto</DialogTitle>
               </DialogHeader>
-              
+
               {(() => {
                 const isVariable = selectedProduct.product_type === 'variable';
                 const sourceVariations = modalVariations.length > 0 ? modalVariations : (selectedProduct.variations || []);
                 const hasAnyVariantStock = isVariable
                   ? Array.isArray(sourceVariations) && sourceVariations.some((v: any) => Number(v.stock) > 0)
                   : false;
-                
+
                 return (
                   <div className="grid md:grid-cols-2 gap-8">
                     <div className="space-y-4">
-                      <ProductImageGallery 
-                        images={selectedProduct.images || [selectedProduct.image]} 
+                      <ProductImageGallery
+                        images={selectedProduct.images || [selectedProduct.image]}
                         productName={selectedProduct.title}
                         showOutOfStock={isVariable ? !hasAnyVariantStock : currentStock === 0}
                       />
                     </div>
-                    
+
                     <div className="space-y-6">
                       <h3 className="font-bold text-gray-900 text-xl md:text-2xl lg:text-3xl flex items-center gap-2 flex-wrap">
                         {selectedProduct.title}
@@ -989,13 +1179,13 @@ const Catalogo = () => {
                           </span>
                         )}
                       </h3>
-                      
+
                       <div>
                         <p className="text-gray-600 leading-relaxed text-sm">
                           {selectedProduct.description}
                         </p>
                       </div>
-                      
+
                       {selectedProduct.features && selectedProduct.features.length > 0 && (
                         <div>
                           <h4 className="font-semibold text-gray-900 mb-2">Características:</h4>
@@ -1009,9 +1199,9 @@ const Catalogo = () => {
                           </ul>
                         </div>
                       )}
-                      
+
                       {/* Product Variables */}
-                      <ProductVariationSelector 
+                      <ProductVariationSelector
                         productId={selectedProduct.id}
                         variations={modalVariations.length > 0 ? modalVariations : selectedProduct.variations}
                         onPriceChange={(price) => setCurrentPrice(price)}
@@ -1019,7 +1209,7 @@ const Catalogo = () => {
                         onVariationComplete={(isComplete) => setCanAddToCart(isComplete)}
                         onVariationChange={(variation) => setSelectedVariation(variation)}
                       />
-                      
+
                       {/* Price Display */}
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
@@ -1055,11 +1245,11 @@ const Catalogo = () => {
                           <p className="text-sm text-gray-500">Selecciona las opciones para ver el stock disponible.</p>
                         )}
                       </div>
-                      
+
                       <div className="space-y-3">
-                        <Button 
-                          onClick={() => addToCart(selectedProduct)} 
-                          className="w-full" 
+                        <Button
+                          onClick={() => addToCart(selectedProduct)}
+                          className="w-full"
                           size="lg"
                           disabled={!canAddToCart || (!isVariable && currentStock === 0)}
                         >
@@ -1067,15 +1257,15 @@ const Catalogo = () => {
                           {isVariable && !canAddToCart
                             ? 'Selecciona opciones'
                             : currentStock === 0
-                            ? 'Agotado'
-                            : 'Agregar al carrito'}
+                              ? 'Agotado'
+                              : 'Agregar al carrito'}
                         </Button>
-                        
+
                         {settings?.whatsapp_number && (
-                          <Button 
-                            onClick={() => sendWhatsAppMessage(selectedProduct)} 
-                            variant="outline" 
-                            className="w-full" 
+                          <Button
+                            onClick={() => sendWhatsAppMessage(selectedProduct)}
+                            variant="outline"
+                            className="w-full"
                             size="lg"
                           >
                             <MessageCircle className="w-5 h-5 mr-2" />
@@ -1123,7 +1313,7 @@ const Catalogo = () => {
           </button>
 
           {/* Carrito */}
-          <button 
+          <button
             onClick={toggleCart}
             className="flex flex-col items-center space-y-0.5 p-1 text-gray-600 hover:text-gray-900"
           >
@@ -1142,7 +1332,7 @@ const Catalogo = () => {
 
       {/* Spacer for bottom navigation on mobile */}
       <div className="md:hidden h-12"></div>
-      
+
       {/* Floating Cart Button */}
       <div className="fixed bottom-4 right-4 z-40">
         <Button
@@ -1151,8 +1341,8 @@ const Catalogo = () => {
         >
           <ShoppingCart className="w-5 h-5" />
           {totalItems > 0 && (
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="absolute -top-2 -right-2 min-w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
             >
               {totalItems}
@@ -1160,13 +1350,13 @@ const Catalogo = () => {
           )}
         </Button>
       </div>
-      
+
       {/* Cart Sidebar */}
       <CartSidebar checkoutConfig={checkoutConfig} />
 
       {/* Contact Section */}
-      <ContactSection 
-        contactData={contactData} 
+      <ContactSection
+        contactData={contactData}
         backgroundColor={settings?.footer_bg_color || '#1a1a1a'}
       />
     </div>

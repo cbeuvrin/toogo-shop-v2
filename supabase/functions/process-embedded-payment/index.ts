@@ -6,7 +6,7 @@ import { MercadoPagoConfig, Payment } from "npm:mercadopago@2.0.15";
 interface EmbeddedPaymentRequest {
   domain: string;
   tenantName: string;
-  planType: 'monthly' | 'annual';
+  planType: 'monthly' | 'semi_annual' | 'annual';
   domainOption?: 'keep' | 'buy' | 'transfer';
   authCode?: string;
   couponCode?: string;
@@ -94,8 +94,10 @@ serve(async (req) => {
     }
 
     const basicPlanPriceMXN = requestData.planType === 'annual'
-      ? (pricingData.setting_value?.plans?.basic_annual?.price_mxn || 2990)
-      : (pricingData.setting_value?.plans?.basic_monthly?.price_mxn || 299);
+      ? (pricingData.setting_value?.plans?.basic_annual?.price_mxn || 3120)
+      : requestData.planType === 'semi_annual'
+        ? (pricingData.setting_value?.plans?.basic_semi_annual?.price_mxn || 1710)
+        : (pricingData.setting_value?.plans?.basic_monthly?.price_mxn || 299);
 
     // Re-validate coupon on backend if provided
     let finalDiscount = 0;
@@ -471,6 +473,29 @@ serve(async (req) => {
         } else {
           console.log('Coupon usage recorded successfully');
         }
+      }
+
+      // Create/update subscription record so billing info is available in dashboard
+      const monthsToAdd = requestData.planType === 'annual' ? 12
+        : requestData.planType === 'semi_annual' ? 6
+          : 1;
+      const nextBillingDate = new Date();
+      nextBillingDate.setMonth(nextBillingDate.getMonth() + monthsToAdd);
+
+      const { error: subscriptionError } = await supabase
+        .from('subscriptions')
+        .upsert({
+          tenant_id: newTenant.id,
+          status: 'active',
+          next_billing_date: nextBillingDate.toISOString(),
+          amount_mxn: planAfterDiscount,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'tenant_id' });
+
+      if (subscriptionError) {
+        console.error('Error creating subscription record (non-critical):', subscriptionError);
+      } else {
+        console.log('✅ Subscription record created/updated for tenant:', newTenant.id);
       }
 
       console.log('Tenant and domain created successfully');

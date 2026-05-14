@@ -41,7 +41,7 @@ const Dashboard3 = () => {
   const { progress } = useOnboardingProgress();
   const [completedSteps, setCompletedSteps] = useState(0);
   const [hideOnboarding, setHideOnboarding] = useState(false);
-  const [profileSubTab, setProfileSubTab] = useState<"mis-datos" | "usuarios" | "mi-plan" | "cupones" | "whatsapp-bot" | "legal">("mis-datos");
+  const [profileSubTab, setProfileSubTab] = useState<"mis-datos" | "usuarios" | "mi-plan" | "mis-dominios" | "cupones" | "whatsapp-bot" | "legal">("mis-datos");
   const [logoUrl, setLogoUrl] = useState<string>('');
 
   // Determine if onboarding is complete (only when user clicks "Ver Tienda")
@@ -62,6 +62,17 @@ const Dashboard3 = () => {
       }
     }
   }, [isOnboardingComplete, activeTab]);
+
+  // Soporte para deep-links desde emails (?tab=mis-dominios)
+  // Permite que el link del email de renovación lleve directo a la pantalla de dominios
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    if (tabParam === "mis-dominios") {
+      setActiveTab("mi-perfil");
+      setProfileSubTab("mis-dominios");
+    }
+  }, []);
 
   // Load tenant logo
   useEffect(() => {
@@ -177,6 +188,10 @@ const Dashboard3 = () => {
     id: "mi-plan" as const,
     icon: CreditCard,
     label: "Mi Plan"
+  }, {
+    id: "mis-dominios" as const,
+    icon: Globe,
+    label: "Mis Dominios"
   }, {
     id: "cupones" as const,
     icon: Tag,

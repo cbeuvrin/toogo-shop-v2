@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CreditCard, MessageCircle, DollarSign, Settings, Shield, AlertTriangle, Crown, AlertCircle } from "lucide-react";
+import { CreditCard, MessageCircle, DollarSign, Settings, Shield, AlertTriangle, Crown, AlertCircle, Link2, Unlink, Loader2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -78,12 +78,98 @@ export const DashboardPayments = () => {
     }
   });
   const [loading, setLoading] = useState(false);
+  // Estado de integración OAuth (nueva forma) con MercadoPago
+  const [mpIntegration, setMpIntegration] = useState<{
+    status: string;
+    provider_user_email: string | null;
+    connected_at: string | null;
+    is_legacy: boolean;
+  } | null>(null);
+  const [mpConnecting, setMpConnecting] = useState(false);
 
   useEffect(() => {
     if (!tenantLoading && tenantId) {
       loadPaymentConfig();
+      loadMpIntegration();
     }
   }, [tenantId, tenantLoading]);
+
+  const loadMpIntegration = async () => {
+    if (!tenantId) return;
+    const { data } = await supabase
+      .from("tenant_payment_integrations")
+      .select("status, provider_user_email, connected_at, metadata")
+      .eq("tenant_id", tenantId)
+      .eq("provider", "mercadopago")
+      .maybeSingle();
+
+    if (data) {
+      setMpIntegration({
+        status: data.status,
+        provider_user_email: data.provider_user_email,
+        connected_at: data.connected_at,
+        is_legacy: false,
+      });
+    } else {
+      // Si hay access_token en tenant_secrets pero no en payment_integrations → es legacy
+      const { data: legacyCheck } = await supabase
+        .from('tenant_payment_secrets' as any)
+        .select('mercadopago_access_token')
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+      if ((legacyCheck as any)?.mercadopago_access_token) {
+        setMpIntegration({ status: "legacy", provider_user_email: null, connected_at: null, is_legacy: true });
+      }
+    }
+  };
+
+  const handleConnectMercadoPago = async () => {
+    if (!tenantId) return;
+    setMpConnecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("mercadopago-oauth-start", {
+        body: { tenantId },
+      });
+      if (error) throw new Error(error.message);
+      if (!data?.auth_url) throw new Error("No se recibió la URL de autorización");
+      window.location.href = data.auth_url;
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: `No pudimos iniciar la conexión: ${err.message}`,
+        variant: "destructive",
+      });
+      setMpConnecting(false);
+    }
+  };
+
+  const handleDisconnectMercadoPago = async () => {
+    if (!tenantId) return;
+    if (!confirm("¿Seguro que quieres desconectar MercadoPago? Tus clientes no podrán pagar con MP hasta que reconectes.")) return;
+    const { error } = await supabase
+      .from("tenant_payment_integrations")
+      .update({ status: "revoked", revoked_at: new Date().toISOString() })
+      .eq("tenant_id", tenantId)
+      .eq("provider", "mercadopago");
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "MercadoPago desconectado", description: "Reconecta cuando quieras." });
+    loadMpIntegration();
+  };
+
+  // Detectar regreso del flujo OAuth: ?mp_connected=1
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("mp_connected") === "1") {
+      toast({ title: "¡MercadoPago conectado!", description: "Ya puedes recibir pagos en tu tienda." });
+      params.delete("mp_connected");
+      const newUrl = window.location.pathname + (params.toString() ? `?${params}` : "");
+      window.history.replaceState({}, "", newUrl);
+      loadMpIntegration();
+    }
+  }, []);
 
   const loadPaymentConfig = async () => {
     if (!user || !tenantId) return;
@@ -245,6 +331,21 @@ export const DashboardPayments = () => {
         </p>
       </div>
 
+      {/* Banner informativo de comisión para plan free */}
+      {plan === 'free' && (
+        <Alert className="bg-purple-50 border-purple-200">
+          <DollarSign className="h-5 w-5 text-purple-600" />
+          <AlertDescription className="text-sm">
+            <strong className="text-purple-900">Plan Free — 1% de comisión por venta procesada en plataforma.</strong>
+            <br />
+            Conecta tu pasarela y empieza a vender. Por cada venta procesada en la tienda
+            web (no aplica a ventas por WhatsApp), Toogo retiene automáticamente el 1%.
+            El 99% restante se deposita directo en tu cuenta. Si más adelante quieres pasar
+            al plan Basic, eliminamos la comisión.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Security Notice */}
       <Alert>
         <div className="flex items-start gap-3">
@@ -311,80 +412,109 @@ export const DashboardPayments = () => {
         )}
       </Card>
 
-      {/* Mercado Pago */}
-      <Card className={!restrictions.canUseMercadoPago ? "opacity-50" : ""}>
+      {/* Mercado Pago — Conexión OAuth tipo "marketplace" */}
+      <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-blue-600" />
               <CardTitle>Mercado Pago</CardTitle>
-              {!restrictions.canUseMercadoPago && (
-                <Badge variant="outline" className="bg-orange-50 text-orange-600 border-orange-200">
-                  <Crown className="w-3 h-3 mr-1" />
-                  Basic
+              {mpIntegration?.status === "active" && (
+                <Badge className="bg-green-100 text-green-800 border-green-300">
+                  <CheckCircle2 className="w-3 h-3 mr-1" /> Conectado
                 </Badge>
               )}
-              <Badge variant={config.mercadopago.enabled ? "default" : "secondary"}>
-                {config.mercadopago.enabled ? "Activo" : "Inactivo"}
-              </Badge>
+              {mpIntegration?.status === "legacy" && (
+                <Badge className="bg-amber-100 text-amber-800 border-amber-300">
+                  <AlertCircle className="w-3 h-3 mr-1" /> Método antiguo
+                </Badge>
+              )}
+              {!mpIntegration && (
+                <Badge variant="secondary">Sin conectar</Badge>
+              )}
             </div>
-            <Switch
-              checked={config.mercadopago.enabled}
-              onCheckedChange={(checked) => updateConfig("mercadopago", "enabled", checked)}
-              disabled={!restrictions.canUseMercadoPago}
-            />
           </div>
           <CardDescription>
-            Acepta pagos con tarjetas de crédito/débito y otros métodos populares en Latinoamérica
-            {!restrictions.canUseMercadoPago && (
-              <div className="text-orange-600 font-medium mt-1">
-                Disponible en el Plan Basic ($299 MXN/mes)
-              </div>
-            )}
+            Acepta pagos con tarjetas de crédito/débito y otros métodos populares en LATAM.
           </CardDescription>
         </CardHeader>
-        {config.mercadopago.enabled && (
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="mp-public-key">Public Key *</Label>
-              <Input
-                id="mp-public-key"
-                value={config.mercadopago.publicKey}
-                onChange={(e) => updateConfig("mercadopago", "publicKey", e.target.value)}
-                placeholder="APP_USR-..."
-              />
-            </div>
-            <div>
-              <Label htmlFor="mp-access-token" className="flex items-center gap-2">
-                Access Token *
-                <span className="text-xs text-muted-foreground font-normal">(Requerido para procesar el pago)</span>
-              </Label>
-              <Input
-                id="mp-access-token"
-                type="password"
-                value={config.mercadopago.accessToken}
-                onChange={(e) => updateConfig("mercadopago", "accessToken", e.target.value)}
-                placeholder={config.mercadopago.hasAccessToken ? "•••••••••••••••• (Guardado)" : "Ingresa tu Access Token"}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Tu Access Token se guarda de forma segura. Déjalo en blanco si no deseas cambiarlo.
+        <CardContent className="space-y-4">
+          {/* Caso 1: NO conectado → mostrar botón conectar */}
+          {!mpIntegration && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Conecta tu cuenta de MercadoPago con un solo click. No tienes que copiar ni pegar claves —
+                Mercado Pago te va a pedir solo autorizar la conexión.
+              </p>
+              <Button
+                onClick={handleConnectMercadoPago}
+                disabled={mpConnecting}
+                className="bg-[#009ee3] hover:bg-[#007eb5] text-white"
+                size="lg"
+              >
+                {mpConnecting ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Redirigiendo...</>
+                ) : (
+                  <><Link2 className="w-4 h-4 mr-2" /> Conectar con MercadoPago</>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Si aún no tienes cuenta de MercadoPago, podrás crearla durante el proceso.
               </p>
             </div>
-            <div className="bg-blue-50 p-3 rounded-md border border-blue-100 text-sm text-blue-800">
-              <p className="flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
-                ¿No sabes cómo obtener tus credenciales?{" "}
-                <a
-                  href="/ayuda/configurar-pagos?provider=mercadopago"
-                  className="underline font-semibold hover:text-blue-900"
-                  target="_blank"
-                >
-                  Ver guía
-                </a>
-              </p>
+          )}
+
+          {/* Caso 2: Conectado vía OAuth */}
+          {mpIntegration?.status === "active" && (
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 text-sm">
+                  <p className="font-medium text-green-900">Tu cuenta de MercadoPago está conectada</p>
+                  {mpIntegration.provider_user_email && (
+                    <p className="text-green-700 text-xs mt-1">Cuenta: <span className="font-mono">{mpIntegration.provider_user_email}</span></p>
+                  )}
+                  {mpIntegration.connected_at && (
+                    <p className="text-green-700 text-xs">
+                      Conectado el {new Date(mpIntegration.connected_at).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <Button variant="outline" onClick={handleDisconnectMercadoPago} size="sm">
+                <Unlink className="w-4 h-4 mr-2" /> Desconectar MercadoPago
+              </Button>
             </div>
-          </CardContent>
-        )}
+          )}
+
+          {/* Caso 3: Tiene credenciales legacy → forzar reconexión OAuth */}
+          {mpIntegration?.status === "legacy" && (
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 text-sm">
+                  <p className="font-medium text-amber-900">Configuración antigua detectada</p>
+                  <p className="text-amber-800 text-xs mt-1">
+                    Tienes MercadoPago configurado con el método anterior (Access Token manual).
+                    Reconecta con el nuevo método de un click para mejor seguridad y experiencia.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={handleConnectMercadoPago}
+                disabled={mpConnecting}
+                className="bg-[#009ee3] hover:bg-[#007eb5] text-white"
+                size="lg"
+              >
+                {mpConnecting ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Redirigiendo...</>
+                ) : (
+                  <><Link2 className="w-4 h-4 mr-2" /> Reconectar con MercadoPago</>
+                )}
+              </Button>
+            </div>
+          )}
+        </CardContent>
       </Card>
 
       {/* PayPal */}

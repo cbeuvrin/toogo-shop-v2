@@ -17,7 +17,7 @@ interface ImageCropperModalProps {
   isOpen: boolean;
   onClose: () => void;
   imageSrc: string;
-  aspectRatio: number; // e.g., 8/3 for banners, 1 for square
+  aspectRatio?: number; // Optional. If undefined, allows free cropping
   onCropComplete: (croppedBlob: Blob) => void;
   title?: string;
 }
@@ -84,6 +84,7 @@ export const ImageCropperModal = ({
 
   // Get aspect ratio label for display
   const getAspectRatioLabel = () => {
+    if (aspectRatio === undefined) return "Libre";
     if (aspectRatio === 1) return "1:1 (Cuadrado)";
     if (Math.abs(aspectRatio - 8 / 3) < 0.01) return "8:3 (Banner)";
     if (Math.abs(aspectRatio - 16 / 9) < 0.01) return "16:9";

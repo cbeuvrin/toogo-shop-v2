@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="640" height="640">
+  <defs>
+    <!-- Neon gradient -->
+    <linearGradient id="neonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F5FF"/>
+      <stop offset="100%" stop-color="#FF00E5"/>
+    </linearGradient>
+
+    <!-- Text gradient -->
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E8E8F0"/>
+      <stop offset="50%" stop-color="#00F5FF"/>
+      <stop offset="100%" stop-color="#FF00E5"/>
+    </linearGradient>
+
+    <!-- Glow filters -->
+    <filter id="cyanGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Grid pattern -->
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#E8E8F0" stroke-width="1" opacity="0.07"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="640" height="640" fill="#0A0A14"/>
+  <rect width="640" height="640" fill="url(#grid)"/>
+
+  <!-- Radial glows -->
+  <circle cx="80" cy="280" r="120" fill="#00F5FF" opacity="0.15"/>
+  <circle cx="560" cy="380" r="120" fill="#FF00E5" opacity="0.15"/>
+
+  <!-- Ticker top -->
+  <rect x="0" y="0" width="640" height="28" fill="#13131E"/>
+  <rect x="0" y="27" width="640" height="1" fill="#2A2A3E"/>
+  <text x="320" y="19" font-family="ui-monospace, Menlo, monospace" font-size="10" font-weight="700" text-anchor="middle" fill="#00F5FF" letter-spacing="3">◢ NUEVA TEMPORADA  ◢ ENVÍO INMEDIATO  ◢ 100% GARANTIZADO</text>
+
+  <!-- Header -->
+  <rect x="0" y="28" width="640" height="56" fill="#0A0A14" opacity="0.8"/>
+  <rect x="0" y="84" width="640" height="1" fill="#2A2A3E"/>
+  <circle cx="34" cy="58" r="4" fill="#00F5FF" filter="url(#cyanGlow)"/>
+  <text x="48" y="64" font-family="ui-monospace, Menlo, monospace" font-size="18" font-weight="900" fill="#E8E8F0" letter-spacing="2">CYBER</text>
+  <text x="290" y="62" font-family="ui-monospace, Menlo, monospace" font-size="10" font-weight="700" fill="#E8E8F0" letter-spacing="2">CATÁLOGO</text>
+  <text x="370" y="62" font-family="ui-monospace, Menlo, monospace" font-size="10" font-weight="700" fill="#E8E8F0" letter-spacing="2">DROPS</text>
+  <text x="425" y="62" font-family="ui-monospace, Menlo, monospace" font-size="10" font-weight="700" fill="#E8E8F0" letter-spacing="2">TECH</text>
+  <circle cx="585" cy="58" r="3" fill="#E8E8F0"/>
+  <rect x="595" y="53" width="10" height="10" fill="none" stroke="#E8E8F0" stroke-width="1.5"/>
+  <circle cx="623" cy="55" r="6" fill="#FF00E5" filter="url(#cyanGlow)"/>
+  <text x="623" y="58" font-family="ui-monospace, Menlo, monospace" font-size="8" font-weight="900" text-anchor="middle" fill="#fff">3</text>
+
+  <!-- Status badge -->
+  <rect x="40" y="115" width="125" height="22" rx="11" fill="none" stroke="#00F5FF" stroke-width="1"/>
+  <text x="103" y="130" font-family="ui-monospace, Menlo, monospace" font-size="9" font-weight="700" text-anchor="middle" fill="#00F5FF" letter-spacing="2">⚡ SYSTEM ONLINE</text>
+
+  <!-- Hero title with gradient -->
+  <text x="40" y="195" font-family="ui-monospace, Menlo, monospace" font-size="46" font-weight="900" fill="url(#textGrad)" letter-spacing="-1">FUTURO</text>
+  <text x="40" y="245" font-family="ui-monospace, Menlo, monospace" font-size="46" font-weight="900" fill="url(#textGrad)" letter-spacing="-1">DIGITAL.</text>
+  <text x="40" y="295" font-family="ui-monospace, Menlo, monospace" font-size="46" font-weight="900" fill="url(#textGrad)" letter-spacing="-1">DISEÑADO</text>
+  <text x="40" y="345" font-family="ui-monospace, Menlo, monospace" font-size="46" font-weight="900" fill="url(#textGrad)" letter-spacing="-1">HOY.</text>
+
+  <text x="40" y="375" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#8888A0">Productos del mañana. Tecnología que se adelanta.</text>
+
+  <!-- CTA primary (gradient) -->
+  <rect x="40" y="395" width="160" height="40" fill="url(#neonGrad)" filter="url(#cyanGlow)"/>
+  <text x="120" y="420" font-family="ui-monospace, Menlo, monospace" font-size="11" font-weight="900" text-anchor="middle" fill="#0A0A14" letter-spacing="2">EXPLORAR DROPS →</text>
+
+  <!-- CTA secondary (outlined) -->
+  <rect x="210" y="395" width="140" height="40" fill="none" stroke="#2A2A3E" stroke-width="1"/>
+  <text x="280" y="420" font-family="ui-monospace, Menlo, monospace" font-size="11" font-weight="900" text-anchor="middle" fill="#E8E8F0" letter-spacing="2">VER CATÁLOGO</text>
+
+  <!-- Hero image area (right side) -->
+  <rect x="380" y="155" width="220" height="180" fill="url(#neonGrad)" opacity="0.2"/>
+  <rect x="380" y="155" width="220" height="180" fill="#13131E" stroke="#2A2A3E" stroke-width="2"/>
+  <circle cx="490" cy="245" r="40" fill="url(#neonGrad)" opacity="0.5"/>
+  <!-- Corner brackets -->
+  <path d="M 388 163 L 388 180 M 388 163 L 405 163" stroke="#00F5FF" stroke-width="2" fill="none"/>
+  <path d="M 592 163 L 592 180 M 592 163 L 575 163" stroke="#00F5FF" stroke-width="2" fill="none"/>
+  <path d="M 388 327 L 388 310 M 388 327 L 405 327" stroke="#FF00E5" stroke-width="2" fill="none"/>
+  <path d="M 592 327 L 592 310 M 592 327 L 575 327" stroke="#FF00E5" stroke-width="2" fill="none"/>
+
+  <!-- Stats row -->
+  <rect x="380" y="350" width="220" height="1" fill="#2A2A3E"/>
+  <text x="390" y="380" font-family="ui-monospace, Menlo, monospace" font-size="20" font-weight="900" fill="#00F5FF">24/7</text>
+  <text x="390" y="395" font-family="ui-monospace, Menlo, monospace" font-size="8" fill="#8888A0" letter-spacing="2">SOPORTE</text>
+  <text x="460" y="380" font-family="ui-monospace, Menlo, monospace" font-size="20" font-weight="900" fill="#FF00E5">100%</text>
+  <text x="460" y="395" font-family="ui-monospace, Menlo, monospace" font-size="8" fill="#8888A0" letter-spacing="2">GARANTÍA</text>
+  <text x="540" y="380" font-family="ui-monospace, Menlo, monospace" font-size="20" font-weight="900" fill="#00F5FF">FAST</text>
+  <text x="540" y="395" font-family="ui-monospace, Menlo, monospace" font-size="8" fill="#8888A0" letter-spacing="2">ENVÍOS</text>
+
+  <!-- Section divider -->
+  <text x="40" y="475" font-family="ui-monospace, Menlo, monospace" font-size="10" font-weight="700" fill="#00F5FF" letter-spacing="3">// PRODUCTS</text>
+  <text x="40" y="505" font-family="ui-monospace, Menlo, monospace" font-size="24" font-weight="900" fill="#E8E8F0" letter-spacing="-1">DROPS ACTIVOS</text>
+
+  <!-- Product cards row (4) -->
+  <g>
+    <rect x="40" y="525" width="135" height="100" rx="10" fill="#13131E" stroke="#2A2A3E"/>
+    <rect x="52" y="540" width="111" height="60" rx="4" fill="#1d1d2e"/>
+    <text x="52" y="616" font-family="ui-monospace, Menlo, monospace" font-size="9" font-weight="700" fill="#E8E8F0">PROD 01</text>
+    <text x="148" y="616" font-family="ui-monospace, Menlo, monospace" font-size="9" font-weight="900" fill="#00F5FF" text-anchor="end">$299</text>
+  </g>
+  <g>
+    <rect x="185" y="525" width="135" height="100" rx="10" fill="#13131E" stroke="#2A2A3E"/>
+    <rect x="197" y="540" width="111" height="60" rx="4" fill="#1d1d2e"/>
+    <rect x="201" y="544" width="40" height="14" rx="2" fill="url(#neonGrad)"/>
+    <text x="221" y="554" font-family="ui-monospace, Menlo, monospace" font-size="7" font-weight="900" text-anchor="middle" fill="#0A0A14">OFERTA</text>
+    <text x="197" y="616" font-family="ui-monospace, Menlo, monospace" font-size="9" font-weight="700" fill="#E8E8F0">PROD 02</text>
+    <text x="293" y="616" font-family="ui-monospace, Menlo, monospace" font-size="9" font-weight="900" fill="#00F5FF" text-anchor="end">$199</text>
+  </g>
+  <g>
+    <rect x="330" y="525" width="135" height="100" rx="10" fill="#13131E" stroke="#2A2A3E"/>
+    <rect x="342" y="540" width="111" height="60" rx="4" fill="#1d1d2e"/>
+    <text x="342" y="616" font-family="ui-monospace, Menlo, monospace" font-size="9" font-weight="700" fill="#E8E8F0">PROD 03</text>
+    <text x="438" y="616" font-family="ui-monospace, Menlo, monospace" font-size="9" font-weight="900" fill="#00F5FF" text-anchor="end">$449</text>
+  </g>
+  <g>
+    <rect x="475" y="525" width="135" height="100" rx="10" fill="#13131E" stroke="#2A2A3E"/>
+    <rect x="487" y="540" width="111" height="60" rx="4" fill="#1d1d2e"/>
+    <text x="487" y="616" font-family="ui-monospace, Menlo, monospace" font-size="9" font-weight="700" fill="#E8E8F0">PROD 04</text>
+    <text x="583" y="616" font-family="ui-monospace, Menlo, monospace" font-size="9" font-weight="900" fill="#00F5FF" text-anchor="end">$799</text>
+  </g>
+</svg>

@@ -3,20 +3,25 @@ import mascotOjos from "@/assets/mascot-ojos.png";
 import { useTenantUrl } from "@/hooks/useTenantUrl";
 import { useOnboardingProgress } from "@/hooks/useOnboardingProgress";
 import { useOnboardingInteraction } from "@/hooks/useOnboardingInteraction";
+import { useTenantContext } from "@/contexts/TenantContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Store, 
-  Package, 
-  CreditCard, 
+import {
+  Store,
+  Package,
+  CreditCard,
   Globe,
   Eye,
   TrendingUp,
   Check,
-  Palette
+  Palette,
+  Sparkles,
+  Hand
 } from "lucide-react";
+import { AIQuickSetupModal } from "./AIQuickSetupModal";
 
 interface OnboardingStep {
   id: string;
@@ -43,7 +48,39 @@ const DashboardOnboarding = ({ onTabChange, onProgressChange }: DashboardOnboard
   const { tenantUrl } = useTenantUrl();
   const { progress, stats, loading, error, refreshProgress } = useOnboardingProgress();
   const { markPublishConfirmed } = useOnboardingInteraction();
+  const { currentTenantId } = useTenantContext();
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiSetupAlreadyUsed, setAiSetupAlreadyUsed] = useState(false);
+  const [hideQuickStart, setHideQuickStart] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('toogo-quickstart-dismissed') === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const dismissQuickStart = () => {
+    setHideQuickStart(true);
+    try { localStorage.setItem('toogo-quickstart-dismissed', '1'); } catch {}
+  };
+
+  // Detectar si el tenant ya ejecutó ai_quick_setup (source of truth = whatsapp_logs en DB)
+  useEffect(() => {
+    if (!currentTenantId) return;
+    let cancelled = false;
+    (async () => {
+      const { count } = await supabase
+        .from('whatsapp_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', currentTenantId)
+        .eq('event_type', 'ai_quick_setup');
+      if (!cancelled && (count || 0) > 0) {
+        setAiSetupAlreadyUsed(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [currentTenantId]);
 
   // Create steps based on real progress data
   useEffect(() => {
@@ -149,8 +186,88 @@ const DashboardOnboarding = ({ onTabChange, onProgressChange }: DashboardOnboard
   const totalSteps = 5;
   const progressPercentage = (completedSteps / totalSteps) * 100;
 
+  // La card aparece si:
+  // - La tienda no está publicada
+  // - Nunca se usó AI setup (one-shot)
+  // - Y O bien (a) usuario no la cerró manualmente, O (b) el tenant es completamente fresco
+  //   (esto último cubre el caso de reset administrativo: ignorar localStorage si la DB dice "tenant nuevo")
+  const isFreshTenant = (progress?.total_progress || 0) === 0;
+  const showQuickStartChoice =
+    !progress?.step_5_confirmed &&
+    !aiSetupAlreadyUsed &&
+    (isFreshTenant || !hideQuickStart);
+
   return (
     <div className="w-full mx-auto space-y-8">
+      {showQuickStartChoice && (
+        <Card className="rounded-[30px] border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-white w-full">
+          <CardContent className="p-6 md:p-8">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg md:text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-purple-600" />
+                  ¿Cómo prefieres empezar?
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Elige cómo quieres configurar tu tienda
+                </p>
+              </div>
+              <button
+                onClick={dismissQuickStart}
+                className="text-xs text-gray-400 hover:text-gray-700"
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button
+                onClick={dismissQuickStart}
+                className="text-left p-5 rounded-[24px] border-2 border-gray-200 bg-white hover:border-gray-400 hover:shadow-md transition-all group"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-colors">
+                    <Hand className="w-5 h-5 text-gray-700" />
+                  </div>
+                  <h4 className="font-bold text-gray-900">Lo hago yo mismo</h4>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Sigo los 5 pasos uno por uno. Personalizo cada detalle a mi gusto.
+                </p>
+              </button>
+
+              <button
+                onClick={() => setAiModalOpen(true)}
+                className="text-left p-5 rounded-[24px] border-2 border-purple-300 bg-purple-50 hover:border-purple-500 hover:shadow-lg transition-all group relative overflow-hidden"
+              >
+                <span className="absolute top-2 right-2 text-[10px] font-bold tracking-wider uppercase text-purple-700 bg-purple-200 px-2 py-0.5 rounded-full">
+                  Recomendado
+                </span>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-full bg-purple-200 flex items-center justify-center group-hover:bg-purple-300 transition-colors">
+                    <Sparkles className="w-5 h-5 text-purple-700" />
+                  </div>
+                  <h4 className="font-bold text-purple-900">Pídele a Toogi</h4>
+                </div>
+                <p className="text-sm text-purple-800">
+                  Describes tu negocio en una frase y Toogi genera plantilla, colores,
+                  categorías y productos en 30 segundos.
+                </p>
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <AIQuickSetupModal
+        open={aiModalOpen}
+        onOpenChange={setAiModalOpen}
+        onComplete={() => {
+          refreshProgress();
+          dismissQuickStart();
+          setAiSetupAlreadyUsed(true);
+        }}
+      />
       {/* Main Configuration Card */}
       <Card className="rounded-[30px] bg-[#F5F0FA] w-full">
         <CardHeader className="space-y-4">

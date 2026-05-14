@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { pipeline, env } from '@huggingface/transformers';
+import { supabase } from '@/integrations/supabase/client';
 
 // Configure transformers.js
 env.allowLocalModels = false;
@@ -10,7 +11,7 @@ const MAX_IMAGE_DIMENSION = 2048;
 // Specialized models for background removal (ordered by quality)
 const BACKGROUND_REMOVAL_MODELS = [
   'Xenova/rembg-u2net',
-  'Xenova/rembg-u2netp', 
+  'Xenova/rembg-u2netp',
   'briaai/RMBG-1.4'
 ];
 
@@ -30,16 +31,16 @@ export const useImageProcessor = () => {
   const initializeBackgroundRemover = useCallback(async () => {
     try {
       console.log('Initializing specialized background removal model...');
-      
+
       // Try each model in order of quality
       for (const modelName of BACKGROUND_REMOVAL_MODELS) {
         try {
           console.log(`Attempting to load: ${modelName}`);
-          
+
           const segmenter = await pipeline('image-segmentation', modelName, {
             device: 'webgpu',
           });
-          
+
           console.log(`Successfully loaded: ${modelName}`);
           return { segmenter, modelName };
         } catch (error) {
@@ -47,7 +48,7 @@ export const useImageProcessor = () => {
           continue;
         }
       }
-      
+
       throw new Error('All background removal models failed to load');
     } catch (error) {
       console.error('WebGPU failed, attempting CPU fallback...');
@@ -98,7 +99,7 @@ export const useImageProcessor = () => {
     shadowCanvas.width = canvas.width + 20;
     shadowCanvas.height = canvas.height + 20;
     const shadowCtx = shadowCanvas.getContext('2d');
-    
+
     if (!shadowCtx) return canvas;
 
     // Draw shadow
@@ -125,7 +126,7 @@ export const useImageProcessor = () => {
     formData.append('image_file', file);
     formData.append('size', 'auto');
     formData.append('format', 'png');
-    
+
     const response = await fetch('https://api.remove.bg/v1.0/removebg', {
       method: 'POST',
       headers: {
@@ -163,37 +164,24 @@ export const useImageProcessor = () => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Could not get canvas context');
-      
+
       const image = await loadImage(file);
       resizeImageIfNeeded(canvas, ctx, image);
-      
+
       const imageData = canvas.toDataURL('image/jpeg', 0.8);
-      
+
       // Create prompt
       const prompt = customPrompt || "Remove the background from this product image and replace it with a clean white background. Make it professional for e-commerce.";
-      
-      const response = await fetch('https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/gemini-image-processor', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imageData,
-          prompt
-        }),
+
+      // Call via Supabase client (environment-agnostic, no hardcoded URL)
+      const { data: result, error: fnError } = await supabase.functions.invoke('gemini-image-processor', {
+        body: { imageData, prompt }
       });
-      
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Gemini processing failed: ${errorData}`);
+
+      if (fnError) {
+        throw new Error(`Gemini processing failed: ${fnError.message}`);
       }
-      
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Gemini processing failed');
-      }
-      
+
       // Convert base64 back to blob
       const base64Data = result.imageData.replace(/^data:image\/[a-z]+;base64,/, '');
       const binaryString = atob(base64Data);
@@ -201,7 +189,7 @@ export const useImageProcessor = () => {
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-      
+
       return new Blob([bytes], { type: 'image/png' });
     } catch (error) {
       console.error('Gemini background removal failed:', error);
@@ -211,7 +199,7 @@ export const useImageProcessor = () => {
 
   const processImage = useCallback(async (file: File, options: ImageProcessingOptions = {}): Promise<Blob> => {
     setIsProcessing(true);
-    
+
     try {
       let processedBlob: Blob;
 
@@ -230,17 +218,17 @@ export const useImageProcessor = () => {
           const image = await loadImage(file);
           const { segmenter, modelName } = await initializeBackgroundRemover();
           console.log(`Using model: ${modelName}`);
-          
+
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
-          
+
           if (!ctx) throw new Error('Could not get canvas context');
 
           const { width, height } = resizeImageIfNeeded(canvas, ctx, image);
 
           // Convert to high-quality base64
           const imageData = canvas.toDataURL('image/png', 1.0);
-          
+
           const result = await segmenter(imageData);
 
           if (!result || !Array.isArray(result) || result.length === 0) {
@@ -263,7 +251,7 @@ export const useImageProcessor = () => {
 
           for (let i = 0; i < maskData.length; i++) {
             let alpha = maskData[i];
-            
+
             // Different models have different outputs
             if (modelName.includes('rembg')) {
               // RMBG models: higher values = keep pixel
@@ -272,17 +260,17 @@ export const useImageProcessor = () => {
               // Other models: invert mask
               alpha = Math.max(0, Math.min(1, 1 - alpha));
             }
-            
+
             // Apply with edge smoothing
             data[i * 4 + 3] = Math.round(alpha * 255);
           }
 
           ctx.putImageData(outputImageData, 0, 0);
-          
+
           processedBlob = await new Promise((resolve, reject) => {
             canvas.toBlob(
-              (blob) => blob ? resolve(blob) : reject(new Error('Failed to create blob')), 
-              'image/png', 
+              (blob) => blob ? resolve(blob) : reject(new Error('Failed to create blob')),
+              'image/png',
               1.0
             );
           });
@@ -300,9 +288,9 @@ export const useImageProcessor = () => {
         const image = await loadImage(new File([processedBlob], 'processed.png'));
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        
+
         if (!ctx) throw new Error('Could not get canvas context');
-        
+
         canvas.width = image.naturalWidth;
         canvas.height = image.naturalHeight;
         ctx.drawImage(image, 0, 0);
@@ -313,15 +301,15 @@ export const useImageProcessor = () => {
           backgroundCanvas.width = canvas.width;
           backgroundCanvas.height = canvas.height;
           const backgroundCtx = backgroundCanvas.getContext('2d');
-          
+
           if (backgroundCtx) {
             // Fill with white background
             backgroundCtx.fillStyle = '#ffffff';
             backgroundCtx.fillRect(0, 0, canvas.width, canvas.height);
-            
+
             // Draw the processed image on top
             backgroundCtx.drawImage(canvas, 0, 0);
-            
+
             // Replace canvas with the one with white background
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(backgroundCanvas, 0, 0);

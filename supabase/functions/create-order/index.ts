@@ -60,7 +60,7 @@ serve(async (req) => {
     // SECURITY: Get authenticated user from request (if any)
     const authHeader = req.headers.get("Authorization");
     let authenticatedUserId: string | null = null;
-    
+
     if (authHeader) {
       const supabaseAuthClient = createClient(
         Deno.env.get("SUPABASE_URL") ?? "",
@@ -70,7 +70,7 @@ serve(async (req) => {
           global: { headers: { Authorization: authHeader } }
         }
       );
-      
+
       const { data: { user } } = await supabaseAuthClient.auth.getUser();
       authenticatedUserId = user?.id || null;
       logStep("Authenticated user", { user_id: authenticatedUserId });
@@ -108,18 +108,18 @@ serve(async (req) => {
       throw new Error("Invalid or inactive tenant");
     }
 
-    // VALIDATION: For variable products, ensure variation_id is provided BEFORE creating order
+    // VALIDATION: Check variation_id and server-side price validation
+    const validatedItems: any[] = [];
     for (const item of items) {
-      // Get product type
       const { data: productData, error: productError } = await supabaseClient
         .from('products')
-        .select('product_type, title')
+        .select('product_type, title, price_mxn, sale_price_mxn')
         .eq('id', item.product_id)
         .single();
-      
-      if (productError) {
-        logStep("Product validation error", { product_id: item.product_id, error: productError.message });
-        return new Response(JSON.stringify({ 
+
+      if (productError || !productData) {
+        logStep("Product validation error", { product_id: item.product_id, error: productError?.message });
+        return new Response(JSON.stringify({
           error: "Product validation failed",
           message: "No se pudo validar el producto"
         }), {
@@ -127,10 +127,10 @@ serve(async (req) => {
           status: 400,
         });
       }
-      
+
       if (productData.product_type === 'variable' && !item.variation_id) {
         logStep("Validation error - missing variation_id", { product_id: item.product_id, product_title: productData.title });
-        return new Response(JSON.stringify({ 
+        return new Response(JSON.stringify({
           error: "Variation selection required",
           message: `Por favor selecciona todas las opciones de "${productData.title}" antes de continuar`,
           product_id: item.product_id,
@@ -140,20 +140,40 @@ serve(async (req) => {
           status: 400,
         });
       }
+
+      // SECURITY: Use server-side price — ignore client-provided price
+      let realPrice: number;
+      if (item.variation_id) {
+        const { data: variation } = await supabaseClient
+          .from('product_variations')
+          .select('price_mxn, sale_price_mxn')
+          .eq('id', item.variation_id)
+          .eq('product_id', item.product_id)
+          .single();
+        realPrice = variation?.sale_price_mxn || variation?.price_mxn || productData.sale_price_mxn || productData.price_mxn;
+      } else {
+        realPrice = productData.sale_price_mxn || productData.price_mxn;
+      }
+
+      validatedItems.push({ ...item, price_mxn: realPrice });
     }
-    logStep("All items validated successfully");
+
+    // Recalculate total using real prices
+    const validatedTotal = validatedItems.reduce(
+      (sum: number, item: any) => sum + item.price_mxn * item.quantity, 0
+    ) + shipping_cost - store_discount_amount;
+    logStep("Price validation complete", { client_total: total_mxn, server_total: validatedTotal, diff: total_mxn - validatedTotal });
 
     // SECURITY: Create order with proper user_id for authenticated users
-    // This allows customers to track their orders while maintaining data isolation
     const orderData: any = {
       tenant_id: tenant_id,
-      user_id: authenticatedUserId, // Set to authenticated user ID or NULL for guest checkout
+      user_id: authenticatedUserId,
       customer_name: customer?.name,
       customer_email: customer?.email,
       customer_phone: customer?.phone,
-      total_mxn: total_mxn,
+      total_mxn: validatedTotal, // Always use server-calculated total
       total_usd: total_usd,
-      status: payment_method === 'whatsapp' ? 'pending' : 'pending',
+      status: 'pending',
       payment_provider: payment_method
     };
 
@@ -167,7 +187,7 @@ serve(async (req) => {
     if (customer?.state) {
       orderData.customer_state = customer.state;
     }
-    
+
     // Add coupon fields if a coupon was applied
     if (store_coupon_id) {
       orderData.store_coupon_id = store_coupon_id;
@@ -183,13 +203,13 @@ serve(async (req) => {
     if (orderError) throw new Error(`Order creation error: ${orderError.message}`);
     logStep("Order created", { order_id: order.id });
 
-    // Create order items (validation already done above)
-    const orderItems = items.map((item: any) => ({
+    // Create order items using validated server-side prices
+    const orderItems = validatedItems.map((item: any) => ({
       order_id: order.id,
       product_id: item.product_id,
       variation_id: item.variation_id || null,
       qty: item.quantity,
-      price_mxn: item.price_mxn,
+      price_mxn: item.price_mxn, // ← server-validated price
       sale_price_mxn: item.sale_price_mxn || 0
     }));
 
@@ -281,7 +301,7 @@ serve(async (req) => {
       // Don't fail the order if email fails
     }
 
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       order_id: order.id,
       status: 'created',
       message: 'Order created successfully'

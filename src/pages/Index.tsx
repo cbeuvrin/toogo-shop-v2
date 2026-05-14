@@ -1,14 +1,11 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Store, Zap, Shield, Globe, ChevronUp } from "lucide-react";
+import { CheckCircle, Store, Zap, Shield, ChevronUp } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Link } from "react-router-dom";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { ChatBotContainer } from "@/components/ChatBotContainer";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { SEOHead } from "@/components/SEOHead";
 import { ContactSupportForm } from "@/components/ContactSupportForm";
 import {
@@ -20,10 +17,6 @@ import {
 } from "@/components/ui/dialog";
 import { usePlatformFacebookPixel } from "@/hooks/usePlatformFacebookPixel";
 const Index = () => {
-  const {
-    user,
-    loading
-  } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingFlowType, setOnboardingFlowType] = useState<"subdomain" | "domain" | undefined>(undefined);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -76,22 +69,6 @@ const Index = () => {
     return () => clearInterval(interval);
   }, []);
 
-  console.log("Index component - loading:", loading, "user:", user);
-
-  // Temporarily removing loading check to show images
-  // if (loading) {
-  //   console.log("Still loading, showing loading screen");
-  //   return (
-  //     <div className="min-h-screen flex items-center justify-center bg-background">
-  //       <div className="text-center">
-  //         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-  //         <p className="text-muted-foreground mt-2">Loading...</p>
-  //       </div>
-  //     </div>
-  //   );
-  // }
-
-  console.log("Rendering main content");
   return <div className="min-h-screen" style={{
     backgroundColor: '#E0E0E0'
   }}>
@@ -112,9 +89,12 @@ const Index = () => {
           <Link to="/blog" className="text-gray-600 hover:text-gray-900 transition-colors text-sm lg:text-base">
             Blog
           </Link>
+          <Link to="/auth" className="text-gray-600 hover:text-gray-900 transition-colors text-sm lg:text-base">
+            Iniciar sesión
+          </Link>
           <Button onClick={() => {
             trackLead('onboarding_started', { source: 'nav_button' });
-            setOnboardingFlowType(undefined);
+            setOnboardingFlowType('subdomain');
             setShowOnboarding(true);
           }} className="bg-primary hover:bg-primary/90 text-white rounded-full px-4 lg:px-6 py-2 text-sm lg:text-base">
             Comenzar gratis
@@ -123,12 +103,15 @@ const Index = () => {
 
         {/* Mobile menu */}
         <div className="md:hidden flex items-center space-x-3">
-          <Link to="/blog" className="text-gray-600 hover:text-gray-900 text-sm">
-            Blog
+          <a href="#precios" className="text-gray-600 hover:text-gray-900 text-sm">
+            Precios
+          </a>
+          <Link to="/auth" className="text-gray-600 hover:text-gray-900 text-sm">
+            Iniciar sesión
           </Link>
           <Button onClick={() => {
             trackLead('onboarding_started', { source: 'mobile_nav_button' });
-            setOnboardingFlowType(undefined);
+            setOnboardingFlowType('subdomain');
             setShowOnboarding(true);
           }} className="bg-primary hover:bg-primary/90 text-white rounded-full px-4 py-2 text-sm">
             Comenzar
@@ -152,13 +135,23 @@ const Index = () => {
                 la mejor plantilla lista para vender. </p>
               <p className="text-lg text-gray-600 font-semibold leading-tight lg:text-2xl">Solo entra y empieza.</p>
             </div>
-            <Button onClick={() => {
-              trackLead('onboarding_started', { source: 'hero_button' });
-              setOnboardingFlowType(undefined);
-              setShowOnboarding(true);
-            }} className="bg-primary hover:bg-primary/90 text-white rounded-full px-6 lg:px-8 py-3 lg:py-4 text-base lg:text-lg">
-              Comenzar gratis
-            </Button>
+            <div className="flex flex-col items-center lg:items-start gap-2">
+              <Button onClick={() => {
+                trackLead('onboarding_started', { source: 'hero_button' });
+                setOnboardingFlowType('subdomain');
+                setShowOnboarding(true);
+              }} className="bg-primary hover:bg-primary/90 text-white rounded-full px-6 lg:px-8 py-3 lg:py-4 text-base lg:text-lg">
+                Comenzar gratis
+              </Button>
+              <p className="text-sm text-gray-500">Sin tarjeta de crédito · Gratis para siempre</p>
+              <button onClick={() => {
+                trackLead('onboarding_started', { source: 'hero_button_own_domain' });
+                setOnboardingFlowType('domain');
+                setShowOnboarding(true);
+              }} className="text-sm text-gray-600 hover:text-primary underline underline-offset-4 mt-1 transition-colors">
+                Ya tengo mi propio dominio →
+              </button>
+            </div>
           </div>
 
           {/* Right side - Mascot */}
@@ -319,7 +312,7 @@ const Index = () => {
               <div className="pt-4">
                 <Button onClick={() => {
                   trackLead('onboarding_started', { source: 'whatsapp_section' });
-                  setOnboardingFlowType(undefined);
+                  setOnboardingFlowType('subdomain');
                   setShowOnboarding(true);
                 }} className="bg-[#25D366] hover:bg-[#128C7E] text-white rounded-full px-8 py-4 text-lg shadow-lg hover:shadow-xl transition-all">
                   Probar ahora
@@ -558,7 +551,7 @@ const Index = () => {
               Con Toogo, ya todo hecho. Sólo sube tus productos y empieza a vender
             </p>
             <Button onClick={() => {
-              setOnboardingFlowType(undefined);
+              setOnboardingFlowType('subdomain');
               setShowOnboarding(true);
             }} className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-6 lg:px-8 py-3 lg:py-4 text-base lg:text-lg font-semibold">
               Comenzar gratis
@@ -666,7 +659,8 @@ const Index = () => {
                     Contacto
                   </button>
                 </li>
-                <li><Link to="/blog" className="text-gray-600 hover:text-gray-900 text-xs lg:text-sm">Centro de ayuda</Link></li>
+                <li><Link to="/blog" className="text-gray-600 hover:text-gray-900 text-xs lg:text-sm">Blog</Link></li>
+                <li><Link to="/soporte" className="text-gray-600 hover:text-gray-900 text-xs lg:text-sm">Centro de ayuda</Link></li>
                 <li><a href="https://www.reddit.com/r/toogostore/" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-gray-900 text-xs lg:text-sm">Comunidad</a></li>
                 <li><a href="mailto:soporte@toogo.store" className="text-gray-600 hover:text-gray-900 text-xs lg:text-sm">soporte@toogo.store</a></li>
               </ul>
@@ -685,7 +679,7 @@ const Index = () => {
           {/* Copyright */}
           <div className="border-t pt-4 lg:pt-8">
             <p className="text-center text-gray-600 text-sm">
-              © 2024 Toogo. Todos los derechos reservados.
+              © 2026 Toogo. Todos los derechos reservados.
             </p>
           </div>
         </div>

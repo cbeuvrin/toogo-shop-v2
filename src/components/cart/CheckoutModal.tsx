@@ -1,5 +1,3 @@
-// @ts-nocheck
-// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -69,8 +67,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponDiscount, setCouponDiscount] = useState(0);
 
-  // Derive local totals from cart's totalPrice (which is a number)
-  const cartTotalMxn = typeof totalPrice === 'number' ? totalPrice : totalPrice?.mxn ?? 0;
+  // totalPrice is always a plain number from CartContext
+  const cartTotalMxn = typeof totalPrice === 'number' ? totalPrice : 0;
   const exchange = settings?.exchange_rate_value || 20;
   const cartTotalUsd = exchange > 0 ? cartTotalMxn / exchange : 0;
   const [customerData, setCustomerData] = useState({
@@ -216,23 +214,23 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         }
         break;
       default:
-      setShippingCost(0);
+        setShippingCost(0);
     }
   };
 
   const loadPreloadedConfig = () => {
     if (!preloadedConfig) return;
-    
+
     // Check if paymentMethods array is provided directly (from Catalogo/Tienda)
     if (Array.isArray(preloadedConfig.paymentMethods)) {
       const methods = preloadedConfig.paymentMethods.map((pm: any) => ({
         ...pm,
-        icon: pm.id === 'whatsapp' 
+        icon: pm.id === 'whatsapp'
           ? <Phone className="w-5 h-5" />
           : <CreditCard className="w-5 h-5" />
       }));
       setPaymentMethods(methods);
-      
+
       if (methods.length > 0) {
         if (methods.length === 1 && methods[0].id === 'whatsapp') {
           setSelectedPaymentMethod('whatsapp');
@@ -243,7 +241,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     } else {
       // Fallback: build from individual keys
       const methods: PaymentMethod[] = [];
-      
+
       if (preloadedConfig.mercadopago_public_key) {
         methods.push({
           id: 'mercadopago',
@@ -252,7 +250,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           icon: <CreditCard className="w-5 h-5" />
         });
       }
-      
+
       if (preloadedConfig.paypal_client_id) {
         methods.push({
           id: 'paypal',
@@ -261,7 +259,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           icon: <CreditCard className="w-5 h-5" />
         });
       }
-      
+
       if (preloadedConfig.whatsapp_number) {
         methods.push({
           id: 'whatsapp',
@@ -270,9 +268,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           icon: <Phone className="w-5 h-5" />
         });
       }
-      
+
       setPaymentMethods(methods);
-      
+
       if (methods.length > 0) {
         if (methods.length === 1 && methods[0].id === 'whatsapp') {
           setSelectedPaymentMethod('whatsapp');
@@ -281,7 +279,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         }
       }
     }
-    
+
     // Check if shippingInfo object is provided directly
     if (preloadedConfig.shippingInfo) {
       setShippingInfo(preloadedConfig.shippingInfo);
@@ -357,7 +355,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           product_id: item.id,
           quantity: item.quantity,
           price_mxn: item.price_mxn,
-          price_usd: item.price_usd ?? (exchange > 0 ? item.price_mxn / exchange : 0),
+          price_usd: exchange > 0 ? item.price_mxn / exchange : 0,
           variation_id: item.variation_id || null
         })),
         customer: customerData,
@@ -383,7 +381,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
     if ((settings as any)?.whatsapp_number) {
       const orderSummary = items.map(item => `${item.quantity}x ${item.title} - $${item.price_mxn} MXN`).join('\n');
-      const finalTotal = cartTotalMxn + shippingCost;
+      // Use finalTotal from outer scope (it correctly includes coupon discount)
 
       // Create message based on context - different for WhatsApp-only vs selected among multiple
       let messageTemplate;
@@ -399,13 +397,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       const message = messageTemplate.replace(/{customer_name}/g, customerData.name).replace(/{customer_email}/g, customerData.email).replace(/{customer_phone}/g, customerData.phone).replace(/{customer_address}/g, customerData.address).replace(/{customer_state}/g, customerData.state || '').replace(/{products_list}/g, orderSummary).replace(/{product_name}/g, items[0]?.title || 'Producto').replace(/{price}/g, `$${finalTotal.toFixed(2)} MXN`).replace(/{order_total}/g, `$${finalTotal.toFixed(2)} MXN`);
       const whatsappUrl = `https://wa.me/${(settings as any).whatsapp_number}?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
+      toast({
+        title: "Orden creada",
+        description: "Tu orden ha sido registrada. Se abrió WhatsApp para completar el pago."
+      });
+      clearCart();
+      onOpenChange(false);
+    } else {
+      // Número de WhatsApp no disponible — avisar sin borrar el carrito
+      console.error('WhatsApp number not found in tenant settings after order creation');
+      toast({
+        title: "Orden registrada",
+        description: "Tu orden fue guardada, pero no se pudo abrir WhatsApp. Contacta a la tienda directamente.",
+        variant: "destructive"
+      });
     }
-    toast({
-      title: "Orden creada",
-      description: "Tu orden ha sido enviada por WhatsApp. Te contactaremos pronto."
-    });
-    clearCart();
-    onOpenChange(false);
   };
   const handleAutomatedPayment = async () => {
     const {
@@ -418,7 +424,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           product_id: item.id,
           quantity: item.quantity,
           price_mxn: item.price_mxn,
-          price_usd: item.price_usd ?? (exchange > 0 ? item.price_mxn / exchange : 0),
+          price_usd: exchange > 0 ? item.price_mxn / exchange : 0,
           title: item.title,
           variation_id: item.variation_id || null
         })),
@@ -521,218 +527,218 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
   const buttonConfig = getButtonConfig();
   return <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:w-[90vw] md:w-[768px] max-w-[768px] max-h-[90vh] overflow-hidden p-4 sm:p-6">
-        <DialogHeader className="relative">
-          <DialogTitle className="flex items-center gap-2">
-            {isWhatsAppOnly || isWhatsAppSelected ? <MessageCircle className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
-            {getModalTitle()}
-          </DialogTitle>
-          {/* Logo in top-right corner */}
-          <div className="absolute top-0 right-0">
-            <LogoDisplay 
-              size="md" 
-              fallbackText="Logo"
-              tenantId={preloadedConfig?.tenant_id || currentTenantId}
-              logoUrl={preloadedConfig?.logoUrl || preloadedConfig?.logo_url}
-              logoSize={preloadedConfig?.logoSize || preloadedConfig?.logo_size}
-            />
-          </div>
-        </DialogHeader>
+    <DialogContent className="w-[95vw] sm:w-[90vw] md:w-[768px] max-w-[768px] max-h-[90vh] overflow-hidden p-4 sm:p-6">
+      <DialogHeader className="relative">
+        <DialogTitle className="flex items-center gap-2">
+          {isWhatsAppOnly || isWhatsAppSelected ? <MessageCircle className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
+          {getModalTitle()}
+        </DialogTitle>
+        {/* Logo in top-right corner */}
+        <div className="absolute top-0 right-0">
+          <LogoDisplay
+            size="md"
+            fallbackText="Logo"
+            tenantId={preloadedConfig?.tenant_id || currentTenantId}
+            logoUrl={preloadedConfig?.logoUrl || preloadedConfig?.logo_url}
+            logoSize={preloadedConfig?.logoSize || preloadedConfig?.logo_size}
+          />
+        </div>
+      </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(95vh-120px)]">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 gap-6">
-              {/* Left Column - Order Summary & Customer Info */}
-              <div className="space-y-6">
-                {/* Order Summary */}
-                <div className="space-y-4">
-                  <h3 className="font-medium text-lg">Resumen de la orden</h3>
-                  <div className="space-y-3 bg-muted/30 p-4 rounded-lg">
-                    {items.map(item => <div key={item.id} className="flex justify-between text-sm">
-                        <span className="flex-1">{item.quantity}x {item.title}</span>
-                        <span className="font-medium">${(item.price_mxn * item.quantity).toFixed(2)}</span>
-                      </div>)}
-                     <Separator />
-                     <div className="space-y-2">
-                       <div className="flex justify-between text-sm">
-                         <span>Subtotal:</span>
-                         <span>${cartTotalMxn.toFixed(2)} MXN</span>
-                       </div>
-                        {shippingInfo?.enabled && <div className="space-y-1">
-                            <div className="flex justify-between text-sm items-center">
-                              <span className="flex items-center gap-2">
-                                <Truck className="w-4 h-4 px-0 py-0 my-0 mx-[6px]" />
-                                Envío:
-                              </span>
-                              <span className={shippingCost === 0 ? "text-green-600 font-medium" : ""}>
-                                {shippingCost === 0 ? "Gratis" : `$${shippingCost.toFixed(2)} MXN`}
-                              </span>
-                            </div>
-                            {shippingInfo.type === 'free_minimum' && shippingInfo.minimumAmount && cartTotalMxn < shippingInfo.minimumAmount && <div className="text-xs text-muted-foreground text-right">
-                                Faltan ${(shippingInfo.minimumAmount - cartTotalMxn).toFixed(2)} MXN para envío gratis
-                              </div>}
-                          </div>}
-                        {couponDiscount > 0 && <div className="flex justify-between text-sm text-green-600 font-medium">
-                            <span className="flex items-center gap-2">
-                              <Tag className="w-4 h-4" />
-                              Descuento:
-                            </span>
-                            <span>-${couponDiscount.toFixed(2)} MXN</span>
-                          </div>}
-                       <Separator />
-                       <div className="flex justify-between font-semibold text-lg">
-                         <span>Total:</span>
-                         <span>${finalTotal.toFixed(2)} MXN</span>
-                       </div>
-                     </div>
+      <ScrollArea className="max-h-[calc(95vh-120px)]">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 gap-6">
+            {/* Left Column - Order Summary & Customer Info */}
+            <div className="space-y-6">
+              {/* Order Summary */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-lg">Resumen de la orden</h3>
+                <div className="space-y-3 bg-muted/30 p-4 rounded-lg">
+                  {items.map(item => <div key={item.id} className="flex justify-between text-sm">
+                    <span className="flex-1">{item.quantity}x {item.title}</span>
+                    <span className="font-medium">${(item.price_mxn * item.quantity).toFixed(2)}</span>
+                  </div>)}
+                  <Separator />
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Subtotal:</span>
+                      <span>${cartTotalMxn.toFixed(2)} MXN</span>
+                    </div>
+                    {shippingInfo?.enabled && <div className="space-y-1">
+                      <div className="flex justify-between text-sm items-center">
+                        <span className="flex items-center gap-2">
+                          <Truck className="w-4 h-4 px-0 py-0 my-0 mx-[6px]" />
+                          Envío:
+                        </span>
+                        <span className={shippingCost === 0 ? "text-green-600 font-medium" : ""}>
+                          {shippingCost === 0 ? "Gratis" : `$${shippingCost.toFixed(2)} MXN`}
+                        </span>
+                      </div>
+                      {shippingInfo.type === 'free_minimum' && shippingInfo.minimumAmount && cartTotalMxn < shippingInfo.minimumAmount && <div className="text-xs text-muted-foreground text-right">
+                        Faltan ${(shippingInfo.minimumAmount - cartTotalMxn).toFixed(2)} MXN para envío gratis
+                      </div>}
+                    </div>}
+                    {couponDiscount > 0 && <div className="flex justify-between text-sm text-green-600 font-medium">
+                      <span className="flex items-center gap-2">
+                        <Tag className="w-4 h-4" />
+                        Descuento:
+                      </span>
+                      <span>-${couponDiscount.toFixed(2)} MXN</span>
+                    </div>}
+                    <Separator />
+                    <div className="flex justify-between font-semibold text-lg">
+                      <span>Total:</span>
+                      <span>${finalTotal.toFixed(2)} MXN</span>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Coupon Section */}
-                <div className="space-y-4">
-                  <h3 className="font-medium text-lg flex items-center gap-2">
-                    <Tag className="w-5 h-5" />
-                    Cupón de descuento
-                  </h3>
-                  {appliedCoupon ? <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <p className="font-medium text-green-900 dark:text-green-100">
-                            {appliedCoupon.coupon_code} aplicado
-                          </p>
-                          <p className="text-sm text-green-700 dark:text-green-300">
-                            Ahorro: ${couponDiscount.toFixed(2)} MXN
-                          </p>
-                        </div>
-                        <Button variant="ghost" size="sm" onClick={handleRemoveCoupon} className="text-green-700 hover:text-green-900">
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div> : <div className="flex gap-2">
-                      <Input value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} placeholder="Código de cupón" className="flex-1" onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), handleApplyCoupon())} />
-                      <Button type="button" onClick={handleApplyCoupon} disabled={couponLoading || !couponCode.trim()}>
-                        {couponLoading ? 'Validando...' : 'Aplicar'}
-                      </Button>
-                    </div>}
-                </div>
+              {/* Coupon Section */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-lg flex items-center gap-2">
+                  <Tag className="w-5 h-5" />
+                  Cupón de descuento
+                </h3>
+                {appliedCoupon ? <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="font-medium text-green-900 dark:text-green-100">
+                        {appliedCoupon.coupon_code} aplicado
+                      </p>
+                      <p className="text-sm text-green-700 dark:text-green-300">
+                        Ahorro: ${couponDiscount.toFixed(2)} MXN
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={handleRemoveCoupon} className="text-green-700 hover:text-green-900">
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div> : <div className="flex gap-2">
+                  <Input value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} placeholder="Código de cupón" className="flex-1" onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), handleApplyCoupon())} />
+                  <Button type="button" onClick={handleApplyCoupon} disabled={couponLoading || !couponCode.trim()}>
+                    {couponLoading ? 'Validando...' : 'Aplicar'}
+                  </Button>
+                </div>}
+              </div>
 
-                {/* Customer Information */}
-                <div className="space-y-4">
-                  <h3 className="font-medium text-lg flex items-center gap-2">
-                    <User className="w-5 h-5" />
-                    Información del cliente
-                  </h3>
-                  
-                  <div className="grid gap-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-0 py-0">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Nombre completo *</Label>
-                        <Input id="name" value={customerData.name} onChange={e => setCustomerData(prev => ({
+              {/* Customer Information */}
+              <div className="space-y-4">
+                <h3 className="font-medium text-lg flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  Información del cliente
+                </h3>
+
+                <div className="grid gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-0 py-0">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nombre completo *</Label>
+                      <Input id="name" value={customerData.name} onChange={e => setCustomerData(prev => ({
                         ...prev,
                         name: e.target.value
                       }))} placeholder="Tu nombre" required />
-                      </div>
+                    </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Teléfono *</Label>
-                        <Input id="phone" type="tel" value={customerData.phone} onChange={e => setCustomerData(prev => ({
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Teléfono *</Label>
+                      <Input id="phone" type="tel" value={customerData.phone} onChange={e => setCustomerData(prev => ({
                         ...prev,
                         phone: e.target.value
                       }))} placeholder="+52 123 456 7890" required />
-                      </div>
                     </div>
+                  </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email *</Label>
-                      <Input id="email" type="email" value={customerData.email} onChange={e => setCustomerData(prev => ({
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email *</Label>
+                    <Input id="email" type="email" value={customerData.email} onChange={e => setCustomerData(prev => ({
                       ...prev,
                       email: e.target.value
                     }))} placeholder="tu@email.com" required />
-                    </div>
+                  </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="address">
-                        Dirección completa {isWhatsAppOnly && !shippingInfo?.enabled ? '' : '*'}
-                      </Label>
-                      <Input id="address" value={customerData.address} onChange={e => setCustomerData(prev => ({
+                  <div className="space-y-2">
+                    <Label htmlFor="address">
+                      Dirección completa {isWhatsAppOnly && !shippingInfo?.enabled ? '' : '*'}
+                    </Label>
+                    <Input id="address" value={customerData.address} onChange={e => setCustomerData(prev => ({
                       ...prev,
                       address: e.target.value
                     }))} placeholder="Calle, número, colonia, ciudad" required={!isWhatsAppOnly || shippingInfo?.enabled} />
-                    </div>
+                  </div>
 
-                    {shippingInfo?.enabled && shippingInfo.type === 'zone_based' && <div className="space-y-2">
-                        <Label htmlFor="state">Estado *</Label>
-                        <select id="state" value={customerData.state} onChange={e => setCustomerData(prev => ({
+                  {shippingInfo?.enabled && shippingInfo.type === 'zone_based' && <div className="space-y-2">
+                    <Label htmlFor="state">Estado *</Label>
+                    <select id="state" value={customerData.state} onChange={e => setCustomerData(prev => ({
                       ...prev,
                       state: e.target.value
                     }))} className="w-full p-2 border border-input rounded-md bg-background" required>
-                          <option value="">Selecciona tu estado</option>
-                          {mexicanStates.map(state => <option key={state} value={state}>{state}</option>)}
-                        </select>
-                      </div>}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column - Payment Methods & Actions */}
-              <div className="space-y-6">
-                {/* Payment Methods - Hide if only WhatsApp is available */}
-                {!isWhatsAppOnly && <div className="space-y-4">
-                    <h3 className="font-medium text-lg">Método de pago</h3>
-                    
-                    {paymentMethods.length === 0 ? <Alert>
-                        <AlertCircle className="w-4 h-4" />
-                        <AlertDescription>
-                          No hay métodos de pago configurados. Contacta al administrador.
-                        </AlertDescription>
-                      </Alert> : <div className="space-y-3">
-                        {paymentMethods.map(method => <label key={method.id} className="relative block">
-                            <input type="radio" name="paymentMethod" value={method.id} checked={selectedPaymentMethod === method.id} onChange={e => setSelectedPaymentMethod(e.target.value)} className="sr-only" />
-                            <div className={`
-                              flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-all
-                              ${selectedPaymentMethod === method.id ? 'border-primary bg-primary/10 shadow-md' : 'border-border hover:bg-muted/50'}
-                            `}>
-                              {method.icon}
-                              <span className="font-medium flex-1">{method.name}</span>
-                              {selectedPaymentMethod === method.id && <Badge variant="default">
-                                  Seleccionado
-                                </Badge>}
-                            </div>
-                          </label>)}
-                      </div>}
+                      <option value="">Selecciona tu estado</option>
+                      {mexicanStates.map(state => <option key={state} value={state}>{state}</option>)}
+                    </select>
                   </div>}
-
-                {/* Shipping Information */}
-                {shippingInfo?.enabled && <div className="space-y-3 bg-muted/30 p-4 rounded-lg">
-                    <h4 className="font-medium flex items-center gap-2">
-                      <Truck className="w-4 h-4" />
-                      Información de envío
-                    </h4>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      {shippingInfo.type === 'free_minimum' && <p>
-                          {shippingInfo.minimumAmount && finalTotal >= shippingInfo.minimumAmount ? `✅ Envío gratis por compra mínima de $${shippingInfo.minimumAmount} MXN` : `Envío gratis con compra mínima de $${shippingInfo.minimumAmount || 0} MXN`}
-                        </p>}
-                      {shippingInfo.type === 'flat_rate' && <p>📦 Tarifa fija de envío: ${shippingInfo.flatRate || 0} MXN</p>}
-                      {shippingInfo.type === 'zone_based' && <p>🗺️ Envío calculado por zona/estado</p>}
-                    </div>
-                  </div>}
-
-                {/* Action Buttons */}
-                <div className="space-y-3 pt-4">
-                  <Button type="submit" disabled={loading || paymentMethods.length === 0} className="w-full h-12 text-lg font-medium" size="lg">
-                    {loading ? 'Procesando...' : <div className="flex items-center gap-2">
-                        {buttonConfig.icon}
-                        {buttonConfig.text}
-                      </div>}
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full">
-                    Cancelar
-                  </Button>
                 </div>
               </div>
             </div>
-          </form>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>;
+
+            {/* Right Column - Payment Methods & Actions */}
+            <div className="space-y-6">
+              {/* Payment Methods - Hide if only WhatsApp is available */}
+              {!isWhatsAppOnly && <div className="space-y-4">
+                <h3 className="font-medium text-lg">Método de pago</h3>
+
+                {paymentMethods.length === 0 ? <Alert>
+                  <AlertCircle className="w-4 h-4" />
+                  <AlertDescription>
+                    No hay métodos de pago configurados. Contacta al administrador.
+                  </AlertDescription>
+                </Alert> : <div className="space-y-3">
+                  {paymentMethods.map(method => <label key={method.id} className="relative block">
+                    <input type="radio" name="paymentMethod" value={method.id} checked={selectedPaymentMethod === method.id} onChange={e => setSelectedPaymentMethod(e.target.value)} className="sr-only" />
+                    <div className={`
+                              flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition-all
+                              ${selectedPaymentMethod === method.id ? 'border-primary bg-primary/10 shadow-md' : 'border-border hover:bg-muted/50'}
+                            `}>
+                      {method.icon}
+                      <span className="font-medium flex-1">{method.name}</span>
+                      {selectedPaymentMethod === method.id && <Badge variant="default">
+                        Seleccionado
+                      </Badge>}
+                    </div>
+                  </label>)}
+                </div>}
+              </div>}
+
+              {/* Shipping Information */}
+              {shippingInfo?.enabled && <div className="space-y-3 bg-muted/30 p-4 rounded-lg">
+                <h4 className="font-medium flex items-center gap-2">
+                  <Truck className="w-4 h-4" />
+                  Información de envío
+                </h4>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  {shippingInfo.type === 'free_minimum' && <p>
+                    {shippingInfo.minimumAmount && finalTotal >= shippingInfo.minimumAmount ? `✅ Envío gratis por compra mínima de $${shippingInfo.minimumAmount} MXN` : `Envío gratis con compra mínima de $${shippingInfo.minimumAmount || 0} MXN`}
+                  </p>}
+                  {shippingInfo.type === 'flat_rate' && <p>📦 Tarifa fija de envío: ${shippingInfo.flatRate || 0} MXN</p>}
+                  {shippingInfo.type === 'zone_based' && <p>🗺️ Envío calculado por zona/estado</p>}
+                </div>
+              </div>}
+
+              {/* Action Buttons */}
+              <div className="space-y-3 pt-4">
+                <Button type="submit" disabled={loading || paymentMethods.length === 0} className="w-full h-12 text-lg font-medium" size="lg">
+                  {loading ? 'Procesando...' : <div className="flex items-center gap-2">
+                    {buttonConfig.icon}
+                    {buttonConfig.text}
+                  </div>}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="w-full">
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </ScrollArea>
+    </DialogContent>
+  </Dialog>;
 };

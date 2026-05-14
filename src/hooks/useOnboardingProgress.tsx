@@ -82,10 +82,13 @@ export const useOnboardingProgress = () => {
           .select('*', { count: 'exact', head: true })
           .eq('tenant_id', tenantId),
         
+        // Excluimos la categoría 'General' que se crea automáticamente en el bootstrap del tenant.
+        // El step se considera completo solo cuando el usuario crea una categoría propia.
         supabase
           .from('categories')
           .select('*', { count: 'exact', head: true })
-          .eq('tenant_id', tenantId),
+          .eq('tenant_id', tenantId)
+          .neq('name', 'General'),
         
         supabase
           .from('tenant_settings')

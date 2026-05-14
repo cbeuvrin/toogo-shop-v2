@@ -248,7 +248,7 @@ const Auth = () => {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold">Toogo</h1>
+            <img src="/lovable-uploads/7a48d2dc-1797-4805-afe6-3c6f336c128d.png" alt="Toogo" className="h-10 w-auto mx-auto mb-3" />
             <p className="text-muted-foreground">Recupera tu contraseña</p>
           </div>
 
@@ -306,7 +306,7 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold">Toogo</h1>
+          <img src="/lovable-uploads/7a48d2dc-1797-4805-afe6-3c6f336c128d.png" alt="Toogo" className="h-10 w-auto mx-auto mb-3" />
           <p className="text-muted-foreground">Accede al perfil de tu tienda</p>
         </div>
 

@@ -6,9 +6,10 @@ import { DashboardPlanNew } from "./DashboardPlanNew";
 import { DashboardCupones } from "./DashboardCupones";
 import { DashboardWhatsAppBot } from "./DashboardWhatsAppBot";
 import { DashboardLegal } from "./DashboardLegal";
-import { User, Users, CreditCard, Tag, MessageSquare, Shield } from "lucide-react";
+import { DashboardMisDominios } from "./DashboardMisDominios";
+import { User, Users, CreditCard, Tag, MessageSquare, Shield, Globe } from "lucide-react";
 
-type ProfileSection = "mis-datos" | "usuarios" | "mi-plan" | "cupones" | "whatsapp-bot" | "legal";
+type ProfileSection = "mis-datos" | "usuarios" | "mi-plan" | "mis-dominios" | "cupones" | "whatsapp-bot" | "legal";
 
 interface DashboardMiPerfilProps {
   activeSubTab: ProfileSection;
@@ -39,6 +40,10 @@ export const DashboardMiPerfil = ({ activeSubTab, onSubTabChange }: DashboardMiP
 
         <TabsContent value="mi-plan">
           <DashboardPlanNew />
+        </TabsContent>
+
+        <TabsContent value="mis-dominios">
+          <DashboardMisDominios />
         </TabsContent>
 
         <TabsContent value="cupones">

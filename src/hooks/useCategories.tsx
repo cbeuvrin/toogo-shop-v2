@@ -14,6 +14,7 @@ export interface Category {
   tenant_id: string;
   created_at?: string;
   updated_at?: string;
+  parent_id?: string | null;
 }
 
 export const useCategories = (publicTenantId?: string) => {
@@ -46,10 +47,12 @@ export const useCategories = (publicTenantId?: string) => {
 
       if (error) throw error;
 
+
       // Map database fields to component format
       const mappedCategories = (data || []).map(category => ({
         ...category,
-        showOnHome: category.show_on_home
+        showOnHome: category.show_on_home,
+        parent_id: category.parent_id
       }));
 
       setCategories(mappedCategories);
@@ -82,7 +85,8 @@ export const useCategories = (publicTenantId?: string) => {
           name: categoryData.name,
           slug: categoryData.slug,
           show_on_home: categoryData.showOnHome || true,
-          sort: categoryData.sort || 0
+          sort: categoryData.sort || 0,
+          parent_id: categoryData.parent_id
         });
 
       if (error) throw error;
@@ -159,8 +163,8 @@ export const useCategories = (publicTenantId?: string) => {
 
       toast({
         title: category.showOnHome ? "Categoría ocultada" : "Categoría mostrada",
-        description: category.showOnHome 
-          ? "La categoría ya no aparecerá en el catálogo" 
+        description: category.showOnHome
+          ? "La categoría ya no aparecerá en el catálogo"
           : "La categoría ahora aparece en el catálogo",
       });
 

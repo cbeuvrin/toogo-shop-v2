@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="640" height="640">
+  <!-- Background -->
+  <rect width="640" height="640" fill="#FAF6EE"/>
+
+  <!-- Top bar black -->
+  <rect x="0" y="0" width="640" height="32" fill="#0A0A0A"/>
+  <text x="320" y="22" font-family="Arial Black, sans-serif" font-size="11" font-weight="900" text-anchor="middle" fill="#FFD60A" letter-spacing="3">ENVÍO GRATIS EN PEDIDOS MAYORES A $999</text>
+
+  <!-- Header line -->
+  <rect x="0" y="80" width="640" height="3" fill="#0A0A0A"/>
+  <text x="40" y="65" font-family="Arial Black, sans-serif" font-size="22" font-weight="900" fill="#0A0A0A" letter-spacing="-1">BAUHAUS</text>
+  <text x="290" y="65" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="#0A0A0A" letter-spacing="2">TIENDA</text>
+  <text x="360" y="65" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="#0A0A0A" letter-spacing="2">COLECCIÓN</text>
+  <text x="450" y="65" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="#0A0A0A" letter-spacing="2">DIARIO</text>
+  <circle cx="585" cy="60" r="3" fill="#0A0A0A"/>
+  <rect x="595" y="55" width="10" height="10" fill="none" stroke="#0A0A0A" stroke-width="2"/>
+
+  <!-- Hero: Big red number -->
+  <text x="30" y="240" font-family="Arial Black, sans-serif" font-size="140" font-weight="900" fill="#E63946">01</text>
+
+  <!-- Hero title -->
+  <text x="180" y="170" font-family="Arial Black, sans-serif" font-size="48" font-weight="900" fill="#0A0A0A" letter-spacing="-2">FORMA</text>
+  <text x="180" y="220" font-family="Arial Black, sans-serif" font-size="48" font-weight="900" fill="#0A0A0A" letter-spacing="-2">SIGUE</text>
+  <text x="180" y="270" font-family="Arial Black, sans-serif" font-size="48" font-weight="900" fill="#0A0A0A" letter-spacing="-2">FUNCIÓN</text>
+
+  <text x="180" y="295" font-family="Arial, sans-serif" font-size="11" fill="#333">Geometría, color, propósito.</text>
+
+  <!-- CTA button -->
+  <rect x="180" y="310" width="180" height="36" fill="#0A0A0A"/>
+  <text x="270" y="333" font-family="Arial Black, sans-serif" font-size="11" font-weight="900" text-anchor="middle" fill="#FFD60A" letter-spacing="2">EXPLORAR →</text>
+
+  <!-- Hero image with yellow offset -->
+  <rect x="448" y="118" width="170" height="226" fill="#FFD60A"/>
+  <rect x="440" y="110" width="170" height="226" fill="#003049"/>
+  <circle cx="525" cy="223" r="40" fill="#FAF6EE" opacity="0.3"/>
+
+  <!-- Geometric divider -->
+  <rect x="40" y="385" width="240" height="3" fill="#0A0A0A"/>
+  <circle cx="295" cy="386" r="8" fill="#E63946"/>
+  <rect x="313" y="378" width="16" height="16" fill="#FFD60A"/>
+  <rect x="340" y="382" width="14" height="14" fill="#003049" transform="rotate(45 347 389)"/>
+  <rect x="365" y="385" width="235" height="3" fill="#0A0A0A"/>
+
+  <!-- Section label 02 -->
+  <text x="40" y="430" font-family="Arial, sans-serif" font-size="10" font-weight="700" fill="#E63946" letter-spacing="2">02 — CATÁLOGO</text>
+  <text x="40" y="470" font-family="Arial Black, sans-serif" font-size="34" font-weight="900" fill="#0A0A0A" letter-spacing="-1">SELECCIÓN</text>
+
+  <!-- Product cards (3 with colored offsets) -->
+  <rect x="44" y="498" width="180" height="120" fill="#E63946"/>
+  <rect x="40" y="494" width="180" height="120" fill="#dadada"/>
+  <text x="42" y="630" font-family="Arial Black, sans-serif" font-size="11" font-weight="900" fill="#0A0A0A">PRODUCTO 01</text>
+
+  <rect x="234" y="498" width="180" height="120" fill="#FFD60A"/>
+  <rect x="230" y="494" width="180" height="120" fill="#cacaca"/>
+  <text x="232" y="630" font-family="Arial Black, sans-serif" font-size="11" font-weight="900" fill="#0A0A0A">PRODUCTO 02</text>
+
+  <rect x="424" y="498" width="180" height="120" fill="#003049"/>
+  <rect x="420" y="494" width="180" height="120" fill="#bababa"/>
+  <text x="422" y="630" font-family="Arial Black, sans-serif" font-size="11" font-weight="900" fill="#0A0A0A">PRODUCTO 03</text>
+</svg>

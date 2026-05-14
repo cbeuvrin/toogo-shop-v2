@@ -40,6 +40,8 @@ interface TenantSettings {
   share_approval_status?: 'approved' | 'pending' | 'rejected';
   terms_text?: string;
   privacy_text?: string;
+  template_id?: string;
+  hero_image_shape?: string;
 }
 
 export const useTenantSettings = (overrideTenantId?: string) => {
@@ -94,6 +96,7 @@ export const useTenantSettings = (overrideTenantId?: string) => {
       if (data) {
         console.log('Loaded tenant settings:', data);
         console.log('Logo URL found:', data.logo_url);
+        console.log('Template ID found:', data.template_id);
         setSettings(data);
       } else {
         console.log('No settings found');
@@ -136,6 +139,7 @@ export const useTenantSettings = (overrideTenantId?: string) => {
 
   const updateSettings = async (updates: Partial<TenantSettings>) => {
     if (!tenantId || !settings) return false;
+    console.log('Updating settings for tenant:', tenantId, updates);
 
     try {
       const { data, error } = await supabase
@@ -155,6 +159,7 @@ export const useTenantSettings = (overrideTenantId?: string) => {
         return false;
       }
 
+      console.log('Settings updated successfully:', data);
       setSettings(data);
       return true;
     } catch (error) {

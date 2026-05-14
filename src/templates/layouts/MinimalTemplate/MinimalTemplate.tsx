@@ -1,0 +1,423 @@
+
+import React, { useState, useEffect } from 'react';
+import { ShoppingCart, Heart, Search, Menu, X, Instagram, Facebook } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
+import { LogoDisplay } from "@/components/ui/LogoDisplay";
+
+// --- Components (Internal to this template for cohesion) ---
+
+const Navigation = ({ onCategoryClick, onContactClick, isMenuOpen, setIsMenuOpen, storeName }: any) => {
+    return (
+        <>
+            {/* Mobile Navigation Overlay */}
+            {isMenuOpen && (
+                <div className="fixed inset-0 bg-white z-50 flex flex-col p-6 animate-in slide-in-from-left duration-300">
+                    <div className="flex justify-between items-center mb-10">
+                        <span className="text-xl font-serif font-bold tracking-tighter">{storeName || 'Store'}</span>
+                        <button onClick={() => setIsMenuOpen(false)}><X className="h-6 w-6" /></button>
+                    </div>
+                    <ul className="flex flex-col gap-6 text-2xl font-light text-center">
+                        <li>
+                            <button onClick={() => {
+                                onCategoryClick(null);
+                                setIsMenuOpen(false);
+                                const productSection = document.getElementById('products');
+                                productSection?.scrollIntoView({ behavior: 'smooth' });
+                            }}>Catálogo</button>
+                        </li>
+                        <li>
+                            <button onClick={() => {
+                                setIsMenuOpen(false);
+                                onContactClick();
+                            }}>Contacto</button>
+                        </li>
+                    </ul>
+                </div>
+            )}
+        </>
+    );
+};
+
+const ProductCard = ({ product, addToCart, toggleFavorite, isFavorite }: any) => {
+    return (
+        <div className="group cursor-pointer">
+            <div className="relative aspect-[3/4] bg-gray-50 overflow-hidden mb-4">
+                <img
+                    src={product.image || product.image_url || '/placeholder.svg'}
+                    alt={product.name}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                {product.compare_at_price > (product.price_mxn || product.price) && (
+                    <span className="absolute top-2 left-2 bg-black text-white text-[10px] uppercase tracking-widest px-2 py-1">
+                        Sale
+                    </span>
+                )}
+                <button
+                    onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }}
+                    className="absolute top-2 right-2 p-2 rounded-full bg-white/0 text-transparent hover:text-black group-hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100"
+                >
+                    <Heart className={`h-5 w-5 ${isFavorite ? "fill-black text-black" : "text-black"}`} />
+                </button>
+
+                <div className="absolute bottom-0 inset-x-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/50 to-transparent flex justify-center">
+                    <Button
+                        onClick={(e) => { e.stopPropagation(); addToCart(product); }}
+                        className="bg-white text-black hover:bg-gray-100 border-none rounded-none uppercase text-xs tracking-widest w-full"
+                    >
+                        Agregar al carrito
+                    </Button>
+                </div>
+            </div>
+            <div className="text-center">
+                <h3 className="text-sm text-gray-900 font-medium mb-1 line-clamp-1">{product.name || product.title}</h3>
+                <div className="flex justify-center gap-3 text-sm">
+                    <span className="text-gray-500 font-light">${(product.price_mxn || product.price || 0).toFixed(2)}</span>
+                    {product.compare_at_price > (product.price_mxn || product.price) && (
+                        <span className="text-gray-300 line-through font-light">${product.compare_at_price}</span>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export const MinimalTemplate = (props: any) => {
+    const {
+        storeData,
+        products,
+        categories,
+        favorites,
+        toggleFavorite,
+        addToCart,
+        effectiveSettings,
+        banners,
+        contactData,
+        view = 'home'
+    } = props; // Destructure props
+
+    // Use effectiveSettings which contains the merged settings (including template_id patch)
+    const settings = effectiveSettings || storeData?.settings || {};
+
+    // Normalize products to ensure images are strings, not objects
+    const formattedProducts = products?.map((p: any) => {
+        let imageUrl = '/placeholder.svg';
+        if (p.images && p.images.length > 0) {
+            const firstImg = p.images[0];
+            imageUrl = typeof firstImg === 'string' ? firstImg : (firstImg?.url || '/placeholder.svg');
+        } else if (p.image_url) {
+            imageUrl = p.image_url;
+        }
+
+        return {
+            ...p,
+            name: p.title || p.name || 'Producto sin nombre',
+            price: p.price_mxn || p.price || 0,
+            image: imageUrl
+        };
+    }) || [];
+
+    // Extract visual settings
+    const bgColor = settings?.store_background_color || '#ffffff';
+    const navColor = settings?.navbar_bg_color || '#ffffff';
+    const headerIconColor = settings?.header_icon_color || '#000000';
+    const headerIconScale = settings?.header_icon_scale || 1;
+    const footerBgColor = settings?.footer_bg_color || '#f9fafb';
+    const footerIconColor = settings?.footer_icon_color || '#9ca3af';
+    const footerIconScale = settings?.footer_icon_scale || 1;
+
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+    // Cart Logic from Context (using context for state, but props for add)
+    const { items, removeItem, updateQuantity, totalPrice: total, clearCart } = useCart();
+    const [isCartOpen, setIsCartOpen] = useState(false);
+
+    // Filter Logic
+    const filteredProducts = formattedProducts?.filter((p: any) => {
+        // Normalization fallback
+        const pCats = p.categories || [];
+        const matchesCategory = selectedCategory
+            ? (p.category_id === selectedCategory || pCats.some((c: any) => c.id === selectedCategory))
+            : true;
+
+        const matchesSearch = (p.name || p.title || "").toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesCategory && matchesSearch;
+    });
+
+    // Derived state
+    const cartItemCount = items.reduce((acc: number, item: any) => acc + item.quantity, 0);
+
+    // Banner Logic
+
+    // Banner Logic
+    const mainBanner = banners && banners.length > 0 ? banners[0] : null;
+
+    const scrollToContact = () => {
+        const footer = document.querySelector('footer');
+        footer?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    return (
+        <div className="min-h-screen font-sans selection:bg-gray-200" style={{ backgroundColor: bgColor }}>
+
+            {/* Search Overlay */}
+            {isSearchOpen && (
+                <div className="fixed top-0 inset-x-0 h-32 bg-white z-50 flex items-center justify-center border-b border-gray-100 animate-in slide-in-from-top duration-200">
+                    <div className="container max-w-2xl relative">
+                        <Search className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                            autoFocus
+                            placeholder="Buscar productos..."
+                            className="w-full text-2xl font-light border-b border-gray-200 focus:border-black outline-none py-2 pl-8 placeholder:text-gray-200"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        <button onClick={() => setIsSearchOpen(false)} className="absolute right-0 top-1/2 -translate-y-1/2">
+                            <X className="h-5 w-5 text-gray-500 hover:text-black" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Header */}
+            <header className="px-6 py-6 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md md:static text-center" style={{ backgroundColor: navColor }}>
+
+                {/* Desktop Navigation Links (Left) */}
+                <nav className="hidden md:flex md:flex-1 md:justify-start gap-8 text-sm uppercase tracking-widest text-gray-500 font-medium">
+                    <button onClick={() => {
+                        setSelectedCategory(null);
+                        const productSection = document.getElementById('products');
+                        productSection?.scrollIntoView({ behavior: 'smooth' });
+                    }} className="hover:text-black transition-colors">
+                        Catálogo
+                    </button>
+                    <button onClick={scrollToContact} className="hover:text-black transition-colors">
+                        Contacto
+                    </button>
+                </nav>
+
+                {/* Mobile Menu Trigger */}
+                <button className="md:hidden" onClick={() => setIsMenuOpen(true)}>
+                    <Menu className="h-6 w-6 stroke-1" style={{ color: headerIconColor }} />
+                </button>
+
+                {/* Logo (Center) */}
+                <div className="absolute left-1/2 -translate-x-1/2 md:static md:translate-x-0 md:flex-1 md:flex md:justify-center">
+                    <div className="scale-75 md:scale-100 origin-center cursor-pointer" onClick={() => setSelectedCategory(null)}>
+                        <LogoDisplay
+                            logoUrl={settings?.logo_url}
+                            logoSize={settings?.logo_size || 'md'}
+                            fallbackText={settings?.store_name || 'LOGO'}
+                            disableFetch={true}
+                            className="text-2xl md:text-3xl font-serif font-bold tracking-tighter"
+                        />
+                    </div>
+                </div>
+
+                {/* Icons (Right) */}
+                <div className="flex items-center gap-6 md:flex-1 md:justify-end">
+                    <button onClick={() => setIsSearchOpen(!isSearchOpen)} className="hidden md:block hover:opacity-70 transition-opacity">
+                        <Search className="h-5 w-5 stroke-1" style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
+                    </button>
+                    <button onClick={() => setIsCartOpen(true)} className="relative hover:opacity-70 transition-opacity">
+                        <ShoppingCart className="h-5 w-5 stroke-1" style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
+                        {cartItemCount > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-3 w-3 items-center justify-center rounded-full bg-black text-[9px] text-white">
+                                {cartItemCount}
+                            </span>
+                        )}
+                    </button>
+                </div>
+            </header>
+
+            <Navigation
+                onCategoryClick={setSelectedCategory}
+                onContactClick={scrollToContact}
+                isMenuOpen={isMenuOpen}
+                setIsMenuOpen={setIsMenuOpen}
+                storeName={settings?.store_name}
+            />
+
+            {/* Hero Section (Only shows when no category is selected, no search, and NOT in catalog mode) */}
+            {!selectedCategory && !searchQuery && view !== 'catalog' && (
+                <section className="mb-12 px-4 md:px-6">
+                    <div className="relative aspect-[16/9] md:aspect-[21/9] overflow-hidden bg-gray-100">
+                        {mainBanner ? (
+                            <img src={mainBanner.image} alt={mainBanner.title || "Banner"} className="w-full h-full object-cover" />
+                        ) : settings?.banner_url ? (
+                            <img src={settings.banner_url} alt="Hero" className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-300">
+                                <span className="text-6xl font-serif italic opacity-20">New Collection</span>
+                            </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
+                            <div className="text-center text-white">
+                                <h2 className="text-4xl md:text-6xl font-serif mb-4 drop-shadow-md">{settings?.welcome_title || 'Season Essentials'}</h2>
+                                <p className="text-lg font-light tracking-wide mb-8 drop-shadow-md">{settings?.welcome_message || 'Discover the new minimalist collection.'}</p>
+                                <Button
+                                    className="bg-white text-black hover:bg-white/90 rounded-none px-8 py-6 text-xs uppercase tracking-[0.2em]"
+                                    onClick={() => {
+                                        const productSection = document.getElementById('products');
+                                        productSection?.scrollIntoView({ behavior: 'smooth' });
+                                    }}
+                                >
+                                    Ver colección
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            )}
+
+            {/* Categories Bar (Moved here) */}
+            <div className="container mx-auto px-4 md:px-6 mb-12 overflow-x-auto">
+                <ul className="flex flex-nowrap md:flex-wrap items-center justify-start md:justify-center gap-8 text-sm uppercase tracking-widest text-gray-500 font-medium min-w-max md:min-w-0 pb-4 md:pb-0">
+                    <li>
+                        <button onClick={() => setSelectedCategory(null)} className={`hover:text-black transition-colors ${selectedCategory === null ? 'text-black border-b border-black' : ''}`}>
+                            Todo
+                        </button>
+                    </li>
+                    {categories?.map((cat: any) => (
+                        <li key={cat.id}>
+                            <button onClick={() => setSelectedCategory(cat.id)} className={`hover:text-black transition-colors ${selectedCategory === cat.id ? 'text-black border-b border-black' : ''}`}>
+                                {cat.name}
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+
+            {/* Main Content */}
+            <main id="products" className="container mx-auto px-4 md:px-6 mb-20 min-h-[60vh]">
+                {selectedCategory && (
+                    <div className="text-center mb-12">
+                        <h2 className="text-3xl font-serif mb-2">
+                            {categories?.find((c: any) => c.id === selectedCategory)?.name}
+                        </h2>
+                        <div className="w-12 h-0.5 bg-black mx-auto"></div>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-8 md:gap-y-16">
+                    {filteredProducts?.map((product: any) => (
+                        <ProductCard
+                            key={product.id}
+                            product={product}
+                            addToCart={addToCart}
+                            toggleFavorite={toggleFavorite}
+                            isFavorite={favorites?.includes(product.id)}
+                        />
+                    ))}
+                </div>
+
+                {filteredProducts?.length === 0 && (
+                    <div className="text-center py-20 text-gray-400 font-light">
+                        No products found directly matching your criteria.
+                    </div>
+                )}
+            </main>
+
+            {/* Footer */}
+            <footer className="border-t border-gray-100 py-20 px-6" style={{ backgroundColor: footerBgColor }}>
+                <div className="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 text-center md:text-left">
+                    <div>
+                        <h3 className="uppercase text-xs tracking-widest font-bold mb-6">About</h3>
+                        <p className="text-sm text-gray-500 font-light leading-relaxed max-w-xs mx-auto md:mx-0">
+                            {settings?.description || 'A curated selection of minimalist essentials for the modern lifestyle.'}
+                        </p>
+                    </div>
+                    <div>
+                        <h3 className="uppercase text-xs tracking-widest font-bold mb-6">Contact</h3>
+                        <p className="text-sm text-gray-500 font-light mb-2">{contactData?.email || settings?.contact?.email || 'hello@minimal.store'}</p>
+                        <p className="text-sm text-gray-500 font-light">{contactData?.phone || settings?.contact?.phone || '+1 (555) 000-0000'}</p>
+                    </div>
+                    <div>
+                        <h3 className="uppercase text-xs tracking-widest font-bold mb-6">Social</h3>
+                        <div className="flex justify-center md:justify-start gap-4">
+                            {(contactData?.instagram || settings?.social_links?.instagram) && (
+                                <a href={contactData?.instagram || settings?.social_links?.instagram} className="hover:text-black transition-colors" style={{ color: footerIconColor }}><Instagram className="h-5 w-5" style={{ width: `${20 * footerIconScale}px`, height: `${20 * footerIconScale}px` }} /></a>
+                            )}
+                            {(contactData?.facebook || settings?.social_links?.facebook) && (
+                                <a href={contactData?.facebook || settings?.social_links?.facebook} className="hover:text-black transition-colors" style={{ color: footerIconColor }}><Facebook className="h-5 w-5" style={{ width: `${20 * footerIconScale}px`, height: `${20 * footerIconScale}px` }} /></a>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                <div className="mt-20 text-center text-xs text-gray-300">
+                    &copy; {new Date().getFullYear()} {settings?.store_name}. All rights reserved. Powered by TOOGO.
+                </div>
+            </footer>
+
+            {/* Cart Drawer - Custom Minimalist Implementation */}
+            <div className={`fixed inset-y-0 right-0 w-full md:w-96 bg-white shadow-2xl z-50 transform ${isCartOpen ? 'translate-x-0' : 'translate-x-full'} transition-transform duration-300 ease-in-out`}>
+                <div className="h-full flex flex-col">
+                    <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                        <h2 className="text-xl font-serif">Your Bag ({cartItemCount})</h2>
+                        <button onClick={() => setIsCartOpen(false)}><X className="h-5 w-5 text-gray-400 hover:text-black" /></button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-6">
+                        {items.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
+                                <ShoppingCart className="h-12 w-12 opacity-20" />
+                                <p className="font-light">Your bag is empty.</p>
+                                <Button variant="outline" onClick={() => setIsCartOpen(false)}>Continue Shopping</Button>
+                            </div>
+                        ) : (
+                            <ul className="space-y-6">
+                                {items.map((item: any) => (
+                                    <li key={item.id} className="flex gap-4">
+                                        <div className="h-20 w-16 bg-gray-50 flex-shrink-0 overflow-hidden">
+                                            <img
+                                                src={item.images?.[0] || item.images || item.image || '/placeholder.svg'}
+                                                alt={item.title || item.name}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        </div>
+                                        <div className="flex-1 flex flex-col justify-between">
+                                            <div className="flex justify-between items-start">
+                                                <h3 className="text-sm font-medium line-clamp-2">{item.title || item.name}</h3>
+                                                <button onClick={() => removeItem(item.id)} className="text-gray-300 hover:text-red-500 ml-2"><X className="h-4 w-4" /></button>
+                                            </div>
+                                            <div className="flex justify-between items-center text-sm">
+                                                <div className="flex border border-gray-200">
+                                                    <button className="px-2 py-0.5 hover:bg-gray-50" onClick={() => updateQuantity(item.id, Math.max(0, item.quantity - 1))}>-</button>
+                                                    <span className="px-2 py-0.5 min-w-[1.5rem] text-center">{item.quantity}</span>
+                                                    <button className="px-2 py-0.5 hover:bg-gray-50" onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
+                                                </div>
+                                                <span className="font-light">${((item.price_mxn || item.price || 0) * item.quantity).toFixed(2)}</span>
+                                            </div>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
+
+                    {items.length > 0 && (
+                        <div className="p-6 border-t border-gray-100 bg-gray-50">
+                            <div className="flex justify-between items-center mb-4 text-sm">
+                                <span className="text-gray-500">Subtotal</span>
+                                <span className="font-medium text-lg">${(total || 0).toFixed(2)}</span>
+                            </div>
+                            <Button className="w-full bg-black text-white hover:bg-gray-800 rounded-none py-6 uppercase tracking-widest text-xs">
+                                Checkout
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            </div>
+            {/* Overlay for Cart */}
+            {isCartOpen && <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setIsCartOpen(false)} />}
+        </div>
+    );
+};

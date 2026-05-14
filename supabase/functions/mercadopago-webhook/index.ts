@@ -199,7 +199,37 @@ serve(async (req) => {
         .single();
 
       if (subError) {
-        console.error('Subscription not found in database:', subError);
+        // Si no es una suscripción de plan, puede ser una auto-renovación de dominio.
+        // Buscamos el preapproval en domain_renewals.
+        const { data: domainRenewal } = await supabase
+          .from('domain_renewals')
+          .select('id, tenant_id, domain, auto_renew')
+          .eq('mercadopago_preapproval_id', preapprovalId)
+          .maybeSingle();
+
+        if (domainRenewal) {
+          if (preapproval.status === 'authorized') {
+            console.log('✅ Domain auto-renewal authorized for:', domainRenewal.domain);
+            await supabase
+              .from('domain_renewals')
+              .update({ auto_renew: true, updated_at: new Date().toISOString() })
+              .eq('id', domainRenewal.id);
+          } else if (preapproval.status === 'cancelled' || preapproval.status === 'paused') {
+            console.log('⚠️ Domain auto-renewal cancelled for:', domainRenewal.domain);
+            await supabase
+              .from('domain_renewals')
+              .update({ auto_renew: false, mercadopago_preapproval_id: null, updated_at: new Date().toISOString() })
+              .eq('id', domainRenewal.id);
+          }
+
+          return new Response(JSON.stringify({ received: true, action: 'domain_renewal_preapproval_updated' }), {
+            headers: { 'Content-Type': 'application/json', ...corsHeaders },
+            status: 200,
+          });
+        }
+
+        // No está en subscriptions ni en domain_renewals — preapproval huérfano
+        console.warn('Preapproval not found in subscriptions or domain_renewals:', preapprovalId);
         return new Response(JSON.stringify({ received: true }), {
           headers: { 'Content-Type': 'application/json', ...corsHeaders },
           status: 200
@@ -277,6 +307,111 @@ serve(async (req) => {
         metadata: payment.metadata
       });
 
+      // Handle FAILED recurring subscription payment (preapproval con cobro rechazado).
+      // MP intenta cobrar varias veces antes de pausar el preapproval; queremos detectar
+      // el primer fallo para notificar al cliente, e ir contando para suspender tras 3 intentos.
+      if (
+        payment.preapproval_id &&
+        payment.status &&
+        ['rejected', 'cancelled', 'refunded', 'charged_back'].includes(payment.status)
+      ) {
+        console.log('⚠️ Recurring payment FAILED:', {
+          payment_id: payment.id,
+          preapproval_id: payment.preapproval_id,
+          status: payment.status,
+          status_detail: payment.status_detail,
+        });
+
+        const { data: subscription } = await supabase
+          .from('subscriptions')
+          .select('id, tenant_id, amount_mxn, failed_payment_attempts')
+          .eq('mercadopago_subscription_id', payment.preapproval_id)
+          .single();
+
+        if (subscription) {
+          const newAttempts = (subscription.failed_payment_attempts || 0) + 1;
+          const shouldSuspend = newAttempts >= 3;
+
+          await supabase
+            .from('subscriptions')
+            .update({
+              failed_payment_attempts: newAttempts,
+              last_payment_failure_at: new Date().toISOString(),
+              status: shouldSuspend ? 'payment_failed' : 'active',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', subscription.id);
+
+          if (shouldSuspend) {
+            console.log(`🚫 3+ failed attempts, downgrading tenant ${subscription.tenant_id} to free`);
+            await supabase
+              .from('tenants')
+              .update({ plan: 'free' })
+              .eq('id', subscription.tenant_id);
+          }
+
+          // Notificar al cliente
+          try {
+            const { data: tenant } = await supabase
+              .from('tenants')
+              .select('name, owner_user_id')
+              .eq('id', subscription.tenant_id)
+              .single();
+
+            if (tenant?.owner_user_id) {
+              const { data: userData } = await supabase.auth.admin.getUserById(tenant.owner_user_id);
+              const email = userData?.user?.email;
+
+              if (email) {
+                const resendApiKey = Deno.env.get('RESEND_API_KEY');
+                const subject = shouldSuspend
+                  ? `Tu suscripción de Toogo fue suspendida — Actualiza tu método de pago`
+                  : `No pudimos cobrar tu suscripción de Toogo (intento ${newAttempts}/3)`;
+
+                const reason = shouldSuspend
+                  ? 'Tras 3 intentos fallidos, tu plan fue bajado a Free temporalmente. Tu tienda sigue activa pero algunas funciones premium están limitadas. Actualiza tu método de pago para reactivar tu plan.'
+                  : `MercadoPago no pudo cobrar tu suscripción mensual. Esto suele pasar por tarjeta vencida o fondos insuficientes. Te quedan ${3 - newAttempts} intento(s) antes de que tu plan se suspenda.`;
+
+                await fetch('https://api.resend.com/emails', {
+                  method: 'POST',
+                  headers: {
+                    Authorization: `Bearer ${resendApiKey}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    from: 'Toogo Store <hola@mail.toogo.store>',
+                    to: [email],
+                    subject,
+                    html: `<!DOCTYPE html><html><body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
+                      <h2 style="color: #9333ea;">${subject}</h2>
+                      <p>Hola,</p>
+                      <p>${reason}</p>
+                      <p style="margin-top: 24px;">
+                        <a href="https://www.toogo.store/dashboard?tab=mi-perfil"
+                           style="background: #9333ea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                          Actualizar método de pago
+                        </a>
+                      </p>
+                      <p style="color: #666; font-size: 14px; margin-top: 24px;">
+                        Si tienes preguntas, escríbenos a <a href="mailto:soporte@toogo.store">soporte@toogo.store</a>
+                      </p>
+                    </body></html>`,
+                  }),
+                });
+                console.log(`📧 Failed payment email sent to ${email}`);
+              }
+            }
+          } catch (emailErr) {
+            console.error('Failed to send payment failure email:', emailErr);
+          }
+        }
+
+        return new Response(JSON.stringify({ received: true, action: 'payment_failed_processed' }), {
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+          status: 200,
+        });
+      }
+
       // Handle recurring subscription payment (from preapproval)
       if (payment.status === 'approved' && payment.preapproval_id) {
         console.log('💰 Recurring subscription payment received:', {
@@ -293,10 +428,10 @@ serve(async (req) => {
           .single();
 
         if (!subError && subscription) {
-          // Update next billing date
+          // Update next billing date + reset contador de fallos (cobro recuperado)
           const nextBilling = new Date(subscription.next_billing_date);
           const isAnnual = subscription.amount_mxn >= 3000;
-          
+
           if (isAnnual) {
             nextBilling.setFullYear(nextBilling.getFullYear() + 1);
           } else {
@@ -308,12 +443,79 @@ serve(async (req) => {
             .update({
               status: 'active',
               next_billing_date: nextBilling.toISOString(),
+              failed_payment_attempts: 0, // reset al recibir cobro exitoso
+              last_payment_failure_at: null,
               updated_at: new Date().toISOString()
             })
             .eq('id', subscription.id);
 
           console.log('✅ Subscription renewed successfully until:', nextBilling.toISOString());
+        } else {
+          // No es suscripción de plan — chequear si es cobro recurrente de renovación de dominio
+          const { data: domainRenewal } = await supabase
+            .from('domain_renewals')
+            .select('id, domain')
+            .eq('mercadopago_preapproval_id', payment.preapproval_id)
+            .eq('status', 'scheduled')
+            .maybeSingle();
+
+          if (domainRenewal) {
+            console.log('🔄 Auto-renewal payment received for domain:', domainRenewal.domain);
+            try {
+              const { error: renewError } = await supabase.functions.invoke('renew-domain-manually', {
+                body: {
+                  renewalId: domainRenewal.id,
+                  paymentRef: payment.id?.toString(),
+                  source: 'mp_preapproval_recurring',
+                },
+              });
+              if (renewError) {
+                console.error('❌ Auto-renewal trigger failed:', renewError);
+              } else {
+                console.log('✅ Domain auto-renewal triggered successfully for:', domainRenewal.domain);
+              }
+            } catch (err) {
+              console.error('❌ Error invoking renew-domain-manually for auto-renewal:', err);
+            }
+          }
         }
+      }
+
+      // Handle DOMAIN RENEWAL payment: cuando es renovación, disparar renew-domain-manually
+      // que ejecuta la renovación en Openprovider y actualiza fechas.
+      if (payment.status === 'approved' && payment.metadata?.type === 'domain_renewal') {
+        const renewalId = payment.metadata?.renewal_id;
+        console.log('🔄 Domain renewal payment approved:', { payment_id: payment.id, renewal_id: renewalId });
+
+        if (renewalId) {
+          try {
+            const { data: renewResult, error: renewError } = await supabase.functions.invoke(
+              'renew-domain-manually',
+              {
+                body: {
+                  renewalId,
+                  paymentRef: payment.id.toString(),
+                  source: 'mercadopago_webhook'
+                }
+              }
+            );
+
+            if (renewError) {
+              console.error('❌ Failed to trigger renewal:', renewError);
+            } else {
+              console.log('✅ Renewal triggered successfully:', renewResult);
+            }
+          } catch (renewErr) {
+            console.error('❌ Error invoking renew-domain-manually:', renewErr);
+          }
+        } else {
+          console.error('❌ Payment has type=domain_renewal but no renewal_id in metadata');
+        }
+
+        return new Response(JSON.stringify({ received: true, action: 'domain_renewal_processed' }), {
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+          status: 200,
+        });
       }
 
       // Handle regular order payment (not combined purchase)

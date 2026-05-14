@@ -79,7 +79,7 @@ serve(async (req) => {
         const ownerEmail = userData.user.email;
 
         // Create Preapproval in MercadoPago using SDK
-        const client = new MercadoPagoConfig({ 
+        const client = new MercadoPagoConfig({
           accessToken: mercadopagoToken,
           options: { timeout: 5000 }
         });
@@ -99,7 +99,7 @@ serve(async (req) => {
             payer_email: ownerEmail,
             external_reference: `tenant_${subscription.tenant_id}_subscription`,
             back_url: 'https://toogo.store/dashboard',
-            notification_url: 'https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/mercadopago-webhook',
+            notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
             status: 'pending'
           }
         });
@@ -157,9 +157,9 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in create-retroactive-preapprovals:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: error.message || 'Internal server error',
-        success: false 
+        success: false
       }),
       {
         headers: { 'Content-Type': 'application/json', ...corsHeaders },

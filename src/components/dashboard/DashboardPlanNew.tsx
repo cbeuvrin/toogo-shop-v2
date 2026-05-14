@@ -378,8 +378,8 @@ export const DashboardPlanNew = () => {
                   <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
                     <CreditCard className="w-4 h-4 text-green-500" />
                     <div className="flex-1">
-                      <p className="text-xs text-muted-foreground">Monto mensual</p>
-                      <p className="text-sm font-medium">$299 MXN</p>
+                      <p className="text-xs text-muted-foreground">Monto del plan</p>
+                      <p className="text-sm font-medium">${subscription.amount_mxn?.toLocaleString() || 299} MXN</p>
                     </div>
                   </div>
 

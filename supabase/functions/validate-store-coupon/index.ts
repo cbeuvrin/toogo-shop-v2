@@ -105,8 +105,22 @@ serve(async (req) => {
       }
     }
 
-    // 5. Calcular subtotal del carrito
-    const subtotal = cart_items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    // 5. Calcular subtotal con precios VERIFICADOS desde la BD (ignorar precios del cliente)
+    let subtotal = 0;
+    const validatedCartItems: { product_id: string; category_ids?: string[]; quantity: number; price: number }[] = [];
+
+    for (const item of cart_items) {
+      // Fetch real price from DB — ignore client-provided item.price
+      const { data: productData } = await supabase
+        .from('products')
+        .select('price_mxn, sale_price_mxn')
+        .eq('id', item.product_id)
+        .single();
+
+      const realPrice = productData?.sale_price_mxn || productData?.price_mxn || 0;
+      subtotal += realPrice * item.quantity;
+      validatedCartItems.push({ ...item, price: realPrice });
+    }
 
     // 6. Validar monto mínimo de compra
     if (coupon.minimum_purchase_amount && subtotal < coupon.minimum_purchase_amount) {
@@ -128,7 +142,7 @@ serve(async (req) => {
       const applicableProducts = coupon.applies_to_products || [];
       const applicableCategories = coupon.applies_to_categories || [];
 
-      for (const item of cart_items) {
+      for (const item of validatedCartItems) {
         // Check if product is directly applicable
         if (applicableProducts.includes(item.product_id)) {
           applicableAmount += item.price * item.quantity;
@@ -152,7 +166,7 @@ serve(async (req) => {
 
     if (coupon.discount_type === 'percentage') {
       discountAmount = (applicableAmount * coupon.discount_value) / 100;
-      
+
       // Aplicar límite máximo si existe
       if (coupon.max_discount_amount && discountAmount > coupon.max_discount_amount) {
         discountAmount = coupon.max_discount_amount;

@@ -87,9 +87,12 @@ export const usePlanRestrictions = () => {
           maxProducts: 20,
           canUseVariations: false,
           canUseWhatsApp: true,
-          canUseMercadoPago: false,
-          canUsePayPal: false,
-          canUseStripe: false,
+          // Plan free PUEDE configurar pasarelas — Toogo cobra 1% de comisión por venta
+          // procesada en plataforma (no aplica a ventas por WhatsApp donde no podemos
+          // verificar el cierre). El cliente recibe el 99% restante directo a su cuenta.
+          canUseMercadoPago: true,
+          canUsePayPal: true,
+          canUseStripe: true,
           hasBasicAnalytics: true,
           hasAdvancedAnalytics: false,
           canUseCustomDomain: false,
@@ -102,6 +105,7 @@ export const usePlanRestrictions = () => {
         };
       
       case 'basic':
+      case 'premium':
       case 'pro':
         return {
           maxProducts: Infinity,
@@ -126,9 +130,9 @@ export const usePlanRestrictions = () => {
           maxProducts: 20,
           canUseVariations: false,
           canUseWhatsApp: true,
-          canUseMercadoPago: false,
-          canUsePayPal: false,
-          canUseStripe: false,
+          canUseMercadoPago: true,
+          canUsePayPal: true,
+          canUseStripe: true,
           hasBasicAnalytics: true,
           hasAdvancedAnalytics: false,
           canUseCustomDomain: false,

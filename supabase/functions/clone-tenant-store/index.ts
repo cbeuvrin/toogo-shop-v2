@@ -24,19 +24,19 @@ serve(async (req) => {
       }
     )
 
-    const { 
-      masterTenantId, 
-      newTenantName, 
-      buyerUserId, 
+    const {
+      masterTenantId,
+      newTenantName,
+      buyerUserId,
       primaryHost,
       couponId,
       discountAmount
     } = await req.json()
 
-    console.log('Cloning store for:', { 
-      masterTenantId, 
-      newTenantName, 
-      buyerUserId, 
+    console.log('Cloning store for:', {
+      masterTenantId,
+      newTenantName,
+      buyerUserId,
       primaryHost,
       couponId,
       discountAmount
@@ -76,19 +76,19 @@ serve(async (req) => {
 
     // 2.5 Create Mercado Pago Preapproval (Recurring Subscription)
     console.log('Creating Mercado Pago Preapproval for tenant:', newTenantId)
-    
+
     const subscriptionAmount = 299 // Plan mensual básico
     const mercadopagoToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN')
-    
+
     let preapprovalId = null
-    
+
     if (mercadopagoToken) {
       try {
         // Get user email for the preapproval
         const { data: userData } = await supabaseClient.auth.admin.getUserById(buyerUserId)
-        
+
         // Create preapproval using SDK
-        const client = new MercadoPagoConfig({ 
+        const client = new MercadoPagoConfig({
           accessToken: mercadopagoToken,
           options: { timeout: 5000 }
         });
@@ -108,7 +108,7 @@ serve(async (req) => {
             },
             back_url: `${Deno.env.get('SUPABASE_URL')?.replace('/functions/v1', '') || 'https://herqxhfmsstbteahhxpr.supabase.co'}/auth/v1/callback`,
             external_reference: `tenant_${newTenantId}_subscription`,
-            notification_url: 'https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/mercadopago-webhook',
+            notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
             status: 'pending'
           }
         });
@@ -144,7 +144,7 @@ serve(async (req) => {
     // 2.7 Apply coupon if provided
     if (couponId && discountAmount) {
       console.log('Applying coupon:', { couponId, discountAmount })
-      
+
       const { error: couponError } = await supabaseClient.functions.invoke('apply-coupon', {
         body: {
           couponId,

@@ -12,8 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { toast } from "sonner";
-import { ImageCropperModal } from "@/components/ui/ImageCropperModal";
-import { fileToDataUrl } from "@/utils/cropImage";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenantContext } from "@/contexts/TenantContext";
 
@@ -31,13 +29,9 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData }: LogoEdit
   const { currentTenantId: tenantId } = useTenantContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Cropper state
-  const [cropperOpen, setCropperOpen] = useState(false);
-  const [imageToCrop, setImageToCrop] = useState<string>("");
-
   // Use current logo from settings, not local state
   const currentLogoUrl = settings?.logo_url || initialData?.url || "";
-  
+
   // Initialize logo size from settings
   useEffect(() => {
     if (settings?.logo_size) {
@@ -47,15 +41,15 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData }: LogoEdit
 
   const handleSave = async () => {
     if (!currentLogoUrl.trim()) return;
-    
+
     try {
       // Save logo size to database
       await updateSettings({ logo_size: logoSize });
-      
+
       // Apply cache-busting to force immediate visual refresh using URL API
       const url = new URL(currentLogoUrl.trim(), window.location.origin);
       url.searchParams.set('cb', Date.now().toString());
-      
+
       onSave({
         url: url.toString(),
         alt: "Logo"
@@ -75,29 +69,18 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData }: LogoEdit
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      try {
-        // Convert file to data URL and open cropper
-        const dataUrl = await fileToDataUrl(file);
-        setImageToCrop(dataUrl);
-        setCropperOpen(true);
-      } catch (error) {
-        console.error('Error reading file:', error);
-        toast.error("Error al leer la imagen");
-      }
+      await handleDirectUpload(file);
     }
     // Reset input
     event.target.value = '';
   };
 
-  const handleCropComplete = async (croppedBlob: Blob) => {
+  const handleDirectUpload = async (file: File) => {
     setIsUploading(true);
     try {
-      // Convert blob to file for upload
-      const file = new File([croppedBlob], `logo_${Date.now()}.jpg`, { type: 'image/jpeg' });
-      
       // Upload to Supabase Storage
       const uploadedUrl = await uploadLogo(file);
-      
+
       if (uploadedUrl) {
         toast.success("Logo subido exitosamente");
         // Force a re-render and keep modal open so user can save
@@ -129,8 +112,8 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData }: LogoEdit
           {currentLogoUrl ? (
             <div className="flex justify-center">
               <div className="relative">
-                <img 
-                  src={currentLogoUrl} 
+                <img
+                  src={currentLogoUrl}
                   alt="Logo"
                   style={{ height: `${logoSize * 16}px` }}
                   className="w-auto object-contain border rounded-lg p-2"
@@ -155,7 +138,7 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData }: LogoEdit
                   value={[logoSize]}
                   onValueChange={(value) => setLogoSize(value[0])}
                   min={1}
-                  max={10}
+                  max={30}
                   step={1}
                   className="flex-1"
                 />
@@ -163,7 +146,7 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData }: LogoEdit
               </div>
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>Pequeño</span>
-                <span>Grande</span>
+                <span>Extra Grande</span>
               </div>
             </div>
           )}
@@ -178,7 +161,7 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData }: LogoEdit
           />
 
           {/* Upload Button */}
-          <Button 
+          <Button
             onClick={handleUploadClick}
             disabled={isUploading}
             className="w-full rounded-[30px]"
@@ -189,8 +172,8 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData }: LogoEdit
           </Button>
 
           {/* Save Button */}
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             disabled={!currentLogoUrl.trim() || isUploading}
             variant="default"
             className="w-full rounded-[30px]"
@@ -200,8 +183,8 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData }: LogoEdit
           </Button>
 
           {/* Close Button */}
-          <Button 
-            onClick={onClose} 
+          <Button
+            onClick={onClose}
             variant="outline"
             className="w-full rounded-[30px]"
             size="lg"
@@ -210,15 +193,6 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData }: LogoEdit
           </Button>
         </div>
 
-        {/* Image Cropper Modal */}
-        <ImageCropperModal
-          isOpen={cropperOpen}
-          onClose={() => setCropperOpen(false)}
-          imageSrc={imageToCrop}
-          aspectRatio={1}
-          onCropComplete={handleCropComplete}
-          title="Recortar Logo"
-        />
       </DialogContent>
     </Dialog>
   );

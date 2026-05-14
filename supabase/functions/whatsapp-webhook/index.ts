@@ -260,6 +260,9 @@ serve(async (req) => {
           conversationId: conversation.id,
           messageId: insertedMessage?.id,
           imageUrl: imageUrl || undefined
+        },
+        headers: {
+          'x-internal-secret': Deno.env.get('INTERNAL_WEBHOOK_SECRET') || ''
         }
       }
     );

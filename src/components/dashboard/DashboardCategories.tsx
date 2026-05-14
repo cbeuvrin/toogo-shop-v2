@@ -11,6 +11,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useCategories, type Category } from "@/hooks/useCategories";
 import { useOnboardingInteraction } from "@/hooks/useOnboardingInteraction";
 import { ProductsTutorialModal } from "./ProductsTutorialModal";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+interface CategoryFormData {
+  name: string;
+  slug: string;
+  showOnHome: boolean;
+  parent_id?: string | null;
+}
 
 export const DashboardCategories = () => {
   const { toast } = useToast();
@@ -20,10 +28,11 @@ export const DashboardCategories = () => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showCategoryTutorial, setShowCategoryTutorial] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CategoryFormData>({
     name: "",
     slug: "",
-    showOnHome: true
+    showOnHome: true,
+    parent_id: null
   });
 
   useEffect(() => {
@@ -47,7 +56,8 @@ export const DashboardCategories = () => {
     setFormData({
       name: "",
       slug: "",
-      showOnHome: true
+      showOnHome: true,
+      parent_id: null
     });
     setEditingCategory(null);
   };
@@ -65,7 +75,8 @@ export const DashboardCategories = () => {
     setFormData({
       name: category.name,
       slug: category.slug,
-      showOnHome: category.showOnHome
+      showOnHome: category.showOnHome,
+      parent_id: category.parent_id || null
     });
     setIsDialogOpen(true);
   };
@@ -86,14 +97,15 @@ export const DashboardCategories = () => {
         name: formData.name,
         slug: formData.slug,
         showOnHome: formData.showOnHome,
-        sort: editingCategory?.sort || categories.length
+        sort: editingCategory?.sort || categories.length,
+        parent_id: formData.parent_id
       };
 
       await saveCategory(categoryData, editingCategory?.id);
-      
+
       toast({
         title: editingCategory ? "Categoría actualizada" : "Categoría creada",
-        description: editingCategory 
+        description: editingCategory
           ? "La categoría se ha actualizado correctamente."
           : "La categoría se ha agregado correctamente.",
       });
@@ -170,7 +182,7 @@ export const DashboardCategories = () => {
                 {editingCategory ? "Modifica los datos de la categoría" : "Crea una nueva categoría para organizar tus productos"}
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="grid gap-4 py-4">
               <div>
                 <Label htmlFor="name">Nombre *</Label>
@@ -181,20 +193,42 @@ export const DashboardCategories = () => {
                   placeholder="Nombre de la categoría"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="slug">URL amigable</Label>
                 <Input
                   id="slug"
                   value={formData.slug}
-                  onChange={(e) => setFormData({...formData, slug: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                   placeholder="url-amigable"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Se genera automáticamente del nombre, pero puedes editarla
                 </p>
               </div>
-              
+
+              <div>
+                <Label htmlFor="parent">Categoría Padre (Opcional)</Label>
+                <Select
+                  value={formData.parent_id || "none"}
+                  onValueChange={(value) => setFormData({ ...formData, parent_id: value === "none" ? null : value })}
+                >
+                  <SelectTrigger className="w-full mt-2">
+                    <SelectValue placeholder="Seleccionar categoría padre" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Ninguna (Categoría Principal)</SelectItem>
+                    {categories
+                      .filter(c => c.id !== editingCategory?.id)
+                      .map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="show_on_home">Mostrar en página principal</Label>
@@ -202,20 +236,20 @@ export const DashboardCategories = () => {
                     La categoría aparecerá en la página de inicio
                   </p>
                 </div>
-                 <Switch
-                   id="show_on_home"
-                   checked={formData.showOnHome}
-                   onCheckedChange={(checked) => setFormData({...formData, showOnHome: checked})}
-                 />
+                <Switch
+                  id="show_on_home"
+                  checked={formData.showOnHome}
+                  onCheckedChange={(checked) => setFormData({ ...formData, showOnHome: checked })}
+                />
               </div>
             </div>
-            
+
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-[30px]">
                 Cancelar
               </Button>
-              <Button 
-                onClick={handleSave} 
+              <Button
+                onClick={handleSave}
                 disabled={isSaving}
                 className="bg-purple-600 hover:bg-purple-700 text-white rounded-[30px]"
               >
@@ -260,55 +294,65 @@ export const DashboardCategories = () => {
             <div className="space-y-3">
               {categories
                 .sort((a, b) => a.sort - b.sort)
-                .map((category) => (
-                  <div
-                    key={category.id}
-                    className="flex items-center gap-2 sm:gap-4 p-3 sm:p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <GripVertical className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground cursor-grab" />
-                    
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm sm:text-base font-medium truncate">{category.name}</h4>
-                    </div>
-                    
-                    <div className="flex items-center gap-1 sm:gap-2">
-                      <div className="flex items-center gap-1 sm:gap-2">
-                        <Label htmlFor={`show-${category.id}`} className="text-xs sm:text-sm">
-                          Mostrar
-                        </Label>
-                         <Switch
-                           id={`show-${category.id}`}
-                           checked={category.showOnHome}
-                           onCheckedChange={() => toggleShowOnHome(category.id)}
-                         />
+                .map((category) => {
+                  const parent = categories.find(c => c.id === category.parent_id);
+                  return (
+                    <div
+                      key={category.id}
+                      className="flex items-center gap-2 sm:gap-4 p-3 sm:p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <GripVertical className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground cursor-grab" />
+
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm sm:text-base font-medium truncate">
+                          {category.name}
+                          {parent && (
+                            <span className="ml-2 text-xs text-muted-foreground bg-gray-100 px-2 py-0.5 rounded-full">
+                              de {parent.name}
+                            </span>
+                          )}
+                        </h4>
                       </div>
-                      
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleEdit(category)}
-                        className="rounded-[30px] h-8 w-8 p-0 sm:h-9 sm:w-9"
-                      >
-                        <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
-                      </Button>
-                      
-                      <Button 
-                        variant="destructive" 
-                        size="sm" 
-                        onClick={() => handleDelete(category.id)}
-                        className="rounded-[30px] h-8 w-8 p-0 sm:h-9 sm:w-9"
-                      >
-                        <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                      </Button>
+
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                          <Label htmlFor={`show-${category.id}`} className="text-xs sm:text-sm">
+                            Mostrar
+                          </Label>
+                          <Switch
+                            id={`show-${category.id}`}
+                            checked={category.showOnHome}
+                            onCheckedChange={() => toggleShowOnHome(category.id)}
+                          />
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(category)}
+                          className="rounded-[30px] h-8 w-8 p-0 sm:h-9 sm:w-9"
+                        >
+                          <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </Button>
+
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(category.id)}
+                          className="rounded-[30px] h-8 w-8 p-0 sm:h-9 sm:w-9"
+                        >
+                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
             </div>
           </CardContent>
         </Card>
       )}
 
-      <ProductsTutorialModal 
+      <ProductsTutorialModal
         isOpen={showCategoryTutorial}
         onClose={() => setShowCategoryTutorial(false)}
         step={1}

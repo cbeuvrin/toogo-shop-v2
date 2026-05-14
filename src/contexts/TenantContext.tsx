@@ -196,6 +196,9 @@ export const TenantProvider = ({ children }: TenantProviderProps) => {
           .select('id, name, plan, primary_host')
           .order('name');
 
+        let currentSessionTenants: Tenant[] = [];
+        let sessionSelectedTenantId: string | null = null;
+
         if (tenantsError) {
           console.error('Error loading tenants for superadmin:', tenantsError);
           // Fallback to Demo Store
@@ -206,51 +209,44 @@ export const TenantProvider = ({ children }: TenantProviderProps) => {
             .maybeSingle();
 
           if (demoStore) {
-            setAvailableTenants([{ id: demoStore.id, name: demoStore.name, plan: demoStore.plan || 'free', primary_host: demoStore.primary_host }]);
-            setCurrentTenantId(demoStore.id);
+            currentSessionTenants = [{ id: demoStore.id, name: demoStore.name, plan: demoStore.plan || 'free', primary_host: demoStore.primary_host }];
+            sessionSelectedTenantId = demoStore.id;
           }
         } else {
-          const mappedTenants: Tenant[] = allTenants.map(t => ({
+          currentSessionTenants = allTenants.map(t => ({
             id: t.id,
             name: t.name,
             plan: t.plan || 'free',
             primary_host: t.primary_host
           }));
-          setAvailableTenants(mappedTenants);
 
           // Try to restore selected tenant from localStorage, otherwise default to Demo Store or first one
           const savedTenantId = localStorage.getItem('selectedTenantId');
-          const targetTenant = mappedTenants.find(t => t.id === savedTenantId);
-          const demoStore = mappedTenants.find(t => t.id === DEMO_STORE_ID);
+          const targetTenant = currentSessionTenants.find(t => t.id === savedTenantId);
+          const demoStore = currentSessionTenants.find(t => t.id === DEMO_STORE_ID);
 
           if (targetTenant) {
-            setCurrentTenantId(targetTenant.id);
+            sessionSelectedTenantId = targetTenant.id;
           } else if (demoStore) {
-            setCurrentTenantId(demoStore.id);
-          } else if (mappedTenants.length > 0) {
-            setCurrentTenantId(mappedTenants[0].id);
+            sessionSelectedTenantId = demoStore.id;
+          } else if (currentSessionTenants.length > 0) {
+            sessionSelectedTenantId = currentSessionTenants[0].id;
           }
+        }
+
+        setAvailableTenants(currentSessionTenants);
+        if (sessionSelectedTenantId) {
+          setCurrentTenantId(sessionSelectedTenantId);
         }
 
         setUserRole('superadmin');
 
-        // Cache superadmin data (including the full tenant list for now)
-        // CAUTION: If tenant list grows large, we should not cache it all here or use pagination.
-        const cacheData: RoleCacheData = {
-          role: 'superadmin',
-          isSuperAdmin: true,
-          tenants: availableTenants, // This will be updated on next render, but for cache we might miss it in this closure. 
-          // Better to use the local variable 'mappedTenants' if available.
-          currentTenantId: currentTenantId // Same caveat, use local variable logic.
-        };
-        // We skip strict caching of the big list here to avoid complexity in this closure, 
-        // relying on re-fetch or let's just cache user role status.
+        // Cache superadmin data
         localStorage.setItem(`user-role-${user.id}`, JSON.stringify({
           role: 'superadmin',
           isSuperAdmin: true,
-          // Don't cache the huge list of tenants to localStorage to avoid quota issues
-          tenants: [],
-          currentTenantId: null
+          tenants: currentSessionTenants,
+          currentTenantId: sessionSelectedTenantId
         }));
         localStorage.setItem(`user-role-timestamp-${user.id}`, Date.now().toString());
       } else {

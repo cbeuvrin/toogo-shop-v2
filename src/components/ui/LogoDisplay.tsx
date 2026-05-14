@@ -10,36 +10,47 @@ interface LogoDisplayProps {
   subtleShadow?: boolean;
   logoUrl?: string;
   logoSize?: number;
+  /**
+   * When true, disables the internal useTenantSettings fetch.
+   * Use this in public store templates where logo data already comes
+   * from the store's RPC call — prevents cross-tenant logo leakage.
+   */
+  disableFetch?: boolean;
 }
 
-export const LogoDisplay = ({ 
-  className = '', 
-  fallbackText = 'Tu Logo',
+export const LogoDisplay = ({
+  className = '',
+  fallbackText = 'LOGO',
   size = 'md',
   customSize,
   tenantId,
   subtleShadow = true,
   logoUrl: propLogoUrl,
-  logoSize: propLogoSize
+  logoSize: propLogoSize,
+  disableFetch = false,
 }: LogoDisplayProps) => {
-  const shouldFetchSettings = !propLogoUrl && !propLogoSize;
+  // Only fetch from settings hook when:
+  // 1. No logo URL was explicitly provided as prop
+  // 2. No logo size was explicitly provided as prop
+  // 3. The caller doesn't disable the fetch (e.g. public store templates)
+  const shouldFetchSettings = !propLogoUrl && !propLogoSize && !disableFetch;
   const { settings, isLoading } = useTenantSettings(shouldFetchSettings ? tenantId : undefined);
 
   // Calculate dynamic height based on logo_size from settings or props
   const logoHeight = useMemo(() => {
     if (customSize) return customSize;
     if (propLogoSize) return propLogoSize * 16; // 1-10 scale to 16-160px
-    if (settings?.logo_size) {
-      return settings.logo_size * 16; // 1-10 scale to 16-160px
+    if (settings?.logo_size && shouldFetchSettings) {
+      return settings.logo_size * 16;
     }
     // Default heights if no logo_size is set
     const defaultHeights = { sm: 32, md: 48, lg: 64 };
     return defaultHeights[size];
-  }, [settings?.logo_size, propLogoSize, size, customSize]);
+  }, [settings?.logo_size, propLogoSize, size, customSize, shouldFetchSettings]);
 
   if (isLoading && shouldFetchSettings) {
     return (
-      <div 
+      <div
         className={`bg-muted animate-pulse rounded ${className}`}
         style={{ height: `${logoHeight}px` }}
       >
@@ -48,21 +59,20 @@ export const LogoDisplay = ({
     );
   }
 
-  const finalLogoUrl = propLogoUrl || settings?.logo_url;
+  // When disableFetch is true, ONLY use the prop — never fall through to settings
+  const finalLogoUrl = disableFetch
+    ? propLogoUrl || undefined
+    : propLogoUrl || settings?.logo_url;
 
   if (finalLogoUrl) {
-    console.log('Rendering LogoDisplay with URL:', finalLogoUrl);
     return (
       <div className="flex items-center">
-        <img 
-          src={finalLogoUrl} 
+        <img
+          src={finalLogoUrl}
           alt="Logo"
           style={{ height: `${logoHeight}px` }}
           className={`w-auto object-contain ${subtleShadow ? 'drop-shadow-sm' : ''} ${className}`}
           onError={(e) => {
-            console.error('Logo failed to load:', finalLogoUrl);
-            console.error('Showing fallback text:', fallbackText);
-            // Hide the image and show fallback
             const target = e.target as HTMLImageElement;
             target.style.display = 'none';
             const container = target.parentElement;
@@ -71,13 +81,10 @@ export const LogoDisplay = ({
               fallbackDiv.style.display = 'flex';
             }
           }}
-          onLoad={() => {
-            console.log('Logo loaded successfully:', finalLogoUrl);
-          }}
         />
-        <div 
-          className="logo-fallback flex items-center justify-center bg-primary/10 text-primary rounded font-semibold"
-          style={{ display: 'none', height: `${logoHeight}px` }}
+        <div
+          className="logo-fallback flex items-center justify-center font-bold tracking-widest uppercase"
+          style={{ display: 'none', height: `${logoHeight}px`, fontSize: `${Math.round(logoHeight * 0.55)}px` }}
         >
           {fallbackText}
         </div>
@@ -86,9 +93,9 @@ export const LogoDisplay = ({
   }
 
   return (
-    <div 
-      className={`flex items-center justify-center bg-primary/10 text-primary rounded font-semibold ${className}`}
-      style={{ height: `${logoHeight}px` }}
+    <div
+      className={`flex items-center font-bold tracking-widest uppercase ${className}`}
+      style={{ height: `${logoHeight}px`, fontSize: `${Math.round(logoHeight * 0.55)}px` }}
     >
       {fallbackText}
     </div>

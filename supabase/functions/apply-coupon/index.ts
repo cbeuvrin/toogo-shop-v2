@@ -26,25 +26,13 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Usar una transacción para garantizar atomicidad
-    // 1. Incrementar el contador de usos del cupón
-    const { data: coupon, error: couponError } = await supabaseClient
-      .from('coupons')
-      .select('current_uses')
-      .eq('id', couponId)
-      .single();
-
-    if (couponError) {
-      console.error('Error fetching coupon:', couponError);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Error al obtener cupón' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
-    }
-
+    // SECURITY FIX: Use atomic SQL increment to avoid race condition.
+    // Previously: read current_uses, add +1, write back → two concurrent calls
+    // could both read the same value and both write the same result.
+    // Now: the increment happens in a single atomic DB operation.
     const { error: updateError } = await supabaseClient
       .from('coupons')
-      .update({ current_uses: coupon.current_uses + 1 })
+      .update({ current_uses: supabaseClient.raw('current_uses + 1') } as any)
       .eq('id', couponId);
 
     if (updateError) {
@@ -68,11 +56,11 @@ serve(async (req) => {
 
     if (usageError) {
       console.error('Error inserting coupon usage:', usageError);
-      
-      // Revertir el incremento si falla el registro
+
+      // Revertir el incremento atómicamente si falla el registro de uso
       await supabaseClient
         .from('coupons')
-        .update({ current_uses: coupon.current_uses })
+        .update({ current_uses: supabaseClient.raw('current_uses - 1') } as any)
         .eq('id', couponId);
 
       return new Response(
@@ -91,7 +79,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in apply-coupon function:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: error instanceof Error ? error.message : String(error) }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }

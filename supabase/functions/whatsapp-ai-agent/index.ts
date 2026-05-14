@@ -37,6 +37,66 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // SECURITY: Verify caller identity via JWT or internal secret
+    const authHeader = req.headers.get('Authorization');
+    const internalSecret = req.headers.get('x-internal-secret');
+    const INTERNAL_WEBHOOK_SECRET = Deno.env.get('INTERNAL_WEBHOOK_SECRET');
+    let callerUserId: string | null = null;
+
+    if (authHeader) {
+      const anonClient = createClient(
+        supabaseUrl,
+        Deno.env.get('SUPABASE_ANON_KEY')!,
+        { auth: { persistSession: false }, global: { headers: { Authorization: authHeader } } }
+      );
+      const { data: { user } } = await anonClient.auth.getUser();
+      callerUserId = user?.id || null;
+    }
+
+    // Path 1: authenticated user — verify JWT resolved to a real user
+    if (authHeader && !callerUserId) {
+      return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (callerUserId) {
+      // Verify user has a role on this tenant (tenant_admin, owner, or superadmin)
+      const { data: role } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', callerUserId)
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+
+      if (!role) {
+        // Check if superadmin
+        const { data: superAdminRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', callerUserId)
+          .eq('role', 'super_admin')
+          .maybeSingle();
+
+        if (!superAdminRole) {
+          console.warn(`🚫 Unauthorized access attempt: user ${callerUserId} for tenant ${tenantId}`);
+          return new Response(JSON.stringify({ error: 'Forbidden: no access to this tenant' }), {
+            status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      }
+      console.log(`✅ Authenticated user ${callerUserId} with role ${role?.role || 'super_admin'}`);
+    } else {
+      // Path 2: no user JWT — must carry the internal webhook secret
+      if (!INTERNAL_WEBHOOK_SECRET || internalSecret !== INTERNAL_WEBHOOK_SECRET) {
+        console.warn('🚫 Rejected unauthenticated call without valid internal secret');
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      console.log('🤖 Internal call from WhatsApp webhook — secret verified');
+    }
+
     console.log('🤖 Processing AI request for tenant:', tenantId);
 
     // Obtener datos del tenant
@@ -222,7 +282,7 @@ IMPORTANTE:
 - Si no tienes información o no puedes hacer algo, explícalo claramente
 
 🖼️ **PARA MOSTRAR UNA IMAGEN AL USUARIO:**
-Si los resultados de `list_products` (u otra herramienta) incluyen una URL de imagen (`imageUrl`) y quieres que el usuario la vea visualmente en WhatsApp:
+Si los resultados de \`list_products\` (u otra herramienta) incluyen una URL de imagen (\`imageUrl\`) y quieres que el usuario la vea visualmente en WhatsApp:
 1. Menciona el producto en tu respuesta de texto.
 2. AL FINAL de tu respuesta, en una línea nueva y separada, escribe EXACTAMENTE:
 "IMAGE_URL: <la_url_de_la_imagen>"

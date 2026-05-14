@@ -1367,11 +1367,15 @@ export const OnboardingModal = ({
                 <div className="flex gap-2 justify-center">
                   <Button variant="outline" size="sm" onClick={() => {
                 onOpenChange(false);
+                navigate('/auth');
               }}>
                     Iniciar sesión
                   </Button>
-                  <Button variant="ghost" size="sm">
-                    Olvidaste tu contraseña
+                  <Button variant="ghost" size="sm" onClick={() => {
+                onOpenChange(false);
+                navigate('/auth');
+              }}>
+                    Olvidé mi contraseña
                   </Button>
                 </div>
               </div>}
