@@ -89,7 +89,7 @@ serve(async (req) => {
       throw new Error("Invalid or inactive tenant");
     }
 
-    // SECURITY: Fetch tenant payment settings (including access token) with service role
+    // SECURITY: Fetch tenant payment settings (legacy fallback)
     const { data: tenantSettings, error: settingsError } = await supabaseClient
       .from('tenant_settings')
       .select('mercadopago_public_key, mercadopago_access_token, paypal_client_id, exchange_rate_value')
@@ -100,9 +100,18 @@ serve(async (req) => {
       throw new Error(`Settings error: ${settingsError.message}`);
     }
 
-    logStep("Settings loaded", {
-      has_mp_key: !!tenantSettings?.mercadopago_public_key,
-      has_mp_token: !!tenantSettings?.mercadopago_access_token,
+    // OAuth method: buscar integración activa en la tabla nueva
+    const { data: mpIntegration } = await supabaseClient
+      .from('tenant_payment_integrations')
+      .select('access_token, refresh_token, expires_at, application_fee_pct')
+      .eq('tenant_id', tenant_id)
+      .eq('provider', 'mercadopago')
+      .eq('status', 'active')
+      .maybeSingle();
+
+    logStep("Payment auth resolved", {
+      has_oauth: !!mpIntegration?.access_token,
+      has_legacy_token: !!tenantSettings?.mercadopago_access_token,
       has_paypal: !!tenantSettings?.paypal_client_id,
     });
 
@@ -189,17 +198,74 @@ serve(async (req) => {
     const siteUrl = Deno.env.get("SITE_URL") || "https://toogo.store";
 
     if (payment_method === 'mercadopago') {
-      if (!tenantSettings?.mercadopago_access_token) {
-        throw new Error('MercadoPago no está configurado para esta tienda. El tenant debe configurar su Access Token.');
+      // Preferimos OAuth (con application_fee 1% que va a Toogo). Fallback a legacy
+      // sin fee mientras el tenant no migre (banner en dashboard les avisa).
+      let mpAccessToken: string;
+      let applyMarketplaceFee = false;
+      let feePct = 1.0;
+
+      if (mpIntegration?.access_token) {
+        // Refresh inline si el token está cerca de expirar (menos de 7 días).
+        // MP devuelve access_tokens válidos 6 meses, refresh_tokens infinitos.
+        const expiresAt = mpIntegration.expires_at ? new Date(mpIntegration.expires_at) : null;
+        const needsRefresh = expiresAt && expiresAt.getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000;
+
+        if (needsRefresh && mpIntegration.refresh_token) {
+          logStep("MP access_token expiring soon, refreshing inline");
+          const refreshed = await refreshMpToken(mpIntegration.refresh_token);
+          if (refreshed) {
+            mpAccessToken = refreshed.access_token;
+            // Persist new tokens
+            await supabaseClient.from('tenant_payment_integrations').update({
+              access_token: refreshed.access_token,
+              refresh_token: refreshed.refresh_token || mpIntegration.refresh_token,
+              expires_at: new Date(Date.now() + (refreshed.expires_in || 15552000) * 1000).toISOString(),
+              last_refreshed_at: new Date().toISOString(),
+            }).eq('tenant_id', tenant_id).eq('provider', 'mercadopago');
+          } else {
+            mpAccessToken = mpIntegration.access_token; // Usar el viejo, mejor que nada
+          }
+        } else {
+          mpAccessToken = mpIntegration.access_token;
+        }
+
+        applyMarketplaceFee = true;
+        feePct = Number(mpIntegration.application_fee_pct ?? 1.0);
+      } else if (tenantSettings?.mercadopago_access_token) {
+        // Legacy: tenant aún no migró a OAuth. Usamos su token directo, SIN fee.
+        // El dashboard les muestra banner para que migren a OAuth.
+        logStep("Using legacy MP credentials (no application_fee)");
+        mpAccessToken = tenantSettings.mercadopago_access_token;
+        applyMarketplaceFee = false;
+      } else {
+        throw new Error('MercadoPago no está conectado para esta tienda. El dueño debe conectarse desde el dashboard.');
       }
+
+      const marketplaceFeeAmount = applyMarketplaceFee ? round2(validatedTotal * (feePct / 100)) : 0;
+
       checkoutUrl = await createMercadoPagoCheckout(
-        tenantSettings.mercadopago_access_token,
+        mpAccessToken,
         validatedItems,
         customer,
         order.id,
         validatedTotal,
-        siteUrl
+        siteUrl,
+        marketplaceFeeAmount
       );
+
+      // Guardar el fee esperado en la orden para tracking de comisiones
+      if (marketplaceFeeAmount > 0) {
+        await supabaseClient
+          .from('orders')
+          .update({
+            metadata: {
+              platform_fee_pct: feePct,
+              platform_fee_mxn: marketplaceFeeAmount,
+              auth_method: 'oauth',
+            }
+          })
+          .eq('id', order.id);
+      }
     } else if (payment_method === 'paypal') {
       if (!tenantSettings?.paypal_client_id) {
         throw new Error('PayPal no está configurado para esta tienda.');
@@ -238,17 +304,55 @@ serve(async (req) => {
   }
 });
 
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+/**
+ * Refresca un access_token de MercadoPago usando el refresh_token.
+ * MP devuelve un nuevo access_token + refresh_token + expires_in.
+ * Si falla, retorna null y dejamos que el caller maneje (probablemente usar el token viejo y esperar que aún funcione).
+ */
+async function refreshMpToken(refreshToken: string): Promise<{ access_token: string; refresh_token?: string; expires_in: number } | null> {
+  try {
+    const clientId = Deno.env.get('MP_OAUTH_CLIENT_ID');
+    const clientSecret = Deno.env.get('MP_OAUTH_CLIENT_SECRET');
+    if (!clientId || !clientSecret) return null;
+
+    const res = await fetch('https://api.mercadopago.com/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        client_id: clientId,
+        client_secret: clientSecret,
+        refresh_token: refreshToken,
+      }).toString(),
+    });
+
+    if (!res.ok) {
+      console.warn('[refreshMpToken] failed', res.status, await res.text());
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.warn('[refreshMpToken] exception', err);
+    return null;
+  }
+}
+
 async function createMercadoPagoCheckout(
   accessToken: string,
   items: any[],
   customer: any,
   orderId: string,
   totalMxn: number,
-  siteUrl: string
+  siteUrl: string,
+  marketplaceFeeAmount = 0
 ): Promise<string> {
-  logStep("Creating real MercadoPago preference");
+  logStep("Creating real MercadoPago preference", { marketplaceFeeAmount });
 
-  const preferenceBody = {
+  const preferenceBody: any = {
     items: items.map(item => ({
       id: item.product_id,
       title: item.title || `Producto ${item.product_id}`,
@@ -272,6 +376,11 @@ async function createMercadoPagoCheckout(
     auto_return: "approved",
     statement_descriptor: "TOOGO STORE"
   };
+
+  // Si hay marketplace_fee, MP retiene esa parte y la deposita a la cuenta del Marketplace (Toogo)
+  if (marketplaceFeeAmount > 0) {
+    preferenceBody.marketplace_fee = marketplaceFeeAmount;
+  }
 
   const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
     method: 'POST',
