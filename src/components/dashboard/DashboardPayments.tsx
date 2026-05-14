@@ -7,6 +7,16 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { CreditCard, MessageCircle, DollarSign, Settings, Shield, AlertTriangle, Crown, AlertCircle, Link2, Unlink, Loader2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -86,6 +96,8 @@ export const DashboardPayments = () => {
     is_legacy: boolean;
   } | null>(null);
   const [mpConnecting, setMpConnecting] = useState(false);
+  const [mpDisconnectDialogOpen, setMpDisconnectDialogOpen] = useState(false);
+  const [mpDisconnecting, setMpDisconnecting] = useState(false);
 
   useEffect(() => {
     if (!tenantLoading && tenantId) {
@@ -152,18 +164,36 @@ export const DashboardPayments = () => {
 
   const handleDisconnectMercadoPago = async () => {
     if (!tenantId) return;
-    if (!confirm("¿Seguro que quieres desconectar MercadoPago? Tus clientes no podrán pagar con MP hasta que reconectes.")) return;
-    const { error } = await supabase
-      .from("tenant_payment_integrations")
-      .update({ status: "revoked", revoked_at: new Date().toISOString() })
-      .eq("tenant_id", tenantId)
-      .eq("provider", "mercadopago");
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-      return;
+    setMpDisconnecting(true);
+    try {
+      const { error, data } = await supabase
+        .from("tenant_payment_integrations")
+        .update({ status: "revoked", revoked_at: new Date().toISOString() })
+        .eq("tenant_id", tenantId)
+        .eq("provider", "mercadopago")
+        .select();
+
+      if (error) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+        return;
+      }
+      if (!data || data.length === 0) {
+        toast({
+          title: "Sin permisos",
+          description: "No tienes permisos para desconectar esta integración. Contacta soporte.",
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: "MercadoPago desconectado",
+        description: "Cuando quieras reconectarte, clic en 'Conectar' otra vez.",
+      });
+      setMpDisconnectDialogOpen(false);
+      await loadMpIntegration();
+    } finally {
+      setMpDisconnecting(false);
     }
-    toast({ title: "MercadoPago desconectado", description: "Reconecta cuando quieras." });
-    loadMpIntegration();
   };
 
   // Detectar regreso del flujo OAuth: ?mp_connected=1
@@ -488,7 +518,7 @@ export const DashboardPayments = () => {
                   )}
                 </div>
               </div>
-              <Button variant="outline" onClick={handleDisconnectMercadoPago} size="sm">
+              <Button variant="outline" onClick={() => setMpDisconnectDialogOpen(true)} size="sm">
                 <Unlink className="w-4 h-4 mr-2" /> Desconectar MercadoPago
               </Button>
             </div>
@@ -678,6 +708,31 @@ export const DashboardPayments = () => {
         <Settings className="w-4 h-4 mr-2" />
         {loading ? "Guardando..." : "Guardar configuración de pago"}
       </Button>
+
+      {/* Dialog de confirmación para desconectar MercadoPago */}
+      <AlertDialog open={mpDisconnectDialogOpen} onOpenChange={setMpDisconnectDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Desconectar MercadoPago?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tus clientes <strong>no podrán pagar con MercadoPago</strong> en tu tienda hasta que reconectes.
+              Las renovaciones y suscripciones existentes no se interrumpen — solo afecta a nuevos pagos.
+              <br /><br />
+              Podés reconectar cuando quieras con un click.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={mpDisconnecting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDisconnectMercadoPago(); }}
+              disabled={mpDisconnecting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {mpDisconnecting ? "Desconectando..." : "Sí, desconectar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
