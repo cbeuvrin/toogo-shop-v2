@@ -103,23 +103,30 @@ export const DashboardPayments = () => {
       .eq("provider", "mercadopago")
       .maybeSingle();
 
-    if (data) {
+    // Solo consideramos "conectado" si el status es active. Cualquier otro estado
+    // (revoked, expired, pending_authorization) se trata como NO conectado para que
+    // se vuelva a mostrar el botón "Conectar".
+    if (data && data.status === "active") {
       setMpIntegration({
         status: data.status,
         provider_user_email: data.provider_user_email,
         connected_at: data.connected_at,
         is_legacy: false,
       });
+      return;
+    }
+
+    // Si no hay registro activo en OAuth, chequear si tiene access_token legacy
+    const { data: legacyCheck } = await supabase
+      .from('tenant_payment_secrets' as any)
+      .select('mercadopago_access_token')
+      .eq('tenant_id', tenantId)
+      .maybeSingle();
+    if ((legacyCheck as any)?.mercadopago_access_token) {
+      setMpIntegration({ status: "legacy", provider_user_email: null, connected_at: null, is_legacy: true });
     } else {
-      // Si hay access_token en tenant_secrets pero no en payment_integrations → es legacy
-      const { data: legacyCheck } = await supabase
-        .from('tenant_payment_secrets' as any)
-        .select('mercadopago_access_token')
-        .eq('tenant_id', tenantId)
-        .maybeSingle();
-      if ((legacyCheck as any)?.mercadopago_access_token) {
-        setMpIntegration({ status: "legacy", provider_user_email: null, connected_at: null, is_legacy: true });
-      }
+      // Limpio: no hay nada conectado, mostrar botón "Conectar"
+      setMpIntegration(null);
     }
   };
 
