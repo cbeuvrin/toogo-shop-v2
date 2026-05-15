@@ -141,10 +141,16 @@ serve(async (req) => {
     );
     log("Price validation", { client_total: total_mxn, server_total: serverTotal });
 
-    const feePct = Number(mpIntegration.application_fee_pct ?? 1.0);
+    // Promo de lanzamiento: 0% comisión durante 3 meses.
+    // Tras aprobación de Marketplace en MP (MP error 2059 al usar application_fee
+    // sin estar registrado como Marketplace oficial), restablecer a 1.0%.
+    // Cuando MP apruebe + se cumplan los 3 meses: volver a Number(mpIntegration.application_fee_pct ?? 1.0)
+    const feePct = 0;
     const feeAmount = round2(serverTotal * (feePct / 100));
 
     // Create order before charging so MP webhook can correlate via external_reference.
+    // Platform fee info is sent to MP via application_fee and recorded there;
+    // mirror it here only if the orders table actually has a metadata column.
     const { data: order, error: orderErr } = await supabase
       .from("orders")
       .insert({
@@ -157,16 +163,11 @@ serve(async (req) => {
         shipping_cost,
         status: "pending",
         payment_provider: "mercadopago",
-        metadata: {
-          platform_fee_pct: feePct,
-          platform_fee_mxn: feeAmount,
-          auth_method: "oauth",
-          payment_flow: "bricks",
-        },
       })
       .select()
       .single();
     if (orderErr) throw new Error(`Order creation error: ${orderErr.message}`);
+    log("Platform fee (recorded in MP only)", { fee_pct: feePct, fee_mxn: feeAmount, order_id: order.id });
 
     const orderItems = validated.map((it: any) => ({
       order_id: order.id,
@@ -240,9 +241,9 @@ serve(async (req) => {
       .from("orders")
       .update({
         status: isApproved ? "paid" : isPending ? "pending" : "failed",
-        payment_provider_id: String(paymentResult.id),
       })
       .eq("id", order.id);
+    log("Order updated", { order_id: order.id, mp_payment_id: paymentResult.id });
 
     return new Response(
       JSON.stringify({
@@ -257,10 +258,20 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    log("ERROR", { message });
-    return new Response(JSON.stringify({ error: message }), {
+  } catch (error: any) {
+    // MP SDK errors come as objects with .cause, .message, .status — flatten them.
+    const message =
+      error?.message ||
+      (Array.isArray(error?.cause) && error.cause[0]?.description) ||
+      (typeof error === "string" ? error : JSON.stringify(error));
+    const detail = {
+      message,
+      status: error?.status,
+      cause: error?.cause,
+      name: error?.name,
+    };
+    log("ERROR", detail);
+    return new Response(JSON.stringify({ error: message, detail }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
