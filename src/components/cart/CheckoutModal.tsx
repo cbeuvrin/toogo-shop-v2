@@ -15,6 +15,8 @@ import { useTenantSettings } from '@/hooks/useTenantSettings';
 import { useTenantContext } from '@/contexts/TenantContext';
 import { LogoDisplay } from '@/components/ui/LogoDisplay';
 import { useTenantCoupons } from '@/hooks/useTenantCoupons';
+import { EmbeddedStoreCheckoutDialog } from './EmbeddedStoreCheckoutDialog';
+import { useNavigate } from 'react-router-dom';
 interface PaymentMethod {
   id: string;
   name: string;
@@ -58,6 +60,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   } = useTenantCoupons();
   const [loading, setLoading] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [bricksOpen, setBricksOpen] = useState(false);
+  const navigate = useNavigate();
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo | null>(null);
   const [shippingCost, setShippingCost] = useState(0);
@@ -428,6 +432,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   };
   const handleAutomatedPayment = async () => {
+    // MercadoPago uses the embedded Bricks dialog (no redirect).
+    if (selectedPaymentMethod === 'mercadopago') {
+      setBricksOpen(true);
+      return;
+    }
+
+    // Other automated providers (PayPal) still use the redirect flow.
     const {
       data,
       error
@@ -451,19 +462,23 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     });
     if (error) throw error;
     if (data.url) {
-      // Open payment URL in new tab
       window.open(data.url, '_blank');
       toast({
         title: "Redirigiendo al pago",
         description: "Se ha abierto una nueva ventana para completar tu pago"
       });
-
-      // Clear cart and close modal after successful checkout creation
       setTimeout(() => {
         clearCart();
         onOpenChange(false);
       }, 2000);
     }
+  };
+
+  const handleBricksSuccess = (result: { order_id: string; payment_id: string; total_mxn: number; platform_fee_mxn: number }) => {
+    clearCart();
+    setBricksOpen(false);
+    onOpenChange(false);
+    navigate(`/payment-success?order_id=${result.order_id}`);
   };
   const handleApplyCoupon = async () => {
     if (!couponCode.trim() || !currentTenantId) {
@@ -540,7 +555,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     };
   };
   const buttonConfig = getButtonConfig();
-  return <Dialog open={open} onOpenChange={onOpenChange}>
+  return <>
+  <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="w-[95vw] sm:w-[90vw] md:w-[768px] max-w-[768px] max-h-[90vh] overflow-hidden p-4 sm:p-6">
       <DialogHeader className="relative">
         <DialogTitle className="flex items-center gap-2">
@@ -754,5 +770,26 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         </form>
       </ScrollArea>
     </DialogContent>
-  </Dialog>;
+  </Dialog>
+
+  <EmbeddedStoreCheckoutDialog
+    open={bricksOpen}
+    onOpenChange={setBricksOpen}
+    tenantId={currentTenantId || ''}
+    publicKey={preloadedConfig?.mercadopago_public_key || settings?.mercadopago_public_key || ''}
+    items={items.map(item => ({
+      product_id: item.id,
+      title: item.title,
+      quantity: item.quantity,
+      price_mxn: item.price_mxn,
+      price_usd: exchange > 0 ? item.price_mxn / exchange : 0,
+      variation_id: item.variation_id || null,
+    }))}
+    customer={customerData}
+    totalMxn={cartTotalMxn + shippingCost - couponDiscount}
+    totalUsd={cartTotalUsd}
+    shippingCost={shippingCost}
+    onSuccess={handleBricksSuccess}
+  />
+  </>;
 };
