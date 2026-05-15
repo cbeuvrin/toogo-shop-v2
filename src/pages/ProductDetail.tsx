@@ -11,6 +11,7 @@ import { CartSidebar } from "@/components/cart/CartSidebar";
 import { ProductImageGallery } from "@/components/ui/product-image-gallery";
 import { ProductVariationSelector } from "@/components/ui/ProductVariationSelector";
 import { StoreNotFound } from "./StoreNotFound";
+import { getProductDetailTheme } from "@/templates/productDetail/themes";
 
 const ProductDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -20,6 +21,11 @@ const ProductDetail = () => {
 
   const store = useToogoStore();
   const { isLoading, storeData, products, tenant, effectiveSettings } = store;
+
+  const theme = useMemo(
+    () => getProductDetailTheme(effectiveSettings?.template_id),
+    [effectiveSettings?.template_id]
+  );
 
   const { addItem, totalItems, toggleCart } = useCart();
 
@@ -55,20 +61,14 @@ const ProductDetail = () => {
     return host ? `/?host=${encodeURIComponent(host)}` : "/";
   };
 
-  // Build checkoutConfig from public RPC settings so the CheckoutModal
-  // doesn't have to query tables that anonymous shoppers can't read under RLS.
+  // checkoutConfig is built from public RPC settings so the embedded
+  // checkout dialog can read MP credentials without hitting RLS-protected tables.
   const checkoutConfig = useMemo(() => {
     const s = effectiveSettings || {};
     const methods: any[] = [];
-    if (s.mercadopago_public_key) {
-      methods.push({ id: "mercadopago", name: "MercadoPago", enabled: true, icon: null });
-    }
-    if (s.paypal_client_id) {
-      methods.push({ id: "paypal", name: "PayPal", enabled: true, icon: null });
-    }
-    if (s.whatsapp_number) {
-      methods.push({ id: "whatsapp", name: "WhatsApp (Pago manual)", enabled: true, icon: null });
-    }
+    if (s.mercadopago_public_key) methods.push({ id: "mercadopago", name: "MercadoPago", enabled: true, icon: null });
+    if (s.paypal_client_id) methods.push({ id: "paypal", name: "PayPal", enabled: true, icon: null });
+    if (s.whatsapp_number) methods.push({ id: "whatsapp", name: "WhatsApp (Pago manual)", enabled: true, icon: null });
     return {
       logoUrl: s.logo_url || "",
       mercadopago_public_key: s.mercadopago_public_key,
@@ -89,7 +89,6 @@ const ProductDetail = () => {
   const handleAddToCart = () => {
     if (!product) return;
     if (!canAddToCart || (!isVariable && currentStock === 0)) return;
-
     const finalPrice = currentPrice || product.price_mxn;
     addItem({
       id: product.id,
@@ -103,10 +102,7 @@ const ProductDetail = () => {
         sku: selectedVariation.sku,
       } : undefined,
     });
-    toast({
-      title: "Agregado al carrito",
-      description: product.title,
-    });
+    toast({ title: "Agregado al carrito", description: product.title });
   };
 
   const handleWhatsApp = () => {
@@ -119,10 +115,10 @@ const ProductDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className={`${theme.pageBg} ${theme.fontFamily} min-h-screen flex items-center justify-center`}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando producto...</p>
+          <div className={`animate-spin rounded-full h-10 w-10 border-b-2 border-current mx-auto mb-3 ${theme.textPrimary}`}></div>
+          <p className={`text-sm ${theme.textSecondary}`}>Cargando producto...</p>
         </div>
       </div>
     );
@@ -132,25 +128,59 @@ const ProductDetail = () => {
     return <StoreNotFound domain={window.location.hostname} />;
   }
 
+  // Header is the same shape everywhere; only its tokens change.
+  const Header = (
+    <header className={`${theme.headerBg} ${theme.headerBorder} sticky top-0 z-10`}>
+      <div className={`${theme.containerMaxWidth} mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-4`}>
+        <button
+          onClick={() => navigate(buildHomeUrl())}
+          className={`flex items-center gap-1.5 sm:gap-2 ${theme.textPrimary} hover:opacity-70 transition-opacity text-xs sm:text-sm`}
+        >
+          <ArrowLeft className="w-4 h-4 flex-shrink-0" />
+          <span className="hidden sm:inline">Volver a la tienda</span>
+          <span className="sm:hidden">Volver</span>
+        </button>
+        <div className="flex-1 flex justify-center max-w-[50%]">
+          <LogoDisplay
+            logoUrl={effectiveSettings?.logo_url}
+            logoSize={effectiveSettings?.logo_size}
+            fallbackText={tenant?.name || "TIENDA"}
+            disableFetch
+          />
+        </div>
+        <button
+          onClick={toggleCart}
+          className={`relative p-1.5 sm:p-2 hover:opacity-70 transition-opacity ${theme.buttonRadius}`}
+          aria-label="Abrir carrito"
+        >
+          <ShoppingCart className={`w-5 h-5 ${theme.textPrimary}`} />
+          {totalItems > 0 && (
+            <span className={`absolute -top-0.5 -right-0.5 ${theme.saleBg} ${theme.saleText} text-[10px] sm:text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center`}>
+              {totalItems}
+            </span>
+          )}
+        </button>
+      </div>
+    </header>
+  );
+
   if (!product) {
     return (
-      <div className="min-h-screen bg-white flex flex-col">
-        <header className="border-b border-gray-200 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <button onClick={() => navigate(buildHomeUrl())} className="flex items-center gap-2 text-gray-700 hover:text-gray-900">
-              <ArrowLeft className="w-4 h-4" />
-              <span className="text-sm">Volver a la tienda</span>
+      <div className={`${theme.pageBg} ${theme.fontFamily} min-h-screen flex flex-col`}>
+        {Header}
+        <div className="flex-1 flex items-center justify-center px-6">
+          <div className="text-center">
+            <div className="text-5xl sm:text-6xl mb-4">🔍</div>
+            <h1 className={`text-xl sm:text-2xl font-bold mb-2 ${theme.textPrimary}`}>Producto no encontrado</h1>
+            <p className={`text-sm sm:text-base mb-6 ${theme.textSecondary}`}>
+              Este producto ya no está disponible o el enlace es incorrecto.
+            </p>
+            <button
+              onClick={() => navigate(buildHomeUrl())}
+              className={`px-6 py-2.5 ${theme.buttonPrimary} ${theme.buttonRadius}`}
+            >
+              Volver a la tienda
             </button>
-            <LogoDisplay logoUrl={effectiveSettings?.logo_url} logoSize={effectiveSettings?.logo_size} fallbackText={tenant?.name || "TIENDA"} disableFetch />
-            <div className="w-24" />
-          </div>
-        </header>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center px-6">
-            <div className="text-6xl mb-4">🔍</div>
-            <h1 className="text-2xl font-bold mb-2">Producto no encontrado</h1>
-            <p className="text-gray-600 mb-6">Este producto ya no está disponible o el enlace es incorrecto.</p>
-            <Button onClick={() => navigate(buildHomeUrl())}>Volver a la tienda</Button>
           </div>
         </div>
       </div>
@@ -166,68 +196,39 @@ const ProductDetail = () => {
     : false;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <header className="border-b border-gray-200 bg-white sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-          <button
-            onClick={() => navigate(buildHomeUrl())}
-            className="flex items-center gap-2 text-gray-700 hover:text-gray-900 text-sm"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Volver a la tienda</span>
-          </button>
+    <div className={`${theme.pageBg} ${theme.fontFamily} ${theme.textPrimary} min-h-screen flex flex-col`}>
+      {Header}
 
-          <div className="flex-1 flex justify-center">
-            <LogoDisplay
-              logoUrl={effectiveSettings?.logo_url}
-              logoSize={effectiveSettings?.logo_size}
-              tenantName={tenant?.name}
-            />
-          </div>
-
-          <button
-            onClick={toggleCart}
-            className="relative p-2 hover:bg-gray-100 rounded-full"
-            aria-label="Abrir carrito"
-          >
-            <ShoppingCart className="w-5 h-5" />
-            {totalItems > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {totalItems}
-              </span>
-            )}
-          </button>
-        </div>
-      </header>
-
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
+      <main className={`flex-1 ${theme.containerMaxWidth} w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 lg:gap-12">
           <div>
-            <ProductImageGallery
-              images={product.images || []}
-              productName={product.title}
-              showOutOfStock={isVariable ? !hasAnyVariantStock : currentStock === 0}
-            />
+            <div className={`${theme.galleryAspect} overflow-hidden ${theme.buttonRadius}`}>
+              <ProductImageGallery
+                images={product.images || []}
+                productName={product.title}
+                showOutOfStock={isVariable ? !hasAnyVariantStock : currentStock === 0}
+              />
+            </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div>
-              <h1 className="font-bold text-gray-900 text-2xl md:text-3xl lg:text-4xl flex items-start gap-3 flex-wrap">
+              <h1 className={`${theme.headingScale} ${theme.headingFont} ${theme.textPrimary} flex items-start gap-2 sm:gap-3 flex-wrap`}>
                 <span>{product.title}</span>
                 {hasDiscount && (
-                  <span className="text-xs font-semibold bg-red-500 text-white px-2 py-1 rounded-full whitespace-nowrap">
+                  <span className={`${theme.saleBg} ${theme.saleText} text-[10px] sm:text-xs font-semibold px-2 py-0.5 sm:py-1 ${theme.buttonRadius} whitespace-nowrap mt-1`}>
                     -{Math.round(((product.price_mxn - product.sale_price_mxn) / product.price_mxn) * 100)}% OFF
                   </span>
                 )}
               </h1>
               {product.sku && (
-                <p className="text-xs text-gray-500 mt-2">SKU: {product.sku}</p>
+                <p className={`text-[11px] sm:text-xs ${theme.textSecondary} mt-1.5 sm:mt-2`}>SKU: {product.sku}</p>
               )}
             </div>
 
             {product.description && (
               <div>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                <p className={`${theme.textPrimary} text-sm sm:text-base leading-relaxed whitespace-pre-line opacity-90`}>
                   {product.description}
                 </p>
               </div>
@@ -235,11 +236,11 @@ const ProductDetail = () => {
 
             {product.features && product.features.length > 0 && (
               <div>
-                <h2 className="font-semibold text-gray-900 mb-2">Características</h2>
+                <h2 className={`font-semibold ${theme.textPrimary} mb-2 text-sm sm:text-base`}>Características</h2>
                 <ul className="space-y-1">
                   {product.features.map((feature: string, index: number) => (
-                    <li key={index} className="text-gray-700 flex items-start">
-                      <span className="w-2 h-2 bg-gray-400 rounded-full mr-2 mt-2 flex-shrink-0"></span>
+                    <li key={index} className={`${theme.textPrimary} flex items-start text-sm sm:text-base opacity-90`}>
+                      <span className={`w-1.5 h-1.5 ${theme.saleBg} rounded-full mr-2 mt-1.5 sm:mt-2 flex-shrink-0`}></span>
                       <span>{feature}</span>
                     </li>
                   ))}
@@ -256,70 +257,69 @@ const ProductDetail = () => {
               onVariationChange={(variation: any) => setSelectedVariation(variation)}
             />
 
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 flex-wrap">
+            <div className="space-y-1.5 sm:space-y-2">
+              <div className="flex items-baseline gap-2 sm:gap-3 flex-wrap">
                 {currentPrice > 0 ? (
-                  <span className="text-3xl md:text-4xl font-bold text-gray-900">
-                    ${currentPrice.toFixed(2)} MXN
+                  <span className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${theme.textPrimary}`}>
+                    ${currentPrice.toFixed(2)} <span className="text-base sm:text-lg font-normal opacity-60">MXN</span>
                   </span>
                 ) : isVariable ? (
-                  <span className="text-3xl md:text-4xl font-bold text-gray-900">
-                    Desde ${product.price_mxn.toFixed(2)} MXN
+                  <span className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${theme.textPrimary}`}>
+                    Desde ${product.price_mxn.toFixed(2)} <span className="text-base sm:text-lg font-normal opacity-60">MXN</span>
                   </span>
                 ) : (
-                  <span className="text-3xl md:text-4xl font-bold text-gray-900">
-                    ${product.price_mxn.toFixed(2)} MXN
+                  <span className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${theme.textPrimary}`}>
+                    ${product.price_mxn.toFixed(2)} <span className="text-base sm:text-lg font-normal opacity-60">MXN</span>
                   </span>
                 )}
                 {hasDiscount && currentPrice === product.sale_price_mxn && (
-                  <span className="text-lg line-through text-gray-400">
+                  <span className={`text-sm sm:text-base lg:text-lg line-through ${theme.textSecondary}`}>
                     ${product.price_mxn.toFixed(2)}
                   </span>
                 )}
               </div>
               {!isVariable && currentStock > 0 && (
-                <p className="text-sm text-green-600">✓ {currentStock} disponibles</p>
+                <p className={`text-xs sm:text-sm ${theme.textAccent} opacity-90`}>✓ {currentStock} disponibles</p>
               )}
               {!isVariable && currentStock === 0 && (
-                <p className="text-sm text-red-600">Producto agotado</p>
+                <p className={`text-xs sm:text-sm ${theme.textAccent}`}>Producto agotado</p>
               )}
               {isVariable && !canAddToCart && hasAnyVariantStock && (
-                <p className="text-sm text-gray-500">Selecciona las opciones para ver disponibilidad.</p>
+                <p className={`text-xs sm:text-sm ${theme.textSecondary}`}>Selecciona las opciones para ver disponibilidad.</p>
               )}
               {isVariable && !hasAnyVariantStock && (
-                <p className="text-sm text-red-600">Sin stock en ninguna variación</p>
+                <p className={`text-xs sm:text-sm ${theme.textAccent}`}>Sin stock en ninguna variación</p>
               )}
             </div>
 
-            <div className="space-y-3 pt-2">
-              <Button
+            <div className="space-y-2.5 sm:space-y-3 pt-1 sm:pt-2">
+              <button
                 onClick={handleAddToCart}
-                className="w-full"
-                size="lg"
                 disabled={!canAddToCart || (!isVariable && currentStock === 0)}
+                className={`w-full ${theme.buttonPrimary} px-5 py-3 sm:py-4 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-sm sm:text-base`}
               >
-                <ShoppingCart className="w-5 h-5 mr-2" />
+                <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
                 {isVariable && !canAddToCart
                   ? "Selecciona opciones"
                   : (currentStock === 0 && !isVariable)
                     ? "Agotado"
                     : "Agregar al carrito"}
-              </Button>
+              </button>
 
               {effectiveSettings?.whatsapp_number && (
-                <Button
+                <button
                   onClick={handleWhatsApp}
-                  variant="outline"
-                  className="w-full"
-                  size="lg"
+                  className={`w-full ${theme.buttonSecondary} px-5 py-3 sm:py-4 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base`}
                 >
-                  <MessageCircle className="w-5 h-5 mr-2" />
+                  <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                   Consultar por WhatsApp
-                </Button>
+                </button>
               )}
             </div>
           </div>
         </div>
+
+        <div className="mt-8 sm:mt-12" />
       </main>
 
       <CartSidebar checkoutConfig={checkoutConfig} />
