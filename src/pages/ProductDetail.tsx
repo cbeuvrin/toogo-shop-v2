@@ -55,6 +55,37 @@ const ProductDetail = () => {
     return host ? `/?host=${encodeURIComponent(host)}` : "/";
   };
 
+  // Build checkoutConfig from public RPC settings so the CheckoutModal
+  // doesn't have to query tables that anonymous shoppers can't read under RLS.
+  const checkoutConfig = useMemo(() => {
+    const s = effectiveSettings || {};
+    const methods: any[] = [];
+    if (s.mercadopago_public_key) {
+      methods.push({ id: "mercadopago", name: "MercadoPago", enabled: true, icon: null });
+    }
+    if (s.paypal_client_id) {
+      methods.push({ id: "paypal", name: "PayPal", enabled: true, icon: null });
+    }
+    if (s.whatsapp_number) {
+      methods.push({ id: "whatsapp", name: "WhatsApp (Pago manual)", enabled: true, icon: null });
+    }
+    return {
+      logoUrl: s.logo_url || "",
+      mercadopago_public_key: s.mercadopago_public_key,
+      paypal_client_id: s.paypal_client_id,
+      whatsapp_number: s.whatsapp_number,
+      whatsapp_message: s.whatsapp_message,
+      paymentMethods: methods,
+      shippingInfo: {
+        enabled: s.shipping_enabled || false,
+        type: s.shipping_type || "free_minimum",
+        minimumAmount: s.shipping_minimum_amount || 0,
+        flatRate: s.shipping_flat_rate || 0,
+        zonesConfig: s.shipping_zones_config || [],
+      },
+    };
+  }, [effectiveSettings]);
+
   const handleAddToCart = () => {
     if (!product) return;
     if (!canAddToCart || (!isVariable && currentStock === 0)) return;
@@ -291,7 +322,7 @@ const ProductDetail = () => {
         </div>
       </main>
 
-      <CartSidebar />
+      <CartSidebar checkoutConfig={checkoutConfig} />
     </div>
   );
 };
