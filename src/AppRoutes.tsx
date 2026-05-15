@@ -24,6 +24,7 @@ const MercadopagoConnected = React.lazy(() => import("./pages/MercadopagoConnect
 const Blog = React.lazy(() => import("./pages/Blog"));
 const BlogPost = React.lazy(() => import("./pages/BlogPost"));
 const Soporte = React.lazy(() => import("./pages/Soporte"));
+const ProductDetail = React.lazy(() => import("./pages/ProductDetail"));
 
 export const AppRoutes = () => {
     return (
@@ -51,6 +52,7 @@ export const AppRoutes = () => {
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
                 <Route path="/soporte" element={<Soporte />} />
+                <Route path="/product/:slug" element={<ProductDetail />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
             </Routes>
