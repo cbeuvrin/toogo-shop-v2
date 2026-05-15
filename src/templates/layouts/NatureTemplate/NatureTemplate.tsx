@@ -78,7 +78,7 @@ export const NatureTemplate = (props: any) => {
         return (
             <div
                 className="group cursor-pointer flex flex-col"
-                onClick={() => handleNavigate(`/product/${product.slug || product.id}`)}
+                onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}
             >
                 <div
                     className="relative aspect-[3/4] overflow-hidden mb-3"

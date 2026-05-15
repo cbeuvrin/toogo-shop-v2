@@ -87,7 +87,7 @@ export const TrendyFashionTemplate = (props: any) => {
     const ProductCard = ({ product }: { product: any }) => (
         <div
             className="group cursor-pointer"
-            onClick={() => handleNavigate(`/product/${product.slug || product.id}`)}
+            onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}
         >
             <div
                 className="relative aspect-[3/4] overflow-hidden rounded-2xl mb-3 transition-all duration-500"

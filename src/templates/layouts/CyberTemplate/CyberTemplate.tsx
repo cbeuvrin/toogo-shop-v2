@@ -251,7 +251,7 @@ export const CyberTemplate = (props: any) => {
                                     key={product.id}
                                     className="group cursor-pointer rounded-xl overflow-hidden border transition-all hover:border-opacity-100"
                                     style={{ borderColor: cyberBorder, backgroundColor: cyberSurface }}
-                                    onClick={() => handleNavigate(`/product/${product.slug || product.id}`)}
+                                    onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}
                                 >
                                     <div className="relative aspect-square overflow-hidden">
                                         <img src={image} alt={product.title || product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />

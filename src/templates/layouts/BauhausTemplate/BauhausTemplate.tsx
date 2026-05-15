@@ -190,7 +190,7 @@ export const BauhausTemplate = (props: any) => {
                                 <div
                                     key={product.id}
                                     className="group cursor-pointer"
-                                    onClick={() => handleNavigate(`/product/${product.slug || product.id}`)}
+                                    onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}
                                 >
                                     <div className="relative mb-4">
                                         <div className="absolute inset-0 translate-x-2 translate-y-2 transition-transform group-hover:translate-x-3 group-hover:translate-y-3" style={{ backgroundColor: accentColor }} />

@@ -10,6 +10,8 @@ import { PremiumBrandTemplate } from "@/templates/layouts/PremiumBrandTemplate/P
 import { BauhausTemplate } from "@/templates/layouts/BauhausTemplate/BauhausTemplate";
 import { CyberTemplate } from "@/templates/layouts/CyberTemplate/CyberTemplate";
 import { StoreNotFound } from "./StoreNotFound";
+import { ProductDetailModal } from "@/templates/productDetail/ProductDetailModal";
+import { useState } from "react";
 
 // Template Switcher Component — 10 templates available
 const TemplateRenderer = (props: any) => {
@@ -43,7 +45,10 @@ const TemplateRenderer = (props: any) => {
 
 const Tienda = () => {
   const store = useToogoStore();
-  const { isLoading, storeData, forcedTenantId, hostname, hostOverride } = store;
+  const { isLoading, storeData, forcedTenantId, hostname, hostOverride, effectiveSettings } = store;
+
+  const [modalProduct, setModalProduct] = useState<any | null>(null);
+  const handleProductClick = (product: any) => setModalProduct(product);
 
   if (isLoading) {
     return (
@@ -75,8 +80,19 @@ const Tienda = () => {
     return <StoreNotFound domain={hostname} />;
   }
 
-  // Pass ALL store state and actions to the renderer
-  return <TemplateRenderer {...store} />;
+  // Pass ALL store state and actions to the renderer + the modal opener.
+  // Templates use onProductClick (falls back to /product/:slug nav if absent).
+  return (
+    <>
+      <TemplateRenderer {...store} onProductClick={handleProductClick} />
+      <ProductDetailModal
+        open={!!modalProduct}
+        onOpenChange={(open) => { if (!open) setModalProduct(null); }}
+        product={modalProduct}
+        effectiveSettings={effectiveSettings}
+      />
+    </>
+  );
 };
 
 

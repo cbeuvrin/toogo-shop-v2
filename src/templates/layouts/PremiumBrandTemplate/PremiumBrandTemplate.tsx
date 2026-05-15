@@ -242,7 +242,7 @@ export const PremiumBrandTemplate = (props: any) => {
                                     if (!product) return null;
                                     const image = (product.images?.[0] && typeof product.images[0] === 'object') ? product.images[0].url : (product.images?.[0] || product.image || '/placeholder.svg');
                                     return (
-                                        <div key={product.id} className="group cursor-pointer bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300" onClick={() => handleNavigate(`/product/${product.slug || product.id}`)}>
+                                        <div key={product.id} className="group cursor-pointer bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300" onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}>
                                             <div className="relative aspect-square bg-[#f8f8f8] p-6 flex items-center justify-center">
                                                 <img src={image} alt={product.title || product.name} className="max-w-full max-h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500" />
                                                 <button
@@ -261,7 +261,7 @@ export const PremiumBrandTemplate = (props: any) => {
                                 })
                             ) : (
                                 displayProducts.slice(0, 4).map((product: any) => (
-                                    <div key={product.id} className="group cursor-pointer bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300" onClick={() => handleNavigate(`/product/${product.slug || product.id}`)}>
+                                    <div key={product.id} className="group cursor-pointer bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300" onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}>
                                         <div className="relative aspect-square bg-[#f8f8f8] p-6 flex items-center justify-center">
                                             <img src={(product.images?.[0] && typeof product.images[0] === 'object') ? product.images[0].url : (product.images?.[0] || product.image || '/placeholder.svg')} alt={product.title || product.name} className="max-w-full max-h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500" />
                                             <button
@@ -295,7 +295,7 @@ export const PremiumBrandTemplate = (props: any) => {
                 {displayProducts.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                         {(isCatalog ? displayProducts : displayProducts.slice(0, 8)).map((product: any) => (
-                            <div key={product.id} className="group cursor-pointer bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300" onClick={() => handleNavigate(`/product/${product.slug || product.id}`)}>
+                            <div key={product.id} className="group cursor-pointer bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300" onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}>
                                 <div className="relative aspect-square bg-[#f8f8f8] p-6 flex items-center justify-center">
                                     <img src={(product.images?.[0] && typeof product.images[0] === 'object') ? product.images[0].url : (product.images?.[0] || product.image || '/placeholder.svg')} alt={product.title || product.name} className="max-w-full max-h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500" />
                                     <button

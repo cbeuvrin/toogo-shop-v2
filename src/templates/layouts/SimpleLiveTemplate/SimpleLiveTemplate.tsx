@@ -101,7 +101,7 @@ export const SimpleLiveTemplate = (props: any) => {
 
     // Product Card Component
     const ProductCard = ({ product }: { product: any }) => (
-        <div className="w-full group cursor-pointer" onClick={() => handleNavigate(`/product/${product.slug || product.id}`)}>
+        <div className="w-full group cursor-pointer" onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}>
             <div className="relative aspect-[3/4] rounded-sm overflow-hidden mb-4 transition-colors duration-300" style={{ backgroundColor: cardBgColor }}>
                 <div className="absolute inset-0 transition-colors duration-300 opacity-0 group-hover:opacity-100" style={{ backgroundColor: cardHoverColor }} />
                 <img
@@ -434,7 +434,7 @@ export const SimpleLiveTemplate = (props: any) => {
                                         const image = (firstImg && typeof firstImg === 'object') ? firstImg.url : (firstImg || product.image || "/placeholder.svg");
 
                                         return (
-                                            <div key={product.id} className="relative aspect-square md:aspect-[4/3] bg-gray-100 group overflow-hidden cursor-pointer" onClick={() => handleNavigate(`/product/${product.slug || product.id}`)}>
+                                            <div key={product.id} className="relative aspect-square md:aspect-[4/3] bg-gray-100 group overflow-hidden cursor-pointer" onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}>
                                                 <img src={image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                                                 <div className="absolute bottom-8 left-8">
                                                     <h3 className="text-white text-3xl font-bold uppercase mb-2 drop-shadow-md">{product.title || product.name}</h3>

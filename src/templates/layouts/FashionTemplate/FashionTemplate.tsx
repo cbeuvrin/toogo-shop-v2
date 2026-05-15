@@ -71,7 +71,7 @@ export const FashionTemplate = (props: any) => {
     const ProductCard = ({ product }: { product: any }) => (
         <div
             className="group cursor-pointer"
-            onClick={() => handleNavigate(`/product/${product.slug || product.id}`)}
+            onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}
         >
             <div className="relative aspect-[3/4] overflow-hidden mb-3" style={{ backgroundColor: cardBgColor }}>
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-0" style={{ backgroundColor: cardHoverColor }} />
@@ -326,7 +326,7 @@ export const FashionTemplate = (props: any) => {
                             <div
                                 key={product.id}
                                 className="w-full md:w-1/4 group cursor-pointer border-r border-gray-100 last:border-r-0 hover:bg-gray-50 transition-colors"
-                                onClick={() => handleNavigate(`/product/${product.slug || product.id}`)}
+                                onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}
                             >
                                 <div className="relative aspect-[3/4] bg-gray-50 overflow-hidden">
                                     <img
