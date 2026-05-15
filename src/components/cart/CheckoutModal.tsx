@@ -103,7 +103,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
     try {
-      // Get tenant settings to check enabled payment methods
+      // 1. Check OAuth integrations first (preferred source of truth)
+      const { data: integrations } = await (supabase as any)
+        .from('tenant_payment_integrations')
+        .select('provider, public_key, status')
+        .eq('tenant_id', currentTenantId)
+        .eq('status', 'active');
+
+      const activeProviders = new Map<string, string | null>();
+      (integrations || []).forEach((row: any) => {
+        activeProviders.set(row.provider, row.public_key);
+      });
+
+      // 2. Legacy fallback: tenant_settings (used before OAuth migration + still needed for paypal/whatsapp)
       const {
         data: settings,
         error
@@ -114,8 +126,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       }
       const methods: PaymentMethod[] = [];
 
-      // Add payment methods based on configuration
-      if (settings?.mercadopago_public_key) {
+      // MercadoPago: prefer OAuth integration, fall back to legacy tenant_settings key
+      const mpFromOAuth = activeProviders.get('mercadopago');
+      if (mpFromOAuth || settings?.mercadopago_public_key) {
         methods.push({
           id: 'mercadopago',
           name: 'MercadoPago',
@@ -123,7 +136,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           icon: <CreditCard className="w-5 h-5" />
         });
       }
-      if (settings?.paypal_client_id) {
+      // PayPal: OAuth (future) or legacy client_id
+      if (activeProviders.has('paypal') || settings?.paypal_client_id) {
         methods.push({
           id: 'paypal',
           name: 'PayPal',
