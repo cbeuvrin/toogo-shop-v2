@@ -89,10 +89,12 @@ serve(async (req) => {
       throw new Error("Invalid or inactive tenant");
     }
 
-    // SECURITY: Fetch tenant payment settings (legacy fallback)
+    // SECURITY: Fetch tenant payment settings.
+    // Note: MercadoPago credentials live in tenant_payment_integrations (OAuth);
+    // tenant_settings only holds the public_key for the Brick + PayPal/exchange.
     const { data: tenantSettings, error: settingsError } = await supabaseClient
       .from('tenant_settings')
-      .select('mercadopago_public_key, mercadopago_access_token, paypal_client_id, exchange_rate_value')
+      .select('mercadopago_public_key, paypal_client_id, exchange_rate_value')
       .eq('tenant_id', tenant_id)
       .maybeSingle();
 
@@ -111,7 +113,6 @@ serve(async (req) => {
 
     logStep("Payment auth resolved", {
       has_oauth: !!mpIntegration?.access_token,
-      has_legacy_token: !!tenantSettings?.mercadopago_access_token,
       has_paypal: !!tenantSettings?.paypal_client_id,
     });
 
@@ -231,12 +232,6 @@ serve(async (req) => {
 
         applyMarketplaceFee = true;
         feePct = Number(mpIntegration.application_fee_pct ?? 1.0);
-      } else if (tenantSettings?.mercadopago_access_token) {
-        // Legacy: tenant aún no migró a OAuth. Usamos su token directo, SIN fee.
-        // El dashboard les muestra banner para que migren a OAuth.
-        logStep("Using legacy MP credentials (no application_fee)");
-        mpAccessToken = tenantSettings.mercadopago_access_token;
-        applyMarketplaceFee = false;
       } else {
         throw new Error('MercadoPago no está conectado para esta tienda. El dueño debe conectarse desde el dashboard.');
       }
