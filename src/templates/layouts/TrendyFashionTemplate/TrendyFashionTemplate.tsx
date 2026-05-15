@@ -355,7 +355,7 @@ export const TrendyFashionTemplate = (props: any) => {
                     </div>
                 )}
                 {isCatalog && (
-                    <h1 className="text-3xl font-serif font-bold mb-8">Catálogo</h1>
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold mb-6 sm:mb-8">Catálogo</h1>
                 )}
 
                 {displayProducts.length > 0 ? (

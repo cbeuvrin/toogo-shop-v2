@@ -314,7 +314,7 @@ export const NatureTemplate = (props: any) => {
                                 logoUrl={settings?.logo_url}
                                 fallbackText={settings?.store_name || 'LOGO'}
                             disableFetch={true}
-                                className="text-4xl font-serif font-bold tracking-tight text-gray-900 mb-4"
+                                className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold tracking-tight text-gray-900 mb-4"
                             />
                             <p className="text-sm text-gray-600 mb-6 max-w-xs leading-relaxed">
                                 {contactData?.address || "Configura tu dirección en el editor visual para mostrarla aquí."}

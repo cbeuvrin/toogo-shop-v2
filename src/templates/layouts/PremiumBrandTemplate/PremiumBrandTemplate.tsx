@@ -285,7 +285,7 @@ export const PremiumBrandTemplate = (props: any) => {
 
             {isCatalog && (
                 <div className="container mx-auto px-6 py-12">
-                    <h1 className="text-4xl font-bold text-[#023f66] mb-8">Catálogo</h1>
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#023f66] mb-6 sm:mb-8">Catálogo</h1>
                 </div>
             )}
 
