@@ -137,14 +137,17 @@ export const useToogoStore = () => {
           return;
         }
 
-        // Patch: Fetch template_id manually because RPC might not return it yet
-        let templateId = 'default';
+        // Patch: Fetch template_id manually because RPC might not return it yet.
+        // Start from whatever the RPC returned (if any), so we don't clobber a good
+        // value when the table fetch fails due to RLS on anonymous visitors.
+        // @ts-ignore
+        let templateId: string | undefined = data.settings?.template_id;
         if (data?.tenant?.id) {
           const { data: settingsData } = await supabase
             .from('tenant_settings')
             .select('template_id')
             .eq('tenant_id', data.tenant.id)
-            .maybeSingle(); // Use maybeSingle to avoid errors if missing
+            .maybeSingle();
 
           // @ts-ignore
           if (settingsData?.template_id) {
@@ -153,11 +156,14 @@ export const useToogoStore = () => {
           }
         }
 
-        // Merge template_id into settings
-        if (data.settings) {
-          data.settings.template_id = templateId;
-        } else {
-          data.settings = { template_id: templateId };
+        // Merge template_id into settings only when we actually have one;
+        // otherwise leave the RPC-provided value untouched.
+        if (templateId) {
+          if (data.settings) {
+            data.settings.template_id = templateId;
+          } else {
+            data.settings = { template_id: templateId };
+          }
         }
 
         setStoreData(data);
