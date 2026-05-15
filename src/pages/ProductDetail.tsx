@@ -31,7 +31,16 @@ const ProductDetail = () => {
 
   const product = useMemo(() => {
     if (!products || products.length === 0) return null;
-    return products.find((p: any) => p.slug === slug || p.id === slug) || null;
+    const found = products.find((p: any) => p.slug === slug || p.id === slug);
+    if (!found) return null;
+    // The public RPC returns images as [{id, url, sort}]; ProductImageGallery
+    // expects an array of URL strings. Normalize here so both shapes are accepted.
+    const normalizedImages = Array.isArray(found.images)
+      ? found.images
+          .map((img: any) => (typeof img === "string" ? img : img?.url))
+          .filter(Boolean)
+      : [];
+    return { ...found, images: normalizedImages };
   }, [products, slug]);
 
   const isVariable = product?.product_type === "variable";
@@ -199,7 +208,7 @@ const ProductDetail = () => {
     <div className={`${theme.pageBg} ${theme.fontFamily} ${theme.textPrimary} min-h-screen flex flex-col`}>
       {Header}
 
-      <main className={`flex-1 ${theme.containerMaxWidth} w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8`}>
+      <main className={`flex-1 ${theme.containerMaxWidth} w-full mx-auto px-3 sm:px-6 lg:px-8 pt-6 sm:pt-10 lg:pt-12 pb-8 sm:pb-12`}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 lg:gap-12">
           <div>
             <div className={`${theme.galleryAspect} overflow-hidden ${theme.buttonRadius}`}>
