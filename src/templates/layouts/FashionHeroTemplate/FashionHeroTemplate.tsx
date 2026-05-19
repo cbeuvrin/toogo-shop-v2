@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ShoppingCart, Heart, Search, Menu, X, User, ChevronRight, ArrowRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,29 @@ export const FashionHeroTemplate = (props: any) => {
     const [isCartOpen, setIsCartOpen] = useState(false);
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    // Auto-collapse header nav to hamburger when its intrinsic width would not
+    // fit in the left column. We render an off-screen "measurer" nav with the
+    // same content + styles, then compare its offsetWidth against the visible
+    // left column's clientWidth.
+    const navColRef = useRef<HTMLDivElement>(null);
+    const navMeasurerRef = useRef<HTMLDivElement>(null);
+    const [navOverflows, setNavOverflows] = useState(false);
+    useEffect(() => {
+      const col = navColRef.current;
+      const measurer = navMeasurerRef.current;
+      if (!col || !measurer) return;
+      const check = () => {
+        // Hamburger reserves ~32px when present. Leave a small safety margin.
+        const available = col.clientWidth - 8;
+        const needed = measurer.offsetWidth + 24; // 24px to keep nav off the logo
+        setNavOverflows(needed > available);
+      };
+      check();
+      const ro = new ResizeObserver(check);
+      ro.observe(col);
+      window.addEventListener('resize', check);
+      return () => { ro.disconnect(); window.removeEventListener('resize', check); };
+    }, [categories, view]);
     const scroll = (direction: 'left' | 'right') => {
         if (scrollContainerRef.current) {
             scrollContainerRef.current.scrollBy({ left: direction === 'left' ? -300 : 300, behavior: 'smooth' });
@@ -109,82 +132,80 @@ export const FashionHeroTemplate = (props: any) => {
             {/* ─── HEADER ─── */}
             <header className="sticky top-0 z-50 border-b border-gray-100 transition-all duration-200" style={{ backgroundColor: settings?.navbar_bg_color || '#ffffff' }}>
                 {(() => {
-                  const pos = (settings as any)?.logo_position || 'center';
-                  // Logo is a static flex item so the header grows with logo_size.
-                  // logo_position chooses which of the three columns it lives in.
+                  // Indico: logo always centered. Grid with two equal flexible cols flanking
+                  // an auto-width center keeps the logo on the geometric middle no matter
+                  // how wide the nav or icons grow.
+                  const navStyle = props.heroStyles?.navMenu || {};
+                  const navFontFamily = navStyle.fontFamily === 'serif' ? 'ui-serif, Georgia, serif'
+                    : navStyle.fontFamily === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace'
+                    : navStyle.fontFamily === 'sans' ? 'ui-sans-serif, system-ui, sans-serif' : undefined;
+                  const navInline = {
+                    fontFamily: navFontFamily,
+                    fontSize: navStyle.fontSize ? `${navStyle.fontSize}px` : undefined,
+                    color: navStyle.color || undefined,
+                  };
+                  // Nav stays mounted so ResizeObserver can keep measuring it. When
+                  // navOverflows is true we visually hide it (visibility:hidden, not display:none)
+                  // and show the hamburger in its place.
+                  const showNavVisible = !isCatalog && !navOverflows;
                   return (
-                <div className="w-full px-6 min-h-16 py-3 flex items-center gap-4">
+                <div className="w-full px-6 min-h-16 py-3 grid items-center gap-4" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
 
-                    {/* LEFT slot — nav + mobile menu, plus logo when position=left */}
-                    <div className={`flex items-center gap-4 ${pos === 'center' ? 'flex-1' : pos === 'left' ? 'flex-shrink-0' : 'flex-1 min-w-0'}`}>
-                      <button className="md:hidden" onClick={() => setIsMenuOpen(true)}>
+                    {/* LEFT col — nav (desktop, no overflow) OR hamburger */}
+                    <div ref={navColRef} className="flex items-center gap-3 min-w-0 justify-start relative">
+                      {/* Hamburger: always on mobile; on desktop only when nav overflows */}
+                      <button
+                        className={`${showNavVisible ? 'md:hidden' : 'md:block'} flex-shrink-0`}
+                        onClick={() => setIsMenuOpen(true)}
+                        aria-label="Abrir menú"
+                      >
                           <Menu className="w-6 h-6" style={{ color: headerIconColor }} />
                       </button>
-                      {!isCatalog && pos !== 'left' && (() => {
-                          const navStyle = props.heroStyles?.navMenu || {};
-                          const navFontFamily = navStyle.fontFamily === 'serif' ? 'ui-serif, Georgia, serif'
-                            : navStyle.fontFamily === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace'
-                            : navStyle.fontFamily === 'sans' ? 'ui-sans-serif, system-ui, sans-serif' : undefined;
-                          const navInline = {
-                            fontFamily: navFontFamily,
-                            fontSize: navStyle.fontSize ? `${navStyle.fontSize}px` : undefined,
-                            color: navStyle.color || undefined,
-                          };
-                          return (
-                          <nav className="hidden md:flex gap-7 text-sm font-medium text-gray-600 overflow-x-auto max-w-[40vw] no-scrollbar">
+                      {/* Visible desktop nav when there is room */}
+                      {!isCatalog && showNavVisible && (
+                          <nav className="hidden md:flex gap-7 text-sm font-medium text-gray-600 whitespace-nowrap">
                               {categories?.filter((cat: any) => !cat.parent_id).map((cat: any) => (
                                   <button
                                       key={cat.id}
                                       onClick={() => handleNavigate('/catalogo', { category: cat.name.toLowerCase() })}
-                                      className="hover:text-black transition-colors uppercase tracking-wider text-xs whitespace-nowrap"
+                                      className="hover:text-black transition-colors uppercase tracking-wider text-xs flex-shrink-0"
                                       style={navInline}
                                   >
                                       {cat.name}
                                   </button>
                               ))}
-                              <button onClick={() => handleNavigate('/catalogo')} className="hover:text-black transition-colors uppercase tracking-wider text-xs whitespace-nowrap" style={navInline}>Todos</button>
+                              <button onClick={() => handleNavigate('/catalogo')} className="hover:text-black transition-colors uppercase tracking-wider text-xs flex-shrink-0" style={navInline}>Todos</button>
                           </nav>
-                          );
-                      })()}
-                      {pos === 'left' && (
-                          <div className="cursor-pointer" onClick={() => handleNavigate('/tienda')}>
-                              <LogoDisplay
-                                  logoUrl={settings?.logo_url}
-                                  logoSize={settings?.logo_size}
-                                  fallbackText={settings?.store_name || 'LOGO'}
-                                  disableFetch={true}
-                                  className="text-2xl font-black uppercase tracking-tighter"
-                              />
-                          </div>
+                      )}
+                      {/* Off-screen measurer — same content/styles so we know the intrinsic width */}
+                      {!isCatalog && (
+                        <div
+                          ref={navMeasurerRef}
+                          aria-hidden="true"
+                          className="hidden md:flex gap-7 text-sm font-medium whitespace-nowrap absolute left-0 top-0 pointer-events-none invisible"
+                          style={{ ...navInline, transform: 'translateY(-9999px)' }}
+                        >
+                          {categories?.filter((cat: any) => !cat.parent_id).map((cat: any) => (
+                            <span key={`m-${cat.id}`} className="uppercase tracking-wider text-xs flex-shrink-0">{cat.name}</span>
+                          ))}
+                          <span className="uppercase tracking-wider text-xs flex-shrink-0">Todos</span>
+                        </div>
                       )}
                     </div>
 
-                    {/* CENTER slot — logo when position=center */}
-                    {pos === 'center' && (
-                      <div className="flex-shrink-0 cursor-pointer" onClick={() => handleNavigate('/tienda')}>
-                          <LogoDisplay
-                              logoUrl={settings?.logo_url}
-                              logoSize={settings?.logo_size}
-                              fallbackText={settings?.store_name || 'LOGO'}
-                              disableFetch={true}
-                              className="text-2xl font-black uppercase tracking-tighter"
-                          />
-                      </div>
-                    )}
+                    {/* CENTER col — logo ALWAYS centered */}
+                    <div className="flex-shrink-0 cursor-pointer justify-self-center" onClick={() => handleNavigate('/tienda')}>
+                        <LogoDisplay
+                            logoUrl={settings?.logo_url}
+                            logoSize={settings?.logo_size}
+                            fallbackText={settings?.store_name || 'LOGO'}
+                            disableFetch={true}
+                            className="text-2xl font-black uppercase tracking-tighter"
+                        />
+                    </div>
 
-                    {/* RIGHT slot — icons, plus logo when position=right */}
-                    <div className={`flex items-center gap-5 ${pos === 'center' ? 'flex-1 justify-end' : pos === 'right' ? 'flex-1 justify-end' : 'flex-shrink-0 justify-end'}`}>
-                        {pos === 'right' && (
-                            <div className="cursor-pointer mr-auto" onClick={() => handleNavigate('/tienda')}>
-                                <LogoDisplay
-                                    logoUrl={settings?.logo_url}
-                                    logoSize={settings?.logo_size}
-                                    fallbackText={settings?.store_name || 'LOGO'}
-                                    disableFetch={true}
-                                    className="text-2xl font-black uppercase tracking-tighter"
-                                />
-                            </div>
-                        )}
+                    {/* RIGHT col — icons */}
+                    <div className="flex items-center gap-5 justify-end min-w-0">
                         <form onSubmit={handleSearch} className="hidden md:flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-full px-4 py-2 hover:bg-gray-100 transition-colors w-52">
                             <Search className="text-gray-400" style={{ color: headerIconColor, width: `${14 * headerIconScale}px`, height: `${14 * headerIconScale}px` }} />
                             <input
