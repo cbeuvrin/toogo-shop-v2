@@ -1340,13 +1340,24 @@ export const StorePreview = ({
             </div>
           </div>
 
-          {/* Hamburger drawer — preview only opens it for visual feedback */}
+          {/* Hamburger drawer — opens from the LEFT, title is editable */}
           {hamburgerOpen && (
             <div className="fixed inset-0 z-50" onClick={() => setHamburgerOpen(false)}>
               <div className="absolute inset-0 bg-black/50" />
-              <div className="absolute right-0 top-0 h-full w-72 bg-white shadow-2xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+              <div className="absolute left-0 top-0 h-full w-72 bg-white shadow-2xl flex flex-col" onClick={(e) => e.stopPropagation()}>
                 <div className="flex justify-between items-center p-6 border-b">
-                  <span className="font-black uppercase tracking-tighter text-lg">Menú</span>
+                  <EditableElement type="título menú" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'menuDrawerTitle')}>
+                    <span
+                      className="font-black uppercase tracking-tighter text-lg"
+                      style={{
+                        fontFamily: heroStyleFontFamily(data.hero?.styles?.menuDrawerTitle?.fontFamily),
+                        fontSize: data.hero?.styles?.menuDrawerTitle?.fontSize ? `${data.hero.styles.menuDrawerTitle.fontSize}px` : undefined,
+                        color: data.hero?.styles?.menuDrawerTitle?.color || undefined,
+                      }}
+                    >
+                      {data.hero?.styles?.menuDrawerTitle?.text || "Categorías"}
+                    </span>
+                  </EditableElement>
                   <button onClick={() => setHamburgerOpen(false)}><X className="w-5 h-5" /></button>
                 </div>
                 <nav className="flex-1 p-6 space-y-5">

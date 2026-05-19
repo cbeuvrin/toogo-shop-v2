@@ -254,13 +254,22 @@ export const FashionHeroTemplate = (props: any) => {
                 )}
             </header>
 
-            {/* ─── MOBILE/HAMBURGER MENU — also opens on desktop when nav collapses ─── */}
+            {/* ─── HAMBURGER MENU — opens from the LEFT, also on desktop when nav collapses ─── */}
             {isMenuOpen && (
                 <div className="fixed inset-0 z-50">
                     <div className="absolute inset-0 bg-black/50" onClick={() => setIsMenuOpen(false)} />
-                    <div className="absolute right-0 top-0 h-full w-72 bg-white shadow-2xl flex flex-col">
+                    <div className="absolute left-0 top-0 h-full w-72 bg-white shadow-2xl flex flex-col">
                         <div className="flex justify-between items-center p-6 border-b">
-                            <span className="font-black uppercase tracking-tighter text-lg">{settings?.store_name || "FASHION"}</span>
+                            <span
+                              className="font-black uppercase tracking-tighter text-lg"
+                              style={{
+                                fontFamily: props.heroStyles?.menuDrawerTitle?.fontFamily === 'serif' ? 'ui-serif, Georgia, serif' : props.heroStyles?.menuDrawerTitle?.fontFamily === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace' : props.heroStyles?.menuDrawerTitle?.fontFamily === 'sans' ? 'ui-sans-serif, system-ui, sans-serif' : undefined,
+                                fontSize: props.heroStyles?.menuDrawerTitle?.fontSize ? `${props.heroStyles.menuDrawerTitle.fontSize}px` : undefined,
+                                color: props.heroStyles?.menuDrawerTitle?.color || undefined,
+                              }}
+                            >
+                              {props.heroStyles?.menuDrawerTitle?.text || "Categorías"}
+                            </span>
                             <button onClick={() => setIsMenuOpen(false)}><X className="w-6 h-6" /></button>
                         </div>
                         <nav className="flex-1 p-6 space-y-6">

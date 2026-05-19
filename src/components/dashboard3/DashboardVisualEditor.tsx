@@ -138,7 +138,8 @@ type HeroElementKey =
   | 'sectionTitle2'                     // "Populares ahora"
   | 'footerHeading1' | 'footerHeading2' | 'footerHeading3' // Contacto / Ubicación / Síguenos
   | 'navMenu'                           // Header nav menu (categories) — font/size/color
-  | 'productCardCta';                    // Hover "Agregar +" button on product cards
+  | 'productCardCta'                    // Hover "Agregar +" button on product cards
+  | 'menuDrawerTitle';                   // Title shown at the top of the hamburger drawer
 
 // Template Demo data for preloading
 const getDemoTemplate = (): EditorData => ({
@@ -1101,6 +1102,7 @@ export const DashboardVisualEditor = () => {
           footerHeading3: 'Footer — Síguenos',
           navMenu: 'Menú de categorías',
           productCardCta: 'Botón "Agregar" del producto',
+          menuDrawerTitle: 'Título del menú hamburguesa',
         };
         const defaultMap: Record<HeroElementKey, string> = {
           eyebrow: 'Nueva Colección',
@@ -1117,6 +1119,7 @@ export const DashboardVisualEditor = () => {
           footerHeading3: 'Síguenos',
           navMenu: 'Mujer • Hombre • Kids',
           productCardCta: 'Agregar +',
+          menuDrawerTitle: 'Categorías',
         };
         const heroTextNodeMap: Partial<Record<HeroElementKey, string>> = {
           title: editorData.hero?.title || '',
