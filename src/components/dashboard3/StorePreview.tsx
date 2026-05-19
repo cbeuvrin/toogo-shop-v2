@@ -581,14 +581,20 @@ export const StorePreview = ({
           </div>
         </EditableElement>
 
-        {/* Product Ticker */}
-        {(data.ticker?.enabled !== false) && (
+        {/* Product Ticker — keeps a placeholder in editor mode so users can re-enable a hidden bar */}
+        {((data.ticker?.enabled !== false) || isEditorMode) && (
           <EditableElement type="ticker" isEditorMode={isEditorMode} onEdit={() => onEditElement('ticker')}>
-            <div className={`bg-black text-white py-2 overflow-hidden ${isEditorMode ? 'cursor-pointer hover:bg-zinc-800' : ''}`}>
-              <div className="flex justify-center text-[10px] font-bold uppercase tracking-widest">
-                <span>{data.ticker?.text || "Nuevos estilos cada semana"}</span>
+            {data.ticker?.enabled === false ? (
+              <div className="bg-gray-100 border border-dashed border-gray-300 text-gray-500 py-2 text-center text-[11px] italic cursor-pointer hover:bg-gray-200">
+                Barra de noticias oculta — click para mostrarla
               </div>
-            </div>
+            ) : (
+              <div className={`bg-black text-white py-2 overflow-hidden ${isEditorMode ? 'cursor-pointer hover:bg-zinc-800' : ''}`}>
+                <div className="flex justify-center text-[10px] font-bold uppercase tracking-widest">
+                  <span>{data.ticker?.text || "Nuevos estilos cada semana"}</span>
+                </div>
+              </div>
+            )}
           </EditableElement>
         )}
 
@@ -1120,16 +1126,22 @@ export const StorePreview = ({
           </div>
         </EditableElement>
 
-        {/* Ticker */}
-        {(data.ticker?.enabled !== false) && (
+        {/* Ticker — keeps a placeholder in editor mode so users can re-enable a hidden bar */}
+        {((data.ticker?.enabled !== false) || isEditorMode) && (
           <EditableElement type="ticker" isEditorMode={isEditorMode} onEdit={() => onEditElement('ticker')}>
-            <div className={`border-y-2 border-black bg-white py-4 overflow-hidden ${isEditorMode ? 'cursor-pointer hover:bg-gray-50' : ''}`}>
-              <div className="flex justify-center flex-nowrap whitespace-nowrap gap-8 text-lg lg:text-3xl font-black uppercase tracking-tighter">
-                {Array(6).fill(data.ticker?.text || "24/7 SUPPORT • HIGH QUALITY COTTON • FREE DELIVERY • MONEY BACK GUARANTEE").map((text, i) => (
-                  <span key={i}>{text}</span>
-                ))}
+            {data.ticker?.enabled === false ? (
+              <div className="bg-gray-100 border border-dashed border-gray-300 text-gray-500 py-3 text-center text-[11px] italic cursor-pointer hover:bg-gray-200">
+                Barra de noticias oculta — click para mostrarla
               </div>
-            </div>
+            ) : (
+              <div className={`border-y-2 border-black bg-white py-4 overflow-hidden ${isEditorMode ? 'cursor-pointer hover:bg-gray-50' : ''}`}>
+                <div className="flex justify-center flex-nowrap whitespace-nowrap gap-8 text-lg lg:text-3xl font-black uppercase tracking-tighter">
+                  {Array(6).fill(data.ticker?.text || "24/7 SUPPORT • HIGH QUALITY COTTON • FREE DELIVERY • MONEY BACK GUARANTEE").map((text, i) => (
+                    <span key={i}>{text}</span>
+                  ))}
+                </div>
+              </div>
+            )}
           </EditableElement>
         )}
 
@@ -1288,14 +1300,20 @@ export const StorePreview = ({
           </section>
         </EditableElement>
 
-        {/* Ticker */}
-        {(data.ticker?.enabled !== false) && (
+        {/* Ticker — keeps a placeholder in editor mode so users can re-enable a hidden bar */}
+        {((data.ticker?.enabled !== false) || isEditorMode) && (
           <EditableElement type="ticker" isEditorMode={isEditorMode} onEdit={() => onEditElement('ticker')}>
-            <div className={`bg-black text-white py-2 overflow-hidden ${isEditorMode ? 'cursor-pointer hover:bg-zinc-800' : ''}`}>
-              <div className="flex justify-center text-[10px] font-bold uppercase tracking-widest">
-                <span>{data.ticker?.text || "Envíos rápidos · Calidad garantizada · Atención personalizada"}</span>
+            {data.ticker?.enabled === false ? (
+              <div className="bg-gray-100 border border-dashed border-gray-300 text-gray-500 py-2 text-center text-[11px] italic cursor-pointer hover:bg-gray-200">
+                Barra de noticias oculta — click para mostrarla
               </div>
-            </div>
+            ) : (
+              <div className={`bg-black text-white py-2 overflow-hidden ${isEditorMode ? 'cursor-pointer hover:bg-zinc-800' : ''}`}>
+                <div className="flex justify-center text-[10px] font-bold uppercase tracking-widest">
+                  <span>{data.ticker?.text || "Envíos rápidos · Calidad garantizada · Atención personalizada"}</span>
+                </div>
+              </div>
+            )}
           </EditableElement>
         )}
 
