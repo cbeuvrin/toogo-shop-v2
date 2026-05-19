@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useTenantSettings } from '@/hooks/useTenantSettings';
 
 interface LogoDisplayProps {
@@ -9,7 +9,11 @@ interface LogoDisplayProps {
   tenantId?: string;
   subtleShadow?: boolean;
   logoUrl?: string;
-  logoSize?: number;
+  logoSize?: number;          // desktop / fallback
+  logoSizeMobile?: number;    // <768px override
+  logoSizeTablet?: number;    // 768–1023px override
+  /** Force a viewport mode (editor preview). Overrides window width. */
+  forceDevice?: 'desktop' | 'tablet' | 'mobile';
   /**
    * When true, disables the internal useTenantSettings fetch.
    * Use this in public store templates where logo data already comes
@@ -27,26 +31,49 @@ export const LogoDisplay = ({
   subtleShadow = true,
   logoUrl: propLogoUrl,
   logoSize: propLogoSize,
+  logoSizeMobile,
+  logoSizeTablet,
+  forceDevice,
   disableFetch = false,
 }: LogoDisplayProps) => {
-  // Only fetch from settings hook when:
-  // 1. No logo URL was explicitly provided as prop
-  // 2. No logo size was explicitly provided as prop
-  // 3. The caller doesn't disable the fetch (e.g. public store templates)
   const shouldFetchSettings = !propLogoUrl && !propLogoSize && !disableFetch;
   const { settings, isLoading } = useTenantSettings(shouldFetchSettings ? tenantId : undefined);
 
-  // Calculate dynamic height based on logo_size from settings or props
+  // Track viewport width so we can swap between per-device logo sizes live.
+  const [vw, setVw] = useState<number>(typeof window !== 'undefined' ? window.innerWidth : 1024);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onResize = () => setVw(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Pick the right size for the current device. forceDevice (editor preview)
+  // overrides the actual window width; otherwise we read window.innerWidth.
   const logoHeight = useMemo(() => {
     if (customSize) return customSize;
-    if (propLogoSize) return propLogoSize * 16; // 1-10 scale to 16-160px
-    if (settings?.logo_size && shouldFetchSettings) {
-      return settings.logo_size * 16;
+    const device = forceDevice
+      ?? (vw < 768 ? 'mobile' : vw < 1024 ? 'tablet' : 'desktop');
+    const settingsSize = settings?.logo_size;
+    const settingsSizeMobile = (settings as any)?.logo_size_mobile;
+    const settingsSizeTablet = (settings as any)?.logo_size_tablet;
+    const pickFromProps = device === 'mobile'
+      ? (logoSizeMobile ?? propLogoSize)
+      : device === 'tablet'
+        ? (logoSizeTablet ?? propLogoSize)
+        : propLogoSize;
+    if (pickFromProps) return pickFromProps * 16;
+    if (shouldFetchSettings) {
+      const pickFromSettings = device === 'mobile'
+        ? (settingsSizeMobile ?? settingsSize)
+        : device === 'tablet'
+          ? (settingsSizeTablet ?? settingsSize)
+          : settingsSize;
+      if (pickFromSettings) return pickFromSettings * 16;
     }
-    // Default heights if no logo_size is set
     const defaultHeights = { sm: 32, md: 48, lg: 64 };
     return defaultHeights[size];
-  }, [settings?.logo_size, propLogoSize, size, customSize, shouldFetchSettings]);
+  }, [settings?.logo_size, (settings as any)?.logo_size_mobile, (settings as any)?.logo_size_tablet, propLogoSize, logoSizeMobile, logoSizeTablet, forceDevice, vw, size, customSize, shouldFetchSettings]);
 
   if (isLoading && shouldFetchSettings) {
     return (

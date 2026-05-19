@@ -986,12 +986,13 @@ export const DashboardVisualEditor = () => {
           <div className={`mx-auto transition-[max-width] duration-200 ${deviceWidthClass}`}>
           <div ref={storePreviewRef} className="border rounded-lg overflow-hidden relative min-h-[600px]">
             <StorePreview
-              key={`preview-${editorData.logo?.url}-${editorData.banners?.map(b => b.imageUrl).join('-')}-${JSON.stringify(editorData.allColors)}`}
+              key={`preview-${editorData.logo?.url}-${editorData.banners?.map(b => b.imageUrl).join('-')}-${JSON.stringify(editorData.allColors)}-${deviceMode}`}
               data={editorData}
               isEditorMode={isEditorMode}
               onEditElement={handleEditElement}
               onDeleteProduct={() => { }}
               onDeleteCategory={() => { }}
+              deviceMode={deviceMode}
               backgroundColor={editorData.allColors?.backgroundColor || settings?.store_background_color || '#ffffff'}
               navbarBgColor={editorData.allColors?.navbarColor || settings?.navbar_bg_color || '#ffffff'}
               productCardBgColor={editorData.allColors?.productCardBgColor || settings?.product_card_bg_color || '#ffffff'}
@@ -1018,7 +1019,7 @@ export const DashboardVisualEditor = () => {
       </Tabs>
 
       {/* Edit Modals */}
-      <LogoEditModal isOpen={activeModal === 'logo'} onClose={() => setActiveModal(null)} onSave={handleSaveLogo} initialData={editorData.logo} />
+      <LogoEditModal isOpen={activeModal === 'logo'} onClose={() => setActiveModal(null)} onSave={handleSaveLogo} initialData={editorData.logo} deviceMode={deviceMode} />
       <BannersEditModal
         isOpen={activeModal === 'banners'}
         onClose={() => setActiveModal(null)}

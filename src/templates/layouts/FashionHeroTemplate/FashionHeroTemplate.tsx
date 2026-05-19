@@ -198,6 +198,8 @@ export const FashionHeroTemplate = (props: any) => {
                         <LogoDisplay
                             logoUrl={settings?.logo_url}
                             logoSize={settings?.logo_size}
+                            logoSizeMobile={(settings as any)?.logo_size_mobile}
+                            logoSizeTablet={(settings as any)?.logo_size_tablet}
                             fallbackText={settings?.store_name || 'LOGO'}
                             disableFetch={true}
                             className="text-2xl font-black uppercase tracking-tighter"
@@ -290,8 +292,8 @@ export const FashionHeroTemplate = (props: any) => {
                 </div>
             )}
 
-            {/* ─── HERO SECTION (Photo + Text split) ─── */}
-            <section className="w-full flex flex-col lg:flex-row min-h-[70vh]">
+            {/* ─── HERO SECTION (Photo + Text split) — on mobile/tablet, text first then photo ─── */}
+            <section className="w-full flex flex-col-reverse lg:flex-row min-h-[70vh]">
                 {/* Photo Side */}
                 <div className="relative w-full lg:w-3/5 aspect-[4/5] lg:aspect-auto overflow-hidden bg-gray-100">
                     {mainHeroImage ? (

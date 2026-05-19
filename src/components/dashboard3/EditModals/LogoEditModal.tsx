@@ -22,9 +22,13 @@ interface LogoEditModalProps {
   onClose: () => void;
   onSave: (data: { url: string; alt?: string }) => void;
   initialData?: { url: string; alt?: string };
+  /** Editor device mode — determines which logo_size column the slider writes to. */
+  deviceMode?: 'desktop' | 'tablet' | 'mobile';
 }
 
-export const LogoEditModal = ({ isOpen, onClose, onSave, initialData }: LogoEditModalProps) => {
+export const LogoEditModal = ({ isOpen, onClose, onSave, initialData, deviceMode = 'desktop' }: LogoEditModalProps) => {
+  const sizeColumn = deviceMode === 'mobile' ? 'logo_size_mobile' : deviceMode === 'tablet' ? 'logo_size_tablet' : 'logo_size';
+  const sizeLabel = deviceMode === 'mobile' ? 'Tamaño del Logo (Móvil)' : deviceMode === 'tablet' ? 'Tamaño del Logo (Tablet)' : 'Tamaño del Logo (Escritorio)';
   const [isUploading, setIsUploading] = useState(false);
   const [logoSize, setLogoSize] = useState<number>(5);
   const [logoPosition, setLogoPosition] = useState<'left' | 'center' | 'right'>('center');
@@ -35,22 +39,28 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData }: LogoEdit
   // Use current logo from settings, not local state
   const currentLogoUrl = settings?.logo_url || initialData?.url || "";
 
-  // Initialize logo size + position from settings
+  // Initialize logo size + position from settings.
+  // Pick the size matching the current device mode; fall back to desktop size.
   useEffect(() => {
-    if (settings?.logo_size) {
-      setLogoSize(settings.logo_size);
+    const currentSize = (settings as any)?.[sizeColumn];
+    const fallback = (settings as any)?.logo_size;
+    if (currentSize) {
+      setLogoSize(currentSize);
+    } else if (fallback) {
+      setLogoSize(fallback);
     }
     if ((settings as any)?.logo_position) {
       setLogoPosition((settings as any).logo_position);
     }
-  }, [settings?.logo_size, (settings as any)?.logo_position]);
+  }, [settings?.logo_size, (settings as any)?.logo_size_mobile, (settings as any)?.logo_size_tablet, (settings as any)?.logo_position, sizeColumn]);
 
   const handleSave = async () => {
     if (!currentLogoUrl.trim()) return;
 
     try {
-      // Save logo size + position to database
-      await updateSettings({ logo_size: logoSize, logo_position: logoPosition } as any);
+      // Save logo size to the column matching current device mode (desktop / tablet / mobile)
+      // + position which is shared across devices.
+      await updateSettings({ [sizeColumn]: logoSize, logo_position: logoPosition } as any);
 
       // Apply cache-busting to force immediate visual refresh using URL API
       const url = new URL(currentLogoUrl.trim(), window.location.origin);
@@ -137,7 +147,7 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData }: LogoEdit
           {/* Logo Size Slider */}
           {currentLogoUrl && (
             <div className="space-y-3">
-              <label className="text-sm font-medium">Tamaño del Logo</label>
+              <label className="text-sm font-medium">{sizeLabel}</label>
               <div className="flex items-center gap-4">
                 <Minus className="w-4 h-4 text-muted-foreground" />
                 <Slider

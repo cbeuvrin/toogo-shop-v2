@@ -42,6 +42,8 @@ interface StorePreviewProps {
   onEditElement: (type: any, item?: any) => void;
   onDeleteProduct: (id: string) => void;
   onDeleteCategory: (id: string) => void;
+  /** Active device toggle in the editor — controls per-device logo sizing inside the preview. */
+  deviceMode?: 'desktop' | 'tablet' | 'mobile';
   backgroundColor?: string;
   productCardBgColor?: string;
   productCardHoverColor?: string;
@@ -80,6 +82,7 @@ export const StorePreview = ({
   onEditElement,
   onDeleteProduct,
   onDeleteCategory,
+  deviceMode = 'desktop',
   backgroundColor,
   productCardBgColor,
   productCardHoverColor,
@@ -1329,7 +1332,16 @@ export const StorePreview = ({
             {/* CENTER col — logo always center */}
             <div className="flex-shrink-0 justify-self-center">
               <EditableElement type="logo" isEditorMode={isEditorMode} onEdit={() => onEditElement('logo')}>
-                <LogoDisplay logoUrl={(data as any)?.logo?.url} logoSize={(settings as any)?.logo_size} fallbackText="FASHION" disableFetch className="text-xl font-black uppercase tracking-tighter" />
+                <LogoDisplay
+                  logoUrl={(data as any)?.logo?.url}
+                  logoSize={(settings as any)?.logo_size}
+                  logoSizeMobile={(settings as any)?.logo_size_mobile}
+                  logoSizeTablet={(settings as any)?.logo_size_tablet}
+                  forceDevice={deviceMode}
+                  fallbackText="FASHION"
+                  disableFetch
+                  className="text-xl font-black uppercase tracking-tighter"
+                />
               </EditableElement>
             </div>
 
@@ -1375,7 +1387,7 @@ export const StorePreview = ({
         {/* Hero - Photo + Text split. In Indico each text element is independently
             editable: clicking the photo opens the banner modal, clicking any text
             opens that text element's dedicated style editor. */}
-        <section className="w-full flex flex-col lg:flex-row min-h-[60vh]">
+        <section className="w-full flex flex-col-reverse lg:flex-row min-h-[60vh]">
           {/* Photo Side — still routes to the banners modal */}
           <div className="relative w-full lg:w-3/5">
             <EditableElement type="banner" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
