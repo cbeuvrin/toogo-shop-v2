@@ -307,15 +307,24 @@ export const TrendyFashionTemplate = (props: any) => {
             {/* Ticker */}
             {ticker?.enabled !== false && !isCatalog && (
                 <div className="border-y border-gray-300 bg-white py-3 overflow-hidden">
-                    <div className="flex gap-16 whitespace-nowrap trendy-ticker">
-                        {Array(8).fill(ticker?.text || 'NEW COLLECTION • FREE SHIPPING • PREMIUM QUALITY • TRENDY STYLES').map((text, i) => (
+                    {ticker?.animated === false ? (
+                        <div className="flex justify-center whitespace-nowrap">
                             <span
-                                key={i}
-                                className={`font-bold uppercase tracking-widest text-gray-500 shrink-0 ${ticker?.fontSize ? '' : 'text-xs'}`}
+                                className={`font-bold uppercase tracking-widest text-gray-500 ${ticker?.fontSize ? '' : 'text-xs'}`}
                                 style={ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : undefined}
-                            >{text}</span>
-                        ))}
-                    </div>
+                            >{ticker?.text || 'NEW COLLECTION • FREE SHIPPING • PREMIUM QUALITY • TRENDY STYLES'}</span>
+                        </div>
+                    ) : (
+                        <div className="flex gap-16 whitespace-nowrap trendy-ticker">
+                            {Array(8).fill(ticker?.text || 'NEW COLLECTION • FREE SHIPPING • PREMIUM QUALITY • TRENDY STYLES').map((text, i) => (
+                                <span
+                                    key={i}
+                                    className={`font-bold uppercase tracking-widest text-gray-500 shrink-0 ${ticker?.fontSize ? '' : 'text-xs'}`}
+                                    style={ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : undefined}
+                                >{text}</span>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 

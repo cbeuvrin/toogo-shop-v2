@@ -93,6 +93,7 @@ export interface EditorData {
     text: string;
     enabled: boolean;
     fontSize?: number;
+    animated?: boolean;
   };
   textBanner?: {
     text: string;

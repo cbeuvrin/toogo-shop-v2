@@ -16,6 +16,7 @@ interface TickerData {
     text: string;
     enabled: boolean;
     fontSize?: number; // px applied as inline style on the ticker text
+    animated?: boolean; // marquee scrolling effect — default true
 }
 
 interface TickerEditModalProps {
@@ -29,7 +30,8 @@ export const TickerEditModal = ({ isOpen, onClose, onSave, initialData }: Ticker
     const [formData, setFormData] = useState<TickerData>({
         text: "New Styles Added Weekly",
         enabled: true,
-        fontSize: 12
+        fontSize: 12,
+        animated: true
     });
 
     useEffect(() => {
@@ -58,13 +60,27 @@ export const TickerEditModal = ({ isOpen, onClose, onSave, initialData }: Ticker
                         <div className="space-y-0.5">
                             <Label htmlFor="enabled">Mostrar barra</Label>
                             <div className="text-xs text-muted-foreground">
-                                Activa o desactiva la barra de noticias desplazable
+                                Activa o desactiva la barra de noticias
                             </div>
                         </div>
                         <Switch
                             id="enabled"
                             checked={formData.enabled}
                             onCheckedChange={(checked) => setFormData(prev => ({ ...prev, enabled: checked }))}
+                        />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="animated">Mover texto (efecto marquee)</Label>
+                            <div className="text-xs text-muted-foreground">
+                                El texto se desliza de derecha a izquierda. Apágalo para mostrar el texto fijo y centrado.
+                            </div>
+                        </div>
+                        <Switch
+                            id="animated"
+                            checked={formData.animated !== false}
+                            onCheckedChange={(checked) => setFormData(prev => ({ ...prev, animated: checked }))}
                         />
                     </div>
 

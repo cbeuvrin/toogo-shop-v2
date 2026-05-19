@@ -64,20 +64,31 @@ export const CyberTemplate = (props: any) => {
     return (
         <div className="min-h-screen font-sans" style={{ backgroundColor: cyberBg, color: cyberText, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
 
-            {/* Top ticker — animated */}
+            {/* Top ticker — animated marquee or static centered text */}
             {announcement?.enabled !== false && (
                 <div className="overflow-hidden border-b" style={{ borderColor: cyberBorder, backgroundColor: cyberSurface }}>
-                    <div className="flex animate-marquee whitespace-nowrap py-2">
-                        {[...Array(4)].map((_, i) => (
+                    {ticker?.animated === false ? (
+                        <div className="flex justify-center whitespace-nowrap py-2">
                             <span
-                                key={i}
                                 className={`font-bold tracking-[0.2em] mx-8 ${ticker?.fontSize ? '' : 'text-xs'}`}
                                 style={{ color: cyberNeon, ...(ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : {}) }}
                             >
                                 {announcement?.text || tickerText}
                             </span>
-                        ))}
-                    </div>
+                        </div>
+                    ) : (
+                        <div className="flex animate-marquee whitespace-nowrap py-2">
+                            {[...Array(4)].map((_, i) => (
+                                <span
+                                    key={i}
+                                    className={`font-bold tracking-[0.2em] mx-8 ${ticker?.fontSize ? '' : 'text-xs'}`}
+                                    style={{ color: cyberNeon, ...(ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : {}) }}
+                                >
+                                    {announcement?.text || tickerText}
+                                </span>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 

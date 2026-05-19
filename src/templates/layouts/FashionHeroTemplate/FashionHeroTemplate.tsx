@@ -314,21 +314,30 @@ export const FashionHeroTemplate = (props: any) => {
             {/* ─── HOME SECTIONS ─── */}
             {!isCatalog && (
                 <>
-                    {/* Ticker / USP Bar — height grows with fontSize via py + line-height */}
+                    {/* Ticker / USP Bar — animated marquee or static centered text */}
                     {(ticker?.enabled !== false) && (
                         <div className="bg-black text-white py-3 overflow-hidden whitespace-nowrap">
-                            <div
-                                className="flex gap-16 justify-center font-bold uppercase tracking-widest animate-marquee"
-                                style={{ fontSize: `${ticker?.fontSize || 10}px` }}
-                            >
-                                <span>{ticker?.text || "Envíos en 24h · Calidad Premium · Garantía Total"}</span>
-                                <span>•</span>
-                                <span>{ticker?.text || "Envíos en 24h · Calidad Premium · Garantía Total"}</span>
-                                <span>•</span>
-                                <span>{ticker?.text || "Envíos en 24h · Calidad Premium · Garantía Total"}</span>
-                                <span>•</span>
-                                <span>{ticker?.text || "Envíos en 24h · Calidad Premium · Garantía Total"}</span>
-                            </div>
+                            {ticker?.animated === false ? (
+                                <div
+                                    className="flex justify-center font-bold uppercase tracking-widest"
+                                    style={{ fontSize: `${ticker?.fontSize || 10}px` }}
+                                >
+                                    <span>{ticker?.text || "Envíos en 24h · Calidad Premium · Garantía Total"}</span>
+                                </div>
+                            ) : (
+                                <div
+                                    className="flex gap-16 justify-center font-bold uppercase tracking-widest animate-marquee"
+                                    style={{ fontSize: `${ticker?.fontSize || 10}px` }}
+                                >
+                                    <span>{ticker?.text || "Envíos en 24h · Calidad Premium · Garantía Total"}</span>
+                                    <span>•</span>
+                                    <span>{ticker?.text || "Envíos en 24h · Calidad Premium · Garantía Total"}</span>
+                                    <span>•</span>
+                                    <span>{ticker?.text || "Envíos en 24h · Calidad Premium · Garantía Total"}</span>
+                                    <span>•</span>
+                                    <span>{ticker?.text || "Envíos en 24h · Calidad Premium · Garantía Total"}</span>
+                                </div>
+                            )}
                         </div>
                     )}
 
