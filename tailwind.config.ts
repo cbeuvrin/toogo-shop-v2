@@ -138,6 +138,14 @@ export default {
 				'100%': {
 					transform: 'translateX(100%)'
 				}
+			},
+			'marquee': {
+				'0%': {
+					transform: 'translateX(0)'
+				},
+				'100%': {
+					transform: 'translateX(-50%)'
+				}
 			}
 			},
 		animation: {
@@ -148,7 +156,8 @@ export default {
 			'float': 'float 3s ease-in-out infinite',
 			'bounce-gentle': 'bounce-gentle 0.6s ease-out',
 			'wiggle': 'wiggle 0.5s ease-out',
-			'slide-right': 'slide-right 1.5s ease-in-out infinite'
+			'slide-right': 'slide-right 1.5s ease-in-out infinite',
+			'marquee': 'marquee 25s linear infinite'
 		}
 		}
 	},
