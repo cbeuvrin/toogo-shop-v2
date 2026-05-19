@@ -393,8 +393,9 @@ export const FashionHeroTemplate = (props: any) => {
             </section>
             )}
 
-            {/* ─── CATALOG VIEW ─── */}
+            {/* ─── CATALOG VIEW — inherits the "Recién Llegados" section bg so the catalog matches home ─── */}
             {isCatalog && (
+                <div style={{ backgroundColor: props.sectionBg?.section1 || undefined }}>
                 <div className="container mx-auto px-6 py-8">
                     <div className="flex flex-wrap justify-center gap-4 mb-8">
                         {categories?.filter((cat: any) => !cat.parent_id).map((cat: any) => {
@@ -434,6 +435,7 @@ export const FashionHeroTemplate = (props: any) => {
                             </div>
                         )}
                     </div>
+                </div>
                 </div>
             )}
 
