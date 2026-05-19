@@ -292,7 +292,8 @@ export const FashionHeroTemplate = (props: any) => {
                 </div>
             )}
 
-            {/* ─── HERO SECTION (Photo + Text split) — on mobile/tablet, text first then photo ─── */}
+            {/* ─── HERO SECTION (Photo + Text split) — only on home, hidden in catalog ─── */}
+            {!isCatalog && (
             <section className="w-full flex flex-col-reverse lg:flex-row min-h-[70vh]">
                 {/* Photo Side */}
                 <div className="relative w-full lg:w-3/5 aspect-[4/5] lg:aspect-auto overflow-hidden bg-gray-100">
@@ -390,6 +391,7 @@ export const FashionHeroTemplate = (props: any) => {
                   );
                 })()}
             </section>
+            )}
 
             {/* ─── CATALOG VIEW ─── */}
             {isCatalog && (
