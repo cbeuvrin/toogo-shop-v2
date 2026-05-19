@@ -472,8 +472,15 @@ export const FashionHeroTemplate = (props: any) => {
                                                 <Heart className={`w-4 h-4 ${favorites?.includes(product.id) ? "fill-black" : ""}`} />
                                             </button>
                                             <div className="absolute bottom-4 left-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300">
-                                                <Button className="w-full bg-white/90 text-black hover:bg-white font-bold backdrop-blur-sm text-xs rounded-none">
-                                                    Agregar +
+                                                <Button
+                                                    className="w-full bg-white/90 text-black hover:bg-white font-bold backdrop-blur-sm text-xs rounded-none"
+                                                    style={{
+                                                      fontFamily: props.heroStyles?.productCardCta?.fontFamily === 'serif' ? 'ui-serif, Georgia, serif' : props.heroStyles?.productCardCta?.fontFamily === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace' : props.heroStyles?.productCardCta?.fontFamily === 'sans' ? 'ui-sans-serif, system-ui, sans-serif' : undefined,
+                                                      fontSize: props.heroStyles?.productCardCta?.fontSize ? `${props.heroStyles.productCardCta.fontSize}px` : undefined,
+                                                      color: props.heroStyles?.productCardCta?.color || undefined,
+                                                    }}
+                                                >
+                                                    {props.heroStyles?.productCardCta?.text || "Agregar +"}
                                                 </Button>
                                             </div>
                                         </div>

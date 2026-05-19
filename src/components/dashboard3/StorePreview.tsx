@@ -1466,13 +1466,48 @@ export const StorePreview = ({
               </Button>
             </div>
           </div>
-          <div ref={heroScrollRef} className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar">
-            {productsToShow.map((product: any) => (
-              <div key={product.id} className="min-w-[180px] md:min-w-[220px] cursor-pointer" onClick={() => openProductModal(product)}>
+          <div ref={heroScrollRef} className="flex gap-4 overflow-x-auto pb-4 hide-scrollbar snap-x snap-mandatory">
+            {productsToShow.map((product: any, idx: number) => (
+              <div
+                key={product.id}
+                className="snap-start shrink-0 w-[180px] md:w-[220px] cursor-pointer"
+                onClick={() => openProductModal(product)}
+              >
                 <div className="aspect-[3/4] overflow-hidden mb-2 relative group transition-colors duration-300" style={{ backgroundColor: cardBgColor }}>
                   <div className="absolute inset-0 transition-colors duration-300 opacity-0 group-hover:opacity-100" style={{ backgroundColor: hoverColor }} />
                   <img src={product.image} className="w-full h-full object-cover relative z-10 mix-blend-multiply" alt={product.name} />
                   <div className="absolute top-2 left-2 bg-white px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider z-20">NUEVO</div>
+                  {/* Hover CTA — only the first card shows it persistently in editor mode so the
+                      user can see + click to edit. In production it appears on hover for every card. */}
+                  {idx === 0 ? (
+                    <div className={`absolute bottom-2 left-2 right-2 z-30 ${isEditorMode ? '' : 'opacity-0 group-hover:opacity-100 transition-opacity'}`} onClick={(e) => e.stopPropagation()}>
+                      <EditableElement type="botón producto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'productCardCta')}>
+                        <Button
+                          className="w-full bg-white/90 text-black hover:bg-white font-bold backdrop-blur-sm text-[10px] rounded-none h-7"
+                          style={{
+                            fontFamily: heroStyleFontFamily(data.hero?.styles?.productCardCta?.fontFamily),
+                            fontSize: data.hero?.styles?.productCardCta?.fontSize ? `${data.hero.styles.productCardCta.fontSize}px` : undefined,
+                            color: data.hero?.styles?.productCardCta?.color || undefined,
+                          }}
+                        >
+                          {data.hero?.styles?.productCardCta?.text || "Agregar +"}
+                        </Button>
+                      </EditableElement>
+                    </div>
+                  ) : (
+                    <div className="absolute bottom-2 left-2 right-2 z-30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                      <Button
+                        className="w-full bg-white/90 text-black hover:bg-white font-bold backdrop-blur-sm text-[10px] rounded-none h-7"
+                        style={{
+                          fontFamily: heroStyleFontFamily(data.hero?.styles?.productCardCta?.fontFamily),
+                          fontSize: data.hero?.styles?.productCardCta?.fontSize ? `${data.hero.styles.productCardCta.fontSize}px` : undefined,
+                          color: data.hero?.styles?.productCardCta?.color || undefined,
+                        }}
+                      >
+                        {data.hero?.styles?.productCardCta?.text || "Agregar +"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <h3 className="font-semibold text-xs leading-tight mb-1 text-gray-900">{product.name}</h3>
                 <span className="text-xs font-bold text-gray-700">${product.price}</span>
