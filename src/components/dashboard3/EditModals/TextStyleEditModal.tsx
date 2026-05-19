@@ -32,11 +32,17 @@ interface TextStyleEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   elementLabel: string; // "Título", "Mensaje", "Botón principal", etc.
-  elementKey: string; // 'title' | 'message' | 'cta1' | 'cta2' | 'eyebrow'
+  elementKey: string; // 'title' | 'message' | 'cta1' | 'cta2' | 'eyebrow' | 'navMenu' …
   initialText: string;
   initialStyle?: TextStyle;
   defaultText: string; // shown as placeholder
   multiline?: boolean;
+  /** Hide the text input (use for elements whose content comes from elsewhere, e.g. nav categories). */
+  hideText?: boolean;
+  /** Hide the live preview block. */
+  hidePreview?: boolean;
+  /** Optional info note rendered after the controls (e.g. "if too many → hamburger"). */
+  infoText?: string;
   onSave: (elementKey: string, text: string, style: TextStyle) => void;
 }
 
@@ -56,6 +62,9 @@ export const TextStyleEditModal = ({
   initialStyle,
   defaultText,
   multiline,
+  hideText,
+  hidePreview,
+  infoText,
   onSave,
 }: TextStyleEditModalProps) => {
   const [text, setText] = useState("");
@@ -101,26 +110,28 @@ export const TextStyleEditModal = ({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label htmlFor="text-content">Texto</Label>
-            {multiline ? (
-              <Textarea
-                id="text-content"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder={defaultText}
-                rows={3}
-              />
-            ) : (
-              <Input
-                id="text-content"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder={defaultText}
-              />
-            )}
-            <p className="text-[10px] text-muted-foreground">Vacío para usar el texto por defecto.</p>
-          </div>
+          {!hideText && (
+            <div className="space-y-2">
+              <Label htmlFor="text-content">Texto</Label>
+              {multiline ? (
+                <Textarea
+                  id="text-content"
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder={defaultText}
+                  rows={3}
+                />
+              ) : (
+                <Input
+                  id="text-content"
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder={defaultText}
+                />
+              )}
+              <p className="text-[10px] text-muted-foreground">Vacío para usar el texto por defecto.</p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Fuente</Label>
@@ -170,12 +181,20 @@ export const TextStyleEditModal = ({
             </div>
           </div>
 
-          <div className="rounded-md border bg-muted/30 p-3">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Vista previa</p>
-            <div style={previewStyle} className="break-words">
-              {text || defaultText}
+          {!hidePreview && (
+            <div className="rounded-md border bg-muted/30 p-3">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Vista previa</p>
+              <div style={previewStyle} className="break-words">
+                {text || defaultText}
+              </div>
             </div>
-          </div>
+          )}
+
+          {infoText && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              {infoText}
+            </div>
+          )}
         </div>
 
         <DialogFooter>

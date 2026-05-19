@@ -254,9 +254,9 @@ export const FashionHeroTemplate = (props: any) => {
                 )}
             </header>
 
-            {/* ─── MOBILE MENU ─── */}
+            {/* ─── MOBILE/HAMBURGER MENU — also opens on desktop when nav collapses ─── */}
             {isMenuOpen && (
-                <div className="fixed inset-0 z-50 md:hidden">
+                <div className="fixed inset-0 z-50">
                     <div className="absolute inset-0 bg-black/50" onClick={() => setIsMenuOpen(false)} />
                     <div className="absolute right-0 top-0 h-full w-72 bg-white shadow-2xl flex flex-col">
                         <div className="flex justify-between items-center p-6 border-b">

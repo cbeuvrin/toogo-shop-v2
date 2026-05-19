@@ -1139,6 +1139,11 @@ export const DashboardVisualEditor = () => {
             initialStyle={currentStyle}
             defaultText={defaultMap[key]}
             multiline={key === 'message'}
+            hideText={key === 'navMenu'}
+            hidePreview={key === 'navMenu'}
+            infoText={key === 'navMenu'
+              ? 'Las categorías vienen de la pestaña Productos → Categorías. Aquí solo puedes cambiar fuente, tamaño y color. Si son muchas, el menú se convierte automáticamente en hamburguesa.'
+              : undefined}
             onSave={handleSaveHeroElement}
           />
         );
