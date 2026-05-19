@@ -1387,11 +1387,19 @@ export const StorePreview = ({
         {/* Hero - Photo + Text split. In Indico each text element is independently
             editable: clicking the photo opens the banner modal, clicking any text
             opens that text element's dedicated style editor. */}
-        <section className="w-full flex flex-col-reverse lg:flex-row min-h-[60vh]">
+        <section
+          className={`w-full flex min-h-[60vh] ${
+            // Force the production layout's stacking based on deviceMode instead of
+            // viewport breakpoints: Tailwind's lg: reads window width and the editor
+            // window is always desktop, so a constrained "mobile" preview would
+            // otherwise still render side-by-side.
+            deviceMode === 'desktop' ? 'flex-row' : 'flex-col-reverse'
+          }`}
+        >
           {/* Photo Side — still routes to the banners modal */}
-          <div className="relative w-full lg:w-3/5">
+          <div className={`relative w-full ${deviceMode === 'desktop' ? 'w-3/5' : ''}`}>
             <EditableElement type="banner" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
-              <div className="relative w-full aspect-[4/5] lg:aspect-auto lg:min-h-[60vh] overflow-hidden bg-gray-100">
+              <div className={`relative w-full overflow-hidden bg-gray-100 ${deviceMode === 'desktop' ? 'aspect-auto min-h-[60vh]' : 'aspect-[4/5]'}`}>
                 {mainHeroImage ? (
                   <img src={mainHeroImage} alt="Hero" className="w-full h-full object-cover" style={{ objectPosition: banners[0]?.position || 'center center' }} />
                 ) : (
@@ -1405,7 +1413,7 @@ export const StorePreview = ({
           </div>
 
           {/* Text Side — each child is its own EditableElement */}
-          <div className="w-full lg:w-2/5 flex flex-col justify-center px-6 md:px-12 py-10 bg-white min-w-0 gap-4">
+          <div className={`flex flex-col justify-center px-6 md:px-12 py-10 bg-white min-w-0 gap-4 ${deviceMode === 'desktop' ? 'w-2/5' : 'w-full'}`}>
             <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'eyebrow')}>
               <p
                 className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400 break-words"
