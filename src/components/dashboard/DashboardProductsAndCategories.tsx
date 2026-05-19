@@ -60,8 +60,8 @@ export const DashboardProductsAndCategories = ({
 
   const productSubItems = [
     { id: "categories" as const, icon: Tag, label: "Categorías" },
-    { id: "variables" as const, icon: Settings, label: "Variables" },
     { id: "products" as const, icon: Package, label: "Mis Productos" },
+    { id: "variables" as const, icon: Settings, label: "Variables" },
   ];
 
   return (
