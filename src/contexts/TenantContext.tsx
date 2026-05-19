@@ -91,6 +91,23 @@ export const TenantProvider = ({ children }: TenantProviderProps) => {
     }
 
     if (user) {
+      // If the visitor is on a storefront route within a tenant domain, the
+      // storefront tenant ALWAYS wins — regardless of who is logged in.
+      // Without this, an admin visiting another tenant's store in a second tab
+      // sees their own tenant's data and the page renders blank.
+      // Dashboard/admin routes keep using user roles so the editor still works.
+      const path = typeof window !== 'undefined' ? window.location.pathname : '/';
+      const isAdminRoute = path.startsWith('/dashboard') || path.startsWith('/admin');
+      if (domainTenant && !isAdminRoute) {
+        console.log('🏪 [TenantContext] Usuario autenticado pero en storefront de otro tenant — usando tenant del dominio:', domainTenant.id);
+        setCurrentTenantId(domainTenant.id);
+        setAvailableTenants([{ id: domainTenant.id, name: domainTenant.name, plan: (domainTenant as any).plan || 'free' }]);
+        setUserRole(null);
+        setIsSuperAdmin(false);
+        setIsLoading(false);
+        return;
+      }
+
       console.log('🏪 [TenantContext] Usuario autenticado detectado, cargando roles y tenants');
       // Verificar cache de roles primero
       const cachedRole = localStorage.getItem(`user-role-${user.id}`);
