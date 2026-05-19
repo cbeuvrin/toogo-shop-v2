@@ -1258,7 +1258,10 @@ export const StorePreview = ({
         {/* Header — mirrors production layout so the bar grows with logo size */}
         {(() => {
           const pos = (data as any)?.settings?.logo_position || (settings as any)?.logo_position || 'center';
-          const allCats = categories.filter((c: any) => !c.parent_id);
+          // Use the raw category list from data (not the showOnHome+products
+          // filtered one used elsewhere in the preview) so the header menu
+          // shows every top-level category, like production does.
+          const allCats = (data.categories || []).filter((c: any) => !c.parent_id);
           const navItems = allCats.length > 0 ? allCats : [{ name: 'Mujer' }, { name: 'Hombre' }, { name: 'Kids' }];
           return (
         <header className="sticky top-0 z-50 border-b border-gray-100" style={{ backgroundColor: navColor }}>
