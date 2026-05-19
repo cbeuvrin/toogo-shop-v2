@@ -133,15 +133,26 @@ export const FashionHeroTemplate = (props: any) => {
                         <Menu className="w-6 h-6" style={{ color: headerIconColor }} />
                     </button>
 
-                    {/* Logo (Center) */}
-                    <div className="absolute left-1/2 -translate-x-1/2 cursor-pointer" onClick={() => handleNavigate('/tienda')}>
-                        <LogoDisplay
+                    {/* Logo — position driven by settings.logo_position (left | center | right) */}
+                    {(() => {
+                      const pos = (settings as any)?.logo_position || 'center';
+                      const posClass = pos === 'left'
+                        ? 'absolute left-6 top-1/2 -translate-y-1/2'
+                        : pos === 'right'
+                          ? 'absolute right-6 top-1/2 -translate-y-1/2'
+                          : 'absolute left-1/2 -translate-x-1/2';
+                      return (
+                        <div className={`${posClass} cursor-pointer`} onClick={() => handleNavigate('/tienda')}>
+                          <LogoDisplay
                             logoUrl={settings?.logo_url}
+                            logoSize={settings?.logo_size}
                             fallbackText={settings?.store_name || 'LOGO'}
                             disableFetch={true}
                             className="text-2xl font-black uppercase tracking-tighter"
-                        />
-                    </div>
+                          />
+                        </div>
+                      );
+                    })()}
 
                     {/* Right Icons */}
                     <div className="flex items-center gap-5">

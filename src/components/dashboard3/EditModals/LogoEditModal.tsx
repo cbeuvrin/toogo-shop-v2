@@ -10,6 +10,8 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +27,7 @@ interface LogoEditModalProps {
 export const LogoEditModal = ({ isOpen, onClose, onSave, initialData }: LogoEditModalProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [logoSize, setLogoSize] = useState<number>(5);
+  const [logoPosition, setLogoPosition] = useState<'left' | 'center' | 'right'>('center');
   const { settings, uploadLogo, loadSettings, updateSettings } = useTenantSettings();
   const { currentTenantId: tenantId } = useTenantContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -32,19 +35,22 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData }: LogoEdit
   // Use current logo from settings, not local state
   const currentLogoUrl = settings?.logo_url || initialData?.url || "";
 
-  // Initialize logo size from settings
+  // Initialize logo size + position from settings
   useEffect(() => {
     if (settings?.logo_size) {
       setLogoSize(settings.logo_size);
     }
-  }, [settings?.logo_size]);
+    if ((settings as any)?.logo_position) {
+      setLogoPosition((settings as any).logo_position);
+    }
+  }, [settings?.logo_size, (settings as any)?.logo_position]);
 
   const handleSave = async () => {
     if (!currentLogoUrl.trim()) return;
 
     try {
-      // Save logo size to database
-      await updateSettings({ logo_size: logoSize });
+      // Save logo size + position to database
+      await updateSettings({ logo_size: logoSize, logo_position: logoPosition } as any);
 
       // Apply cache-busting to force immediate visual refresh using URL API
       const url = new URL(currentLogoUrl.trim(), window.location.origin);
@@ -148,6 +154,22 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData }: LogoEdit
                 <span>Pequeño</span>
                 <span>Extra Grande</span>
               </div>
+            </div>
+          )}
+
+          {/* Logo Position — only honored by templates that read it (Indico) */}
+          {currentLogoUrl && (
+            <div className="space-y-2">
+              <Label>Posición del Logo</Label>
+              <Select value={logoPosition} onValueChange={(v) => setLogoPosition(v as 'left' | 'center' | 'right')}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="left">Izquierda</SelectItem>
+                  <SelectItem value="center">Centro</SelectItem>
+                  <SelectItem value="right">Derecha</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground">Por ahora se aplica en la plantilla Índico.</p>
             </div>
           )}
 
