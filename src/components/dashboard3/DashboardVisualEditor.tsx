@@ -105,6 +105,9 @@ export interface EditorData {
     showTitle?: boolean;
     buttonEnabled?: boolean;
     buttonLabel?: string;
+    buttonAction?: 'catalog' | 'category' | 'link';
+    buttonCategorySlug?: string;
+    buttonCustomUrl?: string;
   };
   hero?: {
     title?: string;
@@ -1059,6 +1062,7 @@ export const DashboardVisualEditor = () => {
         onClose={() => setActiveModal(null)}
         onSave={handleSaveTextBanner}
         initialData={editorData.textBanner}
+        categories={editorData.categories?.filter((c: any) => !c.parent_id) || []}
       />
 
       <FeaturedProductsEditModal

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,9 @@ interface TextBannerData {
     showTitle?: boolean;        // default true
     buttonEnabled?: boolean;    // default true (preserves the hardcoded CTA)
     buttonLabel?: string;
+    buttonAction?: 'catalog' | 'category' | 'link';
+    buttonCategorySlug?: string;
+    buttonCustomUrl?: string;
 }
 
 interface TextBannerEditModalProps {
@@ -32,9 +36,11 @@ interface TextBannerEditModalProps {
     onClose: () => void;
     onSave: (data: TextBannerData) => void;
     initialData?: TextBannerData;
+    /** Categories list for the "Ir a categoría" picker. */
+    categories?: Array<{ id?: string; name: string; slug?: string }>;
 }
 
-export const TextBannerEditModal = ({ isOpen, onClose, onSave, initialData }: TextBannerEditModalProps) => {
+export const TextBannerEditModal = ({ isOpen, onClose, onSave, initialData, categories = [] }: TextBannerEditModalProps) => {
     const [formData, setFormData] = useState<TextBannerData>({
         text: "Never Stop",
         isActive: true,
@@ -43,6 +49,9 @@ export const TextBannerEditModal = ({ isOpen, onClose, onSave, initialData }: Te
         showTitle: true,
         buttonEnabled: true,
         buttonLabel: "",
+        buttonAction: 'catalog',
+        buttonCategorySlug: "",
+        buttonCustomUrl: "",
     });
 
     const [uploading, setUploading] = useState(false);
@@ -64,6 +73,9 @@ export const TextBannerEditModal = ({ isOpen, onClose, onSave, initialData }: Te
                 showTitle: initialData.showTitle !== false,
                 buttonEnabled: initialData.buttonEnabled !== false,
                 buttonLabel: initialData.buttonLabel || "",
+                buttonAction: initialData.buttonAction || 'catalog',
+                buttonCategorySlug: initialData.buttonCategorySlug || "",
+                buttonCustomUrl: initialData.buttonCustomUrl || "",
             });
         }
     }, [initialData, isOpen]);
@@ -204,16 +216,60 @@ export const TextBannerEditModal = ({ isOpen, onClose, onSave, initialData }: Te
                             />
                         </div>
                         {formData.buttonEnabled !== false && (
-                            <div className="space-y-1.5">
-                                <Label htmlFor="buttonLabel" className="text-xs">Texto del botón</Label>
-                                <Input
-                                    id="buttonLabel"
-                                    value={formData.buttonLabel || ""}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, buttonLabel: e.target.value }))}
-                                    placeholder="Ej: Explorar Colección"
-                                />
-                                <p className="text-[10px] text-muted-foreground">Vacío = "Explorar Colección".</p>
-                            </div>
+                            <>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="buttonLabel" className="text-xs">Texto del botón</Label>
+                                    <Input
+                                        id="buttonLabel"
+                                        value={formData.buttonLabel || ""}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, buttonLabel: e.target.value }))}
+                                        placeholder="Ej: Explorar Colección"
+                                    />
+                                    <p className="text-[10px] text-muted-foreground">Vacío = "Explorar Colección".</p>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs">Acción al hacer click</Label>
+                                    <Select value={formData.buttonAction || 'catalog'} onValueChange={(v) => setFormData(prev => ({ ...prev, buttonAction: v as 'catalog' | 'category' | 'link' }))}>
+                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="catalog">Ir al catálogo completo</SelectItem>
+                                            <SelectItem value="category">Ir a una categoría</SelectItem>
+                                            <SelectItem value="link">Enlace personalizado</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                {formData.buttonAction === 'category' && (
+                                    <div className="space-y-1.5">
+                                        <Label className="text-xs">Categoría</Label>
+                                        <Select value={formData.buttonCategorySlug || ""} onValueChange={(v) => setFormData(prev => ({ ...prev, buttonCategorySlug: v }))}>
+                                            <SelectTrigger><SelectValue placeholder="Elige una categoría" /></SelectTrigger>
+                                            <SelectContent>
+                                                {categories.length === 0 ? (
+                                                    <SelectItem value="__none__" disabled>No hay categorías aún</SelectItem>
+                                                ) : (
+                                                    categories.map((cat) => (
+                                                        <SelectItem key={cat.id || cat.slug || cat.name} value={(cat.slug || cat.name).toLowerCase()}>
+                                                            {cat.name}
+                                                        </SelectItem>
+                                                    ))
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+                                {formData.buttonAction === 'link' && (
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="bannerCustomUrl" className="text-xs">URL</Label>
+                                        <Input
+                                            id="bannerCustomUrl"
+                                            value={formData.buttonCustomUrl || ""}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, buttonCustomUrl: e.target.value }))}
+                                            placeholder="https://ejemplo.com"
+                                        />
+                                        <p className="text-[10px] text-muted-foreground">Se abrirá en nueva pestaña.</p>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
 

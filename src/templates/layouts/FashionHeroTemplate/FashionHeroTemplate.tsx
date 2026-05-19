@@ -577,7 +577,16 @@ export const FashionHeroTemplate = (props: any) => {
                                     {textBanner?.buttonEnabled !== false && (
                                       <Button
                                         className="bg-white text-black text-xs md:text-base px-10 py-5 md:py-7 font-bold uppercase tracking-widest hover:scale-105 transition-transform rounded-none"
-                                        onClick={() => handleNavigate('/catalogo')}
+                                        onClick={() => {
+                                          const action = (textBanner as any)?.buttonAction || 'catalog';
+                                          if (action === 'link' && (textBanner as any)?.buttonCustomUrl) {
+                                            window.open((textBanner as any).buttonCustomUrl, '_blank', 'noopener,noreferrer');
+                                          } else if (action === 'category' && (textBanner as any)?.buttonCategorySlug) {
+                                            handleNavigate('/catalogo', { category: (textBanner as any).buttonCategorySlug });
+                                          } else {
+                                            handleNavigate('/catalogo');
+                                          }
+                                        }}
                                       >
                                         {textBanner?.buttonLabel || "Explorar Colección"}
                                       </Button>
