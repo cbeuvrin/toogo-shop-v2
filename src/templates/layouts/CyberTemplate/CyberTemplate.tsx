@@ -78,7 +78,7 @@ export const CyberTemplate = (props: any) => {
             )}
 
             {/* Header — glassmorphic */}
-            <header className="sticky top-0 z-40 backdrop-blur-xl border-b" style={{ backgroundColor: `${cyberBg}cc`, borderColor: cyberBorder }}>
+            <header className="sticky top-0 z-40 backdrop-blur-xl border-b" style={{ backgroundColor: settings?.navbar_bg_color || `${cyberBg}cc`, borderColor: cyberBorder }}>
                 <div className="container mx-auto px-6 py-4 flex items-center justify-between">
                     <button className="md:hidden" onClick={() => setIsMenuOpen(true)}>
                         <Menu className="w-6 h-6" style={{ color: cyberNeon }} />

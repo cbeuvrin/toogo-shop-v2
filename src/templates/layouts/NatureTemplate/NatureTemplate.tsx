@@ -126,7 +126,7 @@ export const NatureTemplate = (props: any) => {
             )}
 
             {/* Header */}
-            <header className="px-6 py-4 flex items-center justify-between border-b border-gray-200" style={{ backgroundColor: brandLightBg }}>
+            <header className="px-6 py-4 flex items-center justify-between border-b border-gray-200" style={{ backgroundColor: settings?.navbar_bg_color || brandLightBg }}>
                 {/* Desktop Nav - Left */}
                 <div className="flex items-center gap-8 md:flex-1">
                     <div className="cursor-pointer" onClick={() => handleNavigate('/tienda')}>

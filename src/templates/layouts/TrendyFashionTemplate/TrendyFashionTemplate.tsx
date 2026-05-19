@@ -139,7 +139,7 @@ export const TrendyFashionTemplate = (props: any) => {
             )}
 
             {/* Header */}
-            <header className="px-6 py-4 flex items-center justify-between relative z-50" style={{ backgroundColor: 'transparent' }}>
+            <header className="px-6 py-4 flex items-center justify-between relative z-50" style={{ backgroundColor: settings?.navbar_bg_color || 'transparent' }}>
                 {/* Logo */}
                 <div className="cursor-pointer" onClick={() => handleNavigate('/tienda')}>
                     <LogoDisplay

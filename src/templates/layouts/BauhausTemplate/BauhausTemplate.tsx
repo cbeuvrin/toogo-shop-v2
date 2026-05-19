@@ -70,7 +70,7 @@ export const BauhausTemplate = (props: any) => {
             )}
 
             {/* Header — asymmetric */}
-            <header className="border-b-[3px] px-6 py-5 flex items-center justify-between" style={{ borderColor: bauhausBlack }}>
+            <header className="border-b-[3px] px-6 py-5 flex items-center justify-between" style={{ borderColor: bauhausBlack, backgroundColor: settings?.navbar_bg_color || 'transparent' }}>
                 <button className="md:hidden" onClick={() => setIsMenuOpen(true)}>
                     <Menu className="w-6 h-6" />
                 </button>
