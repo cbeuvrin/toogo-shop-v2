@@ -772,6 +772,11 @@ const Catalogo = () => {
         banners={banners}
         welcomeTitle={heroData?.title}
         welcomeMessage={heroData?.message}
+        cta1Label={heroData?.cta1Label}
+        cta2Label={heroData?.cta2Label}
+        eyebrowText={heroData?.eyebrowText}
+        heroStyles={heroData?.styles}
+        sectionBg={heroData?.sectionBg}
       />
     );
   }
