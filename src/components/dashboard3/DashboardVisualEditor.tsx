@@ -8,6 +8,7 @@ import { ContactEditModal } from "./EditModals/ContactEditModal";
 import { AllColorsEditModal } from "./EditModals/AllColorsEditModal";
 import { AnnouncementEditModal } from "@/components/dashboard3/EditModals/AnnouncementEditModal";
 import { TickerEditModal } from "@/components/dashboard3/EditModals/TickerEditModal";
+import { TextStyleEditModal } from "./EditModals/TextStyleEditModal";
 import { TextBannerEditModal } from "@/components/dashboard3/EditModals/TextBannerEditModal";
 import { FeaturedProductsEditModal } from "./EditModals/FeaturedProductsEditModal";
 import { TestimonialsEditModal } from "./EditModals/TestimonialsEditModal";
@@ -16,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Edit3, RefreshCw, Palette, LayoutGrid } from "lucide-react";
+import { Eye, Edit3, RefreshCw, Palette, LayoutGrid, Monitor, Tablet, Smartphone } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts, type Product } from "@/hooks/useProducts";
@@ -108,11 +109,22 @@ export interface EditorData {
     scale?: number;
     cta1Label?: string;
     cta2Label?: string;
+    eyebrowText?: string;
+    // Per-element style overrides used by Indico (FashionHero) for fine-grained
+    // editing of font / size / color on each hero text node.
+    styles?: {
+      eyebrow?: { fontFamily?: string; fontSize?: number; color?: string };
+      title?: { fontFamily?: string; fontSize?: number; color?: string };
+      message?: { fontFamily?: string; fontSize?: number; color?: string };
+      cta1?: { fontFamily?: string; fontSize?: number; color?: string };
+      cta2?: { fontFamily?: string; fontSize?: number; color?: string };
+    };
   };
   featuredProducts?: string[];
   testimonials?: any;
 }
-type EditModalType = 'logo' | 'banners' | 'contact' | 'all-colors' | 'announcement' | 'ticker' | 'text_banner' | 'featured_products' | 'testimonials' | 'hero_shape' | null;
+type EditModalType = 'logo' | 'banners' | 'contact' | 'all-colors' | 'announcement' | 'ticker' | 'text_banner' | 'featured_products' | 'testimonials' | 'hero_shape' | 'hero_element' | null;
+type HeroElementKey = 'eyebrow' | 'title' | 'message' | 'cta1' | 'cta2';
 
 // Template Demo data for preloading
 const getDemoTemplate = (): EditorData => ({
@@ -226,8 +238,11 @@ export const DashboardVisualEditor = () => {
     }
   });
   const [activeModal, setActiveModal] = useState<EditModalType>(null);
+  const [activeHeroElement, setActiveHeroElement] = useState<HeroElementKey | null>(null);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isEditorMode, setIsEditorMode] = useState(true);
+  const [deviceMode, setDeviceMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const deviceWidthClass = deviceMode === 'mobile' ? 'max-w-[420px]' : deviceMode === 'tablet' ? 'max-w-[820px]' : 'max-w-full';
   const storePreviewRef = React.useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasPreloaded, setHasPreloaded] = useState(false);
@@ -506,6 +521,33 @@ export const DashboardVisualEditor = () => {
   const handleEditElement = (type: EditModalType, item?: any) => {
     setActiveModal(type);
     setEditingItem(item);
+    if (type === 'hero_element' && typeof item === 'string') {
+      setActiveHeroElement(item as HeroElementKey);
+    } else if (type !== 'hero_element') {
+      setActiveHeroElement(null);
+    }
+  };
+
+  const handleSaveHeroElement = async (elementKey: string, text: string, style: { fontFamily?: string; fontSize?: number; color?: string }) => {
+    const key = elementKey as HeroElementKey;
+    const currentHero = editorData.hero || {};
+    const currentStyles = currentHero.styles || {};
+    const mergedHero = {
+      ...currentHero,
+      ...(key === 'title' && { title: text || undefined }),
+      ...(key === 'message' && { message: text || undefined }),
+      ...(key === 'cta1' && { cta1Label: text || undefined }),
+      ...(key === 'cta2' && { cta2Label: text || undefined }),
+      ...(key === 'eyebrow' && { eyebrowText: text || undefined }),
+      styles: {
+        ...currentStyles,
+        [key]: style,
+      },
+    };
+    await saveEditorData('hero', 'main_hero', mergedHero);
+    setEditorData(prev => ({ ...prev, hero: mergedHero }));
+    setActiveModal(null);
+    setActiveHeroElement(null);
   };
   const handleSaveLogo = async (logoData: {
     url: string;
@@ -868,11 +910,36 @@ export const DashboardVisualEditor = () => {
                     <p>{isEditorMode ? "Vista Previa" : "Editar"}</p>
                   </TooltipContent>
                 </Tooltip>
+
+                {/* Device preview toggle — shrinks the preview viewport */}
+                <div className="ml-2 inline-flex items-center gap-1 border rounded-md p-0.5">
+                  {([
+                    { id: 'desktop', icon: Monitor, label: 'Escritorio' },
+                    { id: 'tablet', icon: Tablet, label: 'Tablet' },
+                    { id: 'mobile', icon: Smartphone, label: 'Móvil' },
+                  ] as const).map(({ id, icon: Icon, label }) => (
+                    <Tooltip key={id}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={deviceMode === id ? 'default' : 'ghost'}
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={() => setDeviceMode(id)}
+                          aria-label={label}
+                        >
+                          <Icon className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent><p>{label}</p></TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
               </div>
             </TooltipProvider>
           </div>
 
-          {/* Store Preview */}
+          {/* Store Preview — wrapped so we can constrain its width for tablet/mobile simulation */}
+          <div className={`mx-auto transition-[max-width] duration-200 ${deviceWidthClass}`}>
           <div ref={storePreviewRef} className="border rounded-lg overflow-hidden relative min-h-[600px]">
             <StorePreview
               key={`preview-${editorData.logo?.url}-${editorData.banners?.map(b => b.imageUrl).join('-')}-${JSON.stringify(editorData.allColors)}`}
@@ -897,6 +964,7 @@ export const DashboardVisualEditor = () => {
               featuredProducts={editorData.featuredProducts}
               testimonials={editorData.testimonials}
             />
+          </div>
           </div>
         </TabsContent>
 
@@ -970,6 +1038,48 @@ export const DashboardVisualEditor = () => {
         initialBanner={editorData.banners?.[0]}
         initialScale={editorData.hero?.scale || 100}
       />
+
+      {/* Per-element hero text editor (Indico). Opens with whichever element was clicked. */}
+      {activeHeroElement && (() => {
+        const key = activeHeroElement;
+        const labelMap: Record<HeroElementKey, string> = {
+          eyebrow: 'eyebrow del Héroe',
+          title: 'Título del Héroe',
+          message: 'Mensaje del Héroe',
+          cta1: 'Botón principal',
+          cta2: 'Botón secundario',
+        };
+        const defaultMap: Record<HeroElementKey, string> = {
+          eyebrow: 'Nueva Colección',
+          title: 'Estilo que Inspira',
+          message: 'Descubre nuestra nueva colección diseñada para quienes viven con propósito.',
+          cta1: 'Ver Colección',
+          cta2: 'Novedades',
+        };
+        const currentText = key === 'title'
+          ? (editorData.hero?.title || '')
+          : key === 'message'
+            ? (editorData.hero?.message || '')
+            : key === 'cta1'
+              ? (editorData.hero?.cta1Label || '')
+              : key === 'cta2'
+                ? (editorData.hero?.cta2Label || '')
+                : (editorData.hero?.eyebrowText || '');
+        const currentStyle = editorData.hero?.styles?.[key];
+        return (
+          <TextStyleEditModal
+            isOpen={activeModal === 'hero_element'}
+            onClose={() => { setActiveModal(null); setActiveHeroElement(null); }}
+            elementLabel={labelMap[key]}
+            elementKey={key}
+            initialText={currentText}
+            initialStyle={currentStyle}
+            defaultText={defaultMap[key]}
+            multiline={key === 'message'}
+            onSave={handleSaveHeroElement}
+          />
+        );
+      })()}
     </div>
   );
 };

@@ -26,6 +26,16 @@ import { EditableElement } from "./EditableElement";
 import { EditorData } from "./DashboardVisualEditor";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
 
+/** Map hero.styles.<element>.fontFamily token to a real CSS font stack. */
+const heroStyleFontFamily = (token?: string): string | undefined => {
+  switch (token) {
+    case 'serif': return 'ui-serif, Georgia, serif';
+    case 'mono': return 'ui-monospace, SFMono-Regular, Menlo, monospace';
+    case 'sans': return 'ui-sans-serif, system-ui, sans-serif';
+    default: return undefined;
+  }
+};
+
 interface StorePreviewProps {
   data: EditorData;
   isEditorMode: boolean;
@@ -1272,41 +1282,96 @@ export const StorePreview = ({
           </div>
         </header>
 
-        {/* Hero - Photo + Text split */}
-        <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
-          <section className="w-full flex flex-col lg:flex-row min-h-[60vh]">
-            {/* Photo Side */}
-            <div className="relative w-full lg:w-3/5 aspect-[4/5] lg:aspect-auto overflow-hidden bg-gray-100">
-              {mainHeroImage ? (
-                <img src={mainHeroImage} alt="Hero" className="w-full h-full object-cover" style={{ objectPosition: banners[0]?.position || 'center center' }} />
-              ) : (
-                <div className="w-full h-full min-h-[300px] flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                  <span className="text-gray-400 font-serif italic text-xl">Foto del hero</span>
-                </div>
-              )}
-              <div className="absolute inset-0 bg-black/10" />
-            </div>
+        {/* Hero - Photo + Text split. In Indico each text element is independently
+            editable: clicking the photo opens the banner modal, clicking any text
+            opens that text element's dedicated style editor. */}
+        <section className="w-full flex flex-col lg:flex-row min-h-[60vh]">
+          {/* Photo Side — still routes to the banners modal */}
+          <div className="relative w-full lg:w-3/5">
+            <EditableElement type="banner" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
+              <div className="relative w-full aspect-[4/5] lg:aspect-auto lg:min-h-[60vh] overflow-hidden bg-gray-100">
+                {mainHeroImage ? (
+                  <img src={mainHeroImage} alt="Hero" className="w-full h-full object-cover" style={{ objectPosition: banners[0]?.position || 'center center' }} />
+                ) : (
+                  <div className="w-full h-full min-h-[300px] flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                    <span className="text-gray-400 font-serif italic text-xl">Foto del hero</span>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/10" />
+              </div>
+            </EditableElement>
+          </div>
 
-            {/* Text Side */}
-            <div className="w-full lg:w-2/5 flex flex-col justify-center px-6 md:px-12 py-10 bg-white min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400 mb-4 break-words">Nueva Colección</p>
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-tighter leading-[0.95] mb-4 break-words [overflow-wrap:anywhere]">
+          {/* Text Side — each child is its own EditableElement */}
+          <div className="w-full lg:w-2/5 flex flex-col justify-center px-6 md:px-12 py-10 bg-white min-w-0 gap-4">
+            <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'eyebrow')}>
+              <p
+                className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400 break-words"
+                style={{
+                  fontFamily: heroStyleFontFamily(data.hero?.styles?.eyebrow?.fontFamily),
+                  fontSize: data.hero?.styles?.eyebrow?.fontSize ? `${data.hero.styles.eyebrow.fontSize}px` : undefined,
+                  color: data.hero?.styles?.eyebrow?.color || undefined,
+                }}
+              >
+                {data.hero?.eyebrowText || "Nueva Colección"}
+              </p>
+            </EditableElement>
+
+            <EditableElement type="título" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'title')}>
+              <h1
+                className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-tighter leading-[0.95] break-words [overflow-wrap:anywhere]"
+                style={{
+                  fontFamily: heroStyleFontFamily(data.hero?.styles?.title?.fontFamily),
+                  fontSize: data.hero?.styles?.title?.fontSize ? `${data.hero.styles.title.fontSize}px` : undefined,
+                  color: data.hero?.styles?.title?.color || undefined,
+                }}
+              >
                 {welcomeTitle || "Estilo\nque Inspira"}
               </h1>
-              <p className="text-gray-500 text-xs leading-relaxed mb-8 max-w-xs break-words">
+            </EditableElement>
+
+            <EditableElement type="mensaje" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'message')}>
+              <p
+                className="text-gray-500 text-xs leading-relaxed max-w-xs break-words"
+                style={{
+                  fontFamily: heroStyleFontFamily(data.hero?.styles?.message?.fontFamily),
+                  fontSize: data.hero?.styles?.message?.fontSize ? `${data.hero.styles.message.fontSize}px` : undefined,
+                  color: data.hero?.styles?.message?.color || undefined,
+                }}
+              >
                 {welcomeMessage || "Descubre nuestra nueva colección. Calidad, estilo y comodidad en cada pieza."}
               </p>
-              <div className="flex gap-3 flex-wrap">
-                <Button className="bg-black text-white hover:bg-gray-800 font-bold rounded-none px-6 py-4 text-xs uppercase tracking-widest">
+            </EditableElement>
+
+            <div className="flex gap-3 flex-wrap mt-2">
+              <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta1')}>
+                <Button
+                  className="bg-black text-white hover:bg-gray-800 font-bold rounded-none px-6 py-4 text-xs uppercase tracking-widest"
+                  style={{
+                    fontFamily: heroStyleFontFamily(data.hero?.styles?.cta1?.fontFamily),
+                    fontSize: data.hero?.styles?.cta1?.fontSize ? `${data.hero.styles.cta1.fontSize}px` : undefined,
+                    color: data.hero?.styles?.cta1?.color || undefined,
+                  }}
+                >
                   {data.hero?.cta1Label || "Ver Colección"}
                 </Button>
-                <Button variant="outline" className="border-black text-black hover:bg-black hover:text-white rounded-none px-6 py-4 text-xs uppercase tracking-widest">
+              </EditableElement>
+              <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta2')}>
+                <Button
+                  variant="outline"
+                  className="border-black text-black hover:bg-black hover:text-white rounded-none px-6 py-4 text-xs uppercase tracking-widest"
+                  style={{
+                    fontFamily: heroStyleFontFamily(data.hero?.styles?.cta2?.fontFamily),
+                    fontSize: data.hero?.styles?.cta2?.fontSize ? `${data.hero.styles.cta2.fontSize}px` : undefined,
+                    color: data.hero?.styles?.cta2?.color || undefined,
+                  }}
+                >
                   {data.hero?.cta2Label || "Novedades"}
                 </Button>
-              </div>
+              </EditableElement>
             </div>
-          </section>
-        </EditableElement>
+          </div>
+        </section>
 
         {/* Ticker — keeps a placeholder in editor mode so users can re-enable a hidden bar */}
         {((data.ticker?.enabled !== false) || isEditorMode) && (

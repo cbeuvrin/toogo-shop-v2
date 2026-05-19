@@ -237,34 +237,61 @@ export const FashionHeroTemplate = (props: any) => {
                     <div className="absolute inset-0 bg-black/10" />
                 </div>
 
-                {/* Text Side — break-words + overflow-wrap to keep long titles inside the column */}
-                <div className="w-full lg:w-2/5 flex flex-col justify-center px-6 sm:px-8 md:px-14 py-12 sm:py-16 bg-white min-w-0">
-                    <p className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.25em] text-gray-400 mb-4 sm:mb-6 break-words">
-                        {settings?.store_name || "Nueva Colección"}
-                    </p>
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tighter leading-[0.95] mb-4 sm:mb-6 break-words [overflow-wrap:anywhere]">
-                        {welcomeTitle || props.welcomeTitle || settings?.welcome_title || "Estilo\nque Inspira"}
-                    </h1>
-                    <p className="text-gray-500 text-sm leading-relaxed mb-8 sm:mb-10 max-w-sm break-words">
-                        {welcomeMessage || props.welcomeMessage || settings?.welcome_message || "Descubre nuestra nueva colección diseñada para quienes viven con propósito. Calidad, estilo y comodidad en cada pieza."}
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <Button
-                            className="bg-black text-white hover:bg-gray-800 font-bold rounded-none px-8 sm:px-10 py-5 sm:py-6 text-xs uppercase tracking-widest group"
-                            onClick={() => handleNavigate('/catalogo')}
+                {/* Text Side — each text element can carry its own styles from the
+                    Indico per-element editor (props.heroStyles.{eyebrow|title|message|cta1|cta2}). */}
+                {(() => {
+                  const fontTok = (t?: string) =>
+                    t === 'serif' ? 'ui-serif, Georgia, serif'
+                    : t === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace'
+                    : t === 'sans' ? 'ui-sans-serif, system-ui, sans-serif'
+                    : undefined;
+                  const s = props.heroStyles || {};
+                  const styleFor = (k: 'eyebrow' | 'title' | 'message' | 'cta1' | 'cta2') => ({
+                    fontFamily: fontTok(s?.[k]?.fontFamily),
+                    fontSize: s?.[k]?.fontSize ? `${s[k].fontSize}px` : undefined,
+                    color: s?.[k]?.color || undefined,
+                  });
+                  return (
+                    <div className="w-full lg:w-2/5 flex flex-col justify-center px-6 sm:px-8 md:px-14 py-12 sm:py-16 bg-white min-w-0">
+                        <p
+                            className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.25em] text-gray-400 mb-4 sm:mb-6 break-words"
+                            style={styleFor('eyebrow')}
                         >
-                            {props.cta1Label || "Ver Colección"}
-                            <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="border-black text-black hover:bg-black hover:text-white rounded-none px-8 sm:px-10 py-5 sm:py-6 text-xs uppercase tracking-widest transition-colors"
-                            onClick={() => handleNavigate('/catalogo')}
+                            {props.eyebrowText || settings?.store_name || "Nueva Colección"}
+                        </p>
+                        <h1
+                            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tighter leading-[0.95] mb-4 sm:mb-6 break-words [overflow-wrap:anywhere]"
+                            style={styleFor('title')}
                         >
-                            {props.cta2Label || "Novedades"}
-                        </Button>
+                            {welcomeTitle || props.welcomeTitle || settings?.welcome_title || "Estilo\nque Inspira"}
+                        </h1>
+                        <p
+                            className="text-gray-500 text-sm leading-relaxed mb-8 sm:mb-10 max-w-sm break-words"
+                            style={styleFor('message')}
+                        >
+                            {welcomeMessage || props.welcomeMessage || settings?.welcome_message || "Descubre nuestra nueva colección diseñada para quienes viven con propósito. Calidad, estilo y comodidad en cada pieza."}
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <Button
+                                className="bg-black text-white hover:bg-gray-800 font-bold rounded-none px-8 sm:px-10 py-5 sm:py-6 text-xs uppercase tracking-widest group"
+                                style={styleFor('cta1')}
+                                onClick={() => handleNavigate('/catalogo')}
+                            >
+                                {props.cta1Label || "Ver Colección"}
+                                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="border-black text-black hover:bg-black hover:text-white rounded-none px-8 sm:px-10 py-5 sm:py-6 text-xs uppercase tracking-widest transition-colors"
+                                style={styleFor('cta2')}
+                                onClick={() => handleNavigate('/catalogo')}
+                            >
+                                {props.cta2Label || "Novedades"}
+                            </Button>
+                        </div>
                     </div>
-                </div>
+                  );
+                })()}
             </section>
 
             {/* ─── CATALOG VIEW ─── */}
