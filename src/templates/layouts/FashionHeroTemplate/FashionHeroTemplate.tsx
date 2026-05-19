@@ -382,8 +382,31 @@ export const FashionHeroTemplate = (props: any) => {
                     {/* ─── PRODUCTS SECTION ─── */}
                     <div className="container mx-auto px-6 py-12 flex items-end justify-between">
                         <div>
-                            <h2 className="text-3xl font-black uppercase mb-1 tracking-tighter">Recién Llegados</h2>
-                            <button className="text-sm font-semibold underline underline-offset-4 hover:text-gray-500" onClick={() => handleNavigate('/catalogo')}>Ver todo</button>
+                            {(() => {
+                              const s = props.heroStyles || {};
+                              const fontTok = (t?: string) =>
+                                t === 'serif' ? 'ui-serif, Georgia, serif'
+                                : t === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace'
+                                : t === 'sans' ? 'ui-sans-serif, system-ui, sans-serif'
+                                : undefined;
+                              const sStyle = (k: string) => ({
+                                fontFamily: fontTok(s?.[k]?.fontFamily),
+                                fontSize: s?.[k]?.fontSize ? `${s[k].fontSize}px` : undefined,
+                                color: s?.[k]?.color || undefined,
+                              });
+                              return (
+                                <>
+                                  <h2 className="text-3xl font-black uppercase mb-1 tracking-tighter" style={sStyle('sectionTitle1')}>
+                                    {s?.sectionTitle1?.text || "Recién Llegados"}
+                                  </h2>
+                                  <button
+                                    className="text-sm font-semibold underline underline-offset-4 hover:text-gray-500"
+                                    style={sStyle('sectionLink1')}
+                                    onClick={() => handleNavigate('/catalogo')}
+                                  >{s?.sectionLink1?.text || "Ver todo"}</button>
+                                </>
+                              );
+                            })()}
                         </div>
                         <div className="flex gap-2">
                             <Button variant="outline" size="icon" onClick={() => scroll('left')} className="rounded-full border-gray-300 hover:bg-gray-100">
@@ -467,7 +490,24 @@ export const FashionHeroTemplate = (props: any) => {
 
                     {/* ─── Popular / Featured Grid ─── */}
                     <div className="container mx-auto px-6 py-16" id="popular-grid">
-                        <h2 className="text-3xl font-black uppercase mb-8 tracking-tighter">Populares ahora</h2>
+                        {(() => {
+                          const s = props.heroStyles || {};
+                          const fontTok = (t?: string) =>
+                            t === 'serif' ? 'ui-serif, Georgia, serif'
+                            : t === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace'
+                            : t === 'sans' ? 'ui-sans-serif, system-ui, sans-serif'
+                            : undefined;
+                          const sStyle = {
+                            fontFamily: fontTok(s?.sectionTitle2?.fontFamily),
+                            fontSize: s?.sectionTitle2?.fontSize ? `${s.sectionTitle2.fontSize}px` : undefined,
+                            color: s?.sectionTitle2?.color || undefined,
+                          };
+                          return (
+                            <h2 className="text-3xl font-black uppercase mb-8 tracking-tighter" style={sStyle}>
+                              {s?.sectionTitle2?.text || "Populares ahora"}
+                            </h2>
+                          );
+                        })()}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {(featuredProductIds && featuredProductIds.length > 0) ? (
                                 featuredProductIds.map((productId: string) => {
@@ -515,7 +555,16 @@ export const FashionHeroTemplate = (props: any) => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
                         {/* Contact */}
                         <div>
-                            <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500">Contacto</h4>
+                            <h4
+                                className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500"
+                                style={{
+                                  fontFamily: props.heroStyles?.footerHeading1?.fontFamily === 'serif' ? 'ui-serif, Georgia, serif' : props.heroStyles?.footerHeading1?.fontFamily === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace' : props.heroStyles?.footerHeading1?.fontFamily === 'sans' ? 'ui-sans-serif, system-ui, sans-serif' : undefined,
+                                  fontSize: props.heroStyles?.footerHeading1?.fontSize ? `${props.heroStyles.footerHeading1.fontSize}px` : undefined,
+                                  color: props.heroStyles?.footerHeading1?.color || undefined,
+                                }}
+                            >
+                                {props.heroStyles?.footerHeading1?.text || "Contacto"}
+                            </h4>
                             <ul className="space-y-4 text-sm font-medium">
                                 {contactData?.whatsapp && (
                                     <li className="flex items-center gap-3">
@@ -536,7 +585,16 @@ export const FashionHeroTemplate = (props: any) => {
 
                         {/* Location */}
                         <div>
-                            <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500">Ubicación</h4>
+                            <h4
+                                className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500"
+                                style={{
+                                  fontFamily: props.heroStyles?.footerHeading2?.fontFamily === 'serif' ? 'ui-serif, Georgia, serif' : props.heroStyles?.footerHeading2?.fontFamily === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace' : props.heroStyles?.footerHeading2?.fontFamily === 'sans' ? 'ui-sans-serif, system-ui, sans-serif' : undefined,
+                                  fontSize: props.heroStyles?.footerHeading2?.fontSize ? `${props.heroStyles.footerHeading2.fontSize}px` : undefined,
+                                  color: props.heroStyles?.footerHeading2?.color || undefined,
+                                }}
+                            >
+                                {props.heroStyles?.footerHeading2?.text || "Ubicación"}
+                            </h4>
                             <p className="text-sm font-medium leading-relaxed max-w-xs text-gray-300">
                                 {contactData?.address || "Dirección no configurada"}
                             </p>
@@ -544,7 +602,16 @@ export const FashionHeroTemplate = (props: any) => {
 
                         {/* Socials */}
                         <div>
-                            <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500">Síguenos</h4>
+                            <h4
+                                className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500"
+                                style={{
+                                  fontFamily: props.heroStyles?.footerHeading3?.fontFamily === 'serif' ? 'ui-serif, Georgia, serif' : props.heroStyles?.footerHeading3?.fontFamily === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace' : props.heroStyles?.footerHeading3?.fontFamily === 'sans' ? 'ui-sans-serif, system-ui, sans-serif' : undefined,
+                                  fontSize: props.heroStyles?.footerHeading3?.fontSize ? `${props.heroStyles.footerHeading3.fontSize}px` : undefined,
+                                  color: props.heroStyles?.footerHeading3?.color || undefined,
+                                }}
+                            >
+                                {props.heroStyles?.footerHeading3?.text || "Síguenos"}
+                            </h4>
                             <div className="flex flex-col gap-3 text-sm">
                                 {contactData?.instagram && (
                                     <a href={contactData.instagram} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" style={{ color: footerIconColor, fontSize: `${14 * footerIconScale}px` }}>Instagram</a>

@@ -111,20 +111,25 @@ export interface EditorData {
     cta2Label?: string;
     eyebrowText?: string;
     // Per-element style overrides used by Indico (FashionHero) for fine-grained
-    // editing of font / size / color on each hero text node.
-    styles?: {
-      eyebrow?: { fontFamily?: string; fontSize?: number; color?: string };
-      title?: { fontFamily?: string; fontSize?: number; color?: string };
-      message?: { fontFamily?: string; fontSize?: number; color?: string };
-      cta1?: { fontFamily?: string; fontSize?: number; color?: string };
-      cta2?: { fontFamily?: string; fontSize?: number; color?: string };
-    };
+    // editing of font / size / color on each text node across the whole page.
+    // Keys with their own dedicated text field above (title/message/etc.)
+    // store only styles here; keys for the rest of the page (sectionTitle1,
+    // midBannerTitle, footerHeading1…) also store a `text` override here.
+    styles?: Record<string, { text?: string; fontFamily?: string; fontSize?: number; color?: string }>;
   };
   featuredProducts?: string[];
   testimonials?: any;
 }
 type EditModalType = 'logo' | 'banners' | 'contact' | 'all-colors' | 'announcement' | 'ticker' | 'text_banner' | 'featured_products' | 'testimonials' | 'hero_shape' | 'hero_element' | null;
-type HeroElementKey = 'eyebrow' | 'title' | 'message' | 'cta1' | 'cta2';
+// Keys for every individually editable text node in Indico — hero, mid-page
+// section headers, footer column headers. Each stores text + style in
+// editorData.hero.styles[key].
+type HeroElementKey =
+  | 'eyebrow' | 'title' | 'message' | 'cta1' | 'cta2'
+  | 'sectionTitle1' | 'sectionLink1'   // "Recién Llegados" + "Ver todo"
+  | 'midBannerTitle'                    // Big mid-banner heading
+  | 'sectionTitle2'                     // "Populares ahora"
+  | 'footerHeading1' | 'footerHeading2' | 'footerHeading3'; // Contacto / Ubicación / Síguenos
 
 // Template Demo data for preloading
 const getDemoTemplate = (): EditorData => ({
@@ -532,6 +537,13 @@ export const DashboardVisualEditor = () => {
     const key = elementKey as HeroElementKey;
     const currentHero = editorData.hero || {};
     const currentStyles = currentHero.styles || {};
+    // Hero text nodes have dedicated fields on `hero`; other elements
+    // (section titles, footer headings…) store their custom text inside
+    // styles[key].text alongside font/size/color.
+    const isHeroTextNode = key === 'title' || key === 'message' || key === 'cta1' || key === 'cta2' || key === 'eyebrow';
+    const styleEntry = isHeroTextNode
+      ? { ...style }
+      : { ...style, text: text || undefined };
     const mergedHero = {
       ...currentHero,
       ...(key === 'title' && { title: text || undefined }),
@@ -541,7 +553,7 @@ export const DashboardVisualEditor = () => {
       ...(key === 'eyebrow' && { eyebrowText: text || undefined }),
       styles: {
         ...currentStyles,
-        [key]: style,
+        [key]: styleEntry,
       },
     };
     await saveEditorData('hero', 'main_hero', mergedHero);
@@ -1039,7 +1051,8 @@ export const DashboardVisualEditor = () => {
         initialScale={editorData.hero?.scale || 100}
       />
 
-      {/* Per-element hero text editor (Indico). Opens with whichever element was clicked. */}
+      {/* Per-element editor (Indico). Works for hero text nodes AND for the
+          rest of the page (section headings, footer column titles, mid banner). */}
       {activeHeroElement && (() => {
         const key = activeHeroElement;
         const labelMap: Record<HeroElementKey, string> = {
@@ -1048,6 +1061,13 @@ export const DashboardVisualEditor = () => {
           message: 'Mensaje del Héroe',
           cta1: 'Botón principal',
           cta2: 'Botón secundario',
+          sectionTitle1: 'Título "Recién Llegados"',
+          sectionLink1: 'Link "Ver todo"',
+          midBannerTitle: 'Título del Mid Banner',
+          sectionTitle2: 'Título "Populares ahora"',
+          footerHeading1: 'Footer — Contacto',
+          footerHeading2: 'Footer — Ubicación',
+          footerHeading3: 'Footer — Síguenos',
         };
         const defaultMap: Record<HeroElementKey, string> = {
           eyebrow: 'Nueva Colección',
@@ -1055,16 +1075,24 @@ export const DashboardVisualEditor = () => {
           message: 'Descubre nuestra nueva colección diseñada para quienes viven con propósito.',
           cta1: 'Ver Colección',
           cta2: 'Novedades',
+          sectionTitle1: 'Recién Llegados',
+          sectionLink1: 'Ver todo',
+          midBannerTitle: 'Mid Banner',
+          sectionTitle2: 'Populares ahora',
+          footerHeading1: 'Contacto',
+          footerHeading2: 'Ubicación',
+          footerHeading3: 'Síguenos',
         };
-        const currentText = key === 'title'
-          ? (editorData.hero?.title || '')
-          : key === 'message'
-            ? (editorData.hero?.message || '')
-            : key === 'cta1'
-              ? (editorData.hero?.cta1Label || '')
-              : key === 'cta2'
-                ? (editorData.hero?.cta2Label || '')
-                : (editorData.hero?.eyebrowText || '');
+        const heroTextNodeMap: Partial<Record<HeroElementKey, string>> = {
+          title: editorData.hero?.title || '',
+          message: editorData.hero?.message || '',
+          cta1: editorData.hero?.cta1Label || '',
+          cta2: editorData.hero?.cta2Label || '',
+          eyebrow: editorData.hero?.eyebrowText || '',
+        };
+        const currentText = heroTextNodeMap[key] !== undefined
+          ? heroTextNodeMap[key]!
+          : (editorData.hero?.styles?.[key]?.text || '');
         const currentStyle = editorData.hero?.styles?.[key];
         return (
           <TextStyleEditModal

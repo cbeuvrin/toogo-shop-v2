@@ -1396,9 +1396,32 @@ export const StorePreview = ({
         {/* Products */}
         <div className="px-4 py-8">
           <div className="flex items-end justify-between mb-4">
-            <div>
-              <h2 className="text-xl font-black uppercase tracking-tighter mb-1">Recién Llegados</h2>
-              <a href="#" className="text-xs font-semibold underline underline-offset-4 hover:text-gray-600">Ver todo</a>
+            <div className="flex flex-col gap-1">
+              <EditableElement type="título sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle1')}>
+                <h2
+                  className="text-xl font-black uppercase tracking-tighter"
+                  style={{
+                    fontFamily: heroStyleFontFamily(data.hero?.styles?.sectionTitle1?.fontFamily),
+                    fontSize: data.hero?.styles?.sectionTitle1?.fontSize ? `${data.hero.styles.sectionTitle1.fontSize}px` : undefined,
+                    color: data.hero?.styles?.sectionTitle1?.color || undefined,
+                  }}
+                >
+                  {data.hero?.styles?.sectionTitle1?.text || "Recién Llegados"}
+                </h2>
+              </EditableElement>
+              <EditableElement type="link" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionLink1')}>
+                <a
+                  href="#"
+                  className="text-xs font-semibold underline underline-offset-4 hover:text-gray-600"
+                  style={{
+                    fontFamily: heroStyleFontFamily(data.hero?.styles?.sectionLink1?.fontFamily),
+                    fontSize: data.hero?.styles?.sectionLink1?.fontSize ? `${data.hero.styles.sectionLink1.fontSize}px` : undefined,
+                    color: data.hero?.styles?.sectionLink1?.color || undefined,
+                  }}
+                >
+                  {data.hero?.styles?.sectionLink1?.text || "Ver todo"}
+                </a>
+              </EditableElement>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="icon" onClick={() => heroScroll('left')} className="rounded-full border-gray-300 hover:bg-gray-100 h-8 w-8">
@@ -1446,7 +1469,18 @@ export const StorePreview = ({
         {/* Featured Products Grid */}
         <EditableElement type="featured_products" isEditorMode={isEditorMode} onEdit={() => onEditElement('featured_products')}>
           <div className={`px-4 py-8 md:py-12 ${isEditorMode ? 'hover:bg-gray-50 cursor-pointer' : ''}`}>
-            <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter mb-6">Populares ahora</h2>
+            <EditableElement type="título sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle2')}>
+              <h2
+                className="text-xl md:text-2xl font-black uppercase tracking-tighter mb-6"
+                style={{
+                  fontFamily: heroStyleFontFamily(data.hero?.styles?.sectionTitle2?.fontFamily),
+                  fontSize: data.hero?.styles?.sectionTitle2?.fontSize ? `${data.hero.styles.sectionTitle2.fontSize}px` : undefined,
+                  color: data.hero?.styles?.sectionTitle2?.color || undefined,
+                }}
+              >
+                {data.hero?.styles?.sectionTitle2?.text || "Populares ahora"}
+              </h2>
+            </EditableElement>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {(featuredProducts && featuredProducts.length > 0) ? (
                 featuredProducts.map((productId: string) => {
@@ -1491,7 +1525,18 @@ export const StorePreview = ({
             <EditableElement type="contact" isEditorMode={isEditorMode} onEdit={() => onEditElement('contact')}>
               <div className={`grid grid-cols-1 md:grid-cols-3 gap-12 mb-16 ${isEditorMode ? 'cursor-pointer hover:bg-zinc-900 p-4 -m-4 rounded-lg transition-colors' : ''}`}>
                 <div>
-                  <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500">Contacto</h4>
+                  <EditableElement type="footer título" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading1')}>
+                    <h4
+                      className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500"
+                      style={{
+                        fontFamily: heroStyleFontFamily(data.hero?.styles?.footerHeading1?.fontFamily),
+                        fontSize: data.hero?.styles?.footerHeading1?.fontSize ? `${data.hero.styles.footerHeading1.fontSize}px` : undefined,
+                        color: data.hero?.styles?.footerHeading1?.color || undefined,
+                      }}
+                    >
+                      {data.hero?.styles?.footerHeading1?.text || "Contacto"}
+                    </h4>
+                  </EditableElement>
                   <ul className="space-y-4 text-sm font-medium">
                     {data.contact?.whatsapp && <li className="flex items-center gap-3"><span className="text-gray-300">WhatsApp:</span> {data.contact.whatsapp}</li>}
                     {data.contact?.email && <li className="flex items-center gap-3"><span className="text-gray-300">Email:</span> {data.contact.email}</li>}
@@ -1499,13 +1544,35 @@ export const StorePreview = ({
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500">Ubicación</h4>
+                  <EditableElement type="footer título" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading2')}>
+                    <h4
+                      className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500"
+                      style={{
+                        fontFamily: heroStyleFontFamily(data.hero?.styles?.footerHeading2?.fontFamily),
+                        fontSize: data.hero?.styles?.footerHeading2?.fontSize ? `${data.hero.styles.footerHeading2.fontSize}px` : undefined,
+                        color: data.hero?.styles?.footerHeading2?.color || undefined,
+                      }}
+                    >
+                      {data.hero?.styles?.footerHeading2?.text || "Ubicación"}
+                    </h4>
+                  </EditableElement>
                   <p className="text-sm font-medium leading-relaxed max-w-xs text-gray-300">
                     {data.contact?.address || <span className="text-zinc-600 italic">Configura tu dirección</span>}
                   </p>
                 </div>
                 <div>
-                  <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500">Síguenos</h4>
+                  <EditableElement type="footer título" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading3')}>
+                    <h4
+                      className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500"
+                      style={{
+                        fontFamily: heroStyleFontFamily(data.hero?.styles?.footerHeading3?.fontFamily),
+                        fontSize: data.hero?.styles?.footerHeading3?.fontSize ? `${data.hero.styles.footerHeading3.fontSize}px` : undefined,
+                        color: data.hero?.styles?.footerHeading3?.color || undefined,
+                      }}
+                    >
+                      {data.hero?.styles?.footerHeading3?.text || "Síguenos"}
+                    </h4>
+                  </EditableElement>
                   <div className="flex flex-col gap-3 text-sm">
                     {data.contact?.instagram && <a href={data.contact.instagram} className="hover:text-zinc-300 transition-colors" style={{ color: footerIconColor, fontSize: `${14 * footerIconScale}px` }}>Instagram</a>}
                     {data.contact?.facebook && <a href={data.contact.facebook} className="hover:text-zinc-300 transition-colors" style={{ color: footerIconColor, fontSize: `${14 * footerIconScale}px` }}>Facebook</a>}
