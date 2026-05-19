@@ -379,7 +379,8 @@ export const FashionHeroTemplate = (props: any) => {
                         </div>
                     )}
 
-                    {/* ─── PRODUCTS SECTION ─── */}
+                    {/* ─── PRODUCTS SECTION (Recién Llegados) ─── */}
+                    <div style={{ backgroundColor: props.sectionBg?.section1 || undefined }}>
                     <div className="container mx-auto px-6 py-12 flex items-end justify-between">
                         <div>
                             {(() => {
@@ -452,6 +453,7 @@ export const FashionHeroTemplate = (props: any) => {
                             })()}
                         </div>
                     </div>
+                    </div>
 
                     {/* ─── MID-PAGE IMAGE BANNER ─── */}
                     {(textBanner?.isActive !== false) && (
@@ -488,7 +490,8 @@ export const FashionHeroTemplate = (props: any) => {
                         </section>
                     )}
 
-                    {/* ─── Popular / Featured Grid ─── */}
+                    {/* ─── Popular / Featured Grid (Populares ahora) ─── */}
+                    <div style={{ backgroundColor: props.sectionBg?.section2 || undefined }}>
                     <div className="container mx-auto px-6 py-16" id="popular-grid">
                         {(() => {
                           const s = props.heroStyles || {};
@@ -545,6 +548,7 @@ export const FashionHeroTemplate = (props: any) => {
                                 </>
                             )}
                         </div>
+                    </div>
                     </div>
                 </>
             )}

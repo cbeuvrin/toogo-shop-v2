@@ -9,6 +9,7 @@ import { AllColorsEditModal } from "./EditModals/AllColorsEditModal";
 import { AnnouncementEditModal } from "@/components/dashboard3/EditModals/AnnouncementEditModal";
 import { TickerEditModal } from "@/components/dashboard3/EditModals/TickerEditModal";
 import { TextStyleEditModal } from "./EditModals/TextStyleEditModal";
+import { SectionBgEditModal } from "./EditModals/SectionBgEditModal";
 import { TextBannerEditModal } from "@/components/dashboard3/EditModals/TextBannerEditModal";
 import { FeaturedProductsEditModal } from "./EditModals/FeaturedProductsEditModal";
 import { TestimonialsEditModal } from "./EditModals/TestimonialsEditModal";
@@ -116,11 +117,14 @@ export interface EditorData {
     // store only styles here; keys for the rest of the page (sectionTitle1,
     // midBannerTitle, footerHeading1…) also store a `text` override here.
     styles?: Record<string, { text?: string; fontFamily?: string; fontSize?: number; color?: string }>;
+    // Background color per section ('section1' = Recién Llegados, 'section2' = Populares ahora).
+    sectionBg?: Record<string, string | null>;
   };
   featuredProducts?: string[];
   testimonials?: any;
 }
-type EditModalType = 'logo' | 'banners' | 'contact' | 'all-colors' | 'announcement' | 'ticker' | 'text_banner' | 'featured_products' | 'testimonials' | 'hero_shape' | 'hero_element' | null;
+type EditModalType = 'logo' | 'banners' | 'contact' | 'all-colors' | 'announcement' | 'ticker' | 'text_banner' | 'featured_products' | 'testimonials' | 'hero_shape' | 'hero_element' | 'section_bg' | null;
+type SectionBgKey = 'section1' | 'section2';
 // Keys for every individually editable text node in Indico — hero, mid-page
 // section headers, footer column headers. Each stores text + style in
 // editorData.hero.styles[key].
@@ -244,6 +248,7 @@ export const DashboardVisualEditor = () => {
   });
   const [activeModal, setActiveModal] = useState<EditModalType>(null);
   const [activeHeroElement, setActiveHeroElement] = useState<HeroElementKey | null>(null);
+  const [activeSectionBg, setActiveSectionBg] = useState<SectionBgKey | null>(null);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isEditorMode, setIsEditorMode] = useState(true);
   const [deviceMode, setDeviceMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
@@ -531,6 +536,27 @@ export const DashboardVisualEditor = () => {
     } else if (type !== 'hero_element') {
       setActiveHeroElement(null);
     }
+    if (type === 'section_bg' && typeof item === 'string') {
+      setActiveSectionBg(item as SectionBgKey);
+    } else if (type !== 'section_bg') {
+      setActiveSectionBg(null);
+    }
+  };
+
+  const handleSaveSectionBg = async (sectionKey: string, bgColor: string | null) => {
+    const currentHero = editorData.hero || {};
+    const currentBg = currentHero.sectionBg || {};
+    const mergedHero = {
+      ...currentHero,
+      sectionBg: {
+        ...currentBg,
+        [sectionKey]: bgColor,
+      },
+    };
+    await saveEditorData('hero', 'main_hero', mergedHero);
+    setEditorData(prev => ({ ...prev, hero: mergedHero }));
+    setActiveModal(null);
+    setActiveSectionBg(null);
   };
 
   const handleSaveHeroElement = async (elementKey: string, text: string, style: { fontFamily?: string; fontSize?: number; color?: string }) => {
@@ -1105,6 +1131,25 @@ export const DashboardVisualEditor = () => {
             defaultText={defaultMap[key]}
             multiline={key === 'message'}
             onSave={handleSaveHeroElement}
+          />
+        );
+      })()}
+
+      {/* Section background editor (Indico) */}
+      {activeSectionBg && (() => {
+        const key = activeSectionBg;
+        const labelMap: Record<SectionBgKey, string> = {
+          section1: 'Recién Llegados',
+          section2: 'Populares ahora',
+        };
+        return (
+          <SectionBgEditModal
+            isOpen={activeModal === 'section_bg'}
+            onClose={() => { setActiveModal(null); setActiveSectionBg(null); }}
+            sectionLabel={labelMap[key]}
+            sectionKey={key}
+            initialBgColor={editorData.hero?.sectionBg?.[key] || undefined}
+            onSave={handleSaveSectionBg}
           />
         );
       })()}

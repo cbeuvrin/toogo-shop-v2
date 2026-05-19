@@ -1393,8 +1393,9 @@ export const StorePreview = ({
           </EditableElement>
         )}
 
-        {/* Products */}
-        <div className="px-4 py-8">
+        {/* Products section — has its own background editable separately */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section1')}>
+        <div className="px-4 py-8" style={{ backgroundColor: data.hero?.sectionBg?.section1 || undefined }}>
           <div className="flex items-end justify-between mb-4">
             <div className="flex flex-col gap-1">
               <EditableElement type="título sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle1')}>
@@ -1446,6 +1447,7 @@ export const StorePreview = ({
             ))}
           </div>
         </div>
+        </EditableElement>
 
         {/* Mid Image Banner */}
         {(data.textBanner?.isActive !== false) && (
@@ -1466,7 +1468,9 @@ export const StorePreview = ({
           </EditableElement>
         )}
 
-        {/* Featured Products Grid */}
+        {/* Featured Products Grid — section bg editable separately */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section2')}>
+        <div style={{ backgroundColor: data.hero?.sectionBg?.section2 || undefined }}>
         <EditableElement type="featured_products" isEditorMode={isEditorMode} onEdit={() => onEditElement('featured_products')}>
           <div className={`px-4 py-8 md:py-12 ${isEditorMode ? 'hover:bg-gray-50 cursor-pointer' : ''}`}>
             <EditableElement type="título sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle2')}>
@@ -1517,6 +1521,8 @@ export const StorePreview = ({
               )}
             </div>
           </div>
+        </EditableElement>
+        </div>
         </EditableElement>
 
         {/* Footer */}
