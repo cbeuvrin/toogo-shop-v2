@@ -22,6 +22,9 @@ interface TextBannerData {
     isActive: boolean;
     imageUrl?: string;
     imagePosition?: string;
+    showTitle?: boolean;        // default true
+    buttonEnabled?: boolean;    // default true (preserves the hardcoded CTA)
+    buttonLabel?: string;
 }
 
 interface TextBannerEditModalProps {
@@ -37,6 +40,9 @@ export const TextBannerEditModal = ({ isOpen, onClose, onSave, initialData }: Te
         isActive: true,
         imageUrl: "",
         imagePosition: "50% 50%",
+        showTitle: true,
+        buttonEnabled: true,
+        buttonLabel: "",
     });
 
     const [uploading, setUploading] = useState(false);
@@ -55,6 +61,9 @@ export const TextBannerEditModal = ({ isOpen, onClose, onSave, initialData }: Te
                 isActive: initialData.isActive !== false,
                 imageUrl: initialData.imageUrl || "",
                 imagePosition: initialData.imagePosition || "50% 50%",
+                showTitle: initialData.showTitle !== false,
+                buttonEnabled: initialData.buttonEnabled !== false,
+                buttonLabel: initialData.buttonLabel || "",
             });
         }
     }, [initialData, isOpen]);
@@ -161,18 +170,51 @@ export const TextBannerEditModal = ({ isOpen, onClose, onSave, initialData }: Te
                         />
                     </div>
 
-                    {/* Text Input */}
-                    <div className="space-y-2">
-                        <Label htmlFor="text">Texto del banner</Label>
-                        <Input
-                            id="text"
-                            value={formData.text}
-                            onChange={(e) => setFormData(prev => ({ ...prev, text: e.target.value }))}
-                            placeholder="Ej: Never Stop"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                            Texto grande que aparece centrado en el banner.
-                        </p>
+                    {/* Title section */}
+                    <div className="space-y-3 border rounded-md p-3 bg-muted/20">
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="showTitle">Mostrar título</Label>
+                            <Switch
+                                id="showTitle"
+                                checked={formData.showTitle !== false}
+                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, showTitle: checked }))}
+                            />
+                        </div>
+                        {formData.showTitle !== false && (
+                            <div className="space-y-1.5">
+                                <Label htmlFor="text" className="text-xs">Texto del banner</Label>
+                                <Input
+                                    id="text"
+                                    value={formData.text}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, text: e.target.value }))}
+                                    placeholder="Ej: Never Stop"
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Button section */}
+                    <div className="space-y-3 border rounded-md p-3 bg-muted/20">
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="buttonEnabled">Mostrar botón</Label>
+                            <Switch
+                                id="buttonEnabled"
+                                checked={formData.buttonEnabled !== false}
+                                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, buttonEnabled: checked }))}
+                            />
+                        </div>
+                        {formData.buttonEnabled !== false && (
+                            <div className="space-y-1.5">
+                                <Label htmlFor="buttonLabel" className="text-xs">Texto del botón</Label>
+                                <Input
+                                    id="buttonLabel"
+                                    value={formData.buttonLabel || ""}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, buttonLabel: e.target.value }))}
+                                    placeholder="Ej: Explorar Colección"
+                                />
+                                <p className="text-[10px] text-muted-foreground">Vacío = "Explorar Colección".</p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Image Upload */}

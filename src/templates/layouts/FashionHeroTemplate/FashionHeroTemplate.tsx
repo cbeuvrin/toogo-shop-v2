@@ -120,20 +120,32 @@ export const FashionHeroTemplate = (props: any) => {
                       <button className="md:hidden" onClick={() => setIsMenuOpen(true)}>
                           <Menu className="w-6 h-6" style={{ color: headerIconColor }} />
                       </button>
-                      {!isCatalog && pos !== 'left' && (
-                          <nav className="hidden md:flex gap-7 text-sm font-medium text-gray-600">
+                      {!isCatalog && pos !== 'left' && (() => {
+                          const navStyle = props.heroStyles?.navMenu || {};
+                          const navFontFamily = navStyle.fontFamily === 'serif' ? 'ui-serif, Georgia, serif'
+                            : navStyle.fontFamily === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace'
+                            : navStyle.fontFamily === 'sans' ? 'ui-sans-serif, system-ui, sans-serif' : undefined;
+                          const navInline = {
+                            fontFamily: navFontFamily,
+                            fontSize: navStyle.fontSize ? `${navStyle.fontSize}px` : undefined,
+                            color: navStyle.color || undefined,
+                          };
+                          return (
+                          <nav className="hidden md:flex gap-7 text-sm font-medium text-gray-600 overflow-x-auto max-w-[40vw] no-scrollbar">
                               {categories?.filter((cat: any) => !cat.parent_id).map((cat: any) => (
                                   <button
                                       key={cat.id}
                                       onClick={() => handleNavigate('/catalogo', { category: cat.name.toLowerCase() })}
-                                      className="hover:text-black transition-colors uppercase tracking-wider text-xs"
+                                      className="hover:text-black transition-colors uppercase tracking-wider text-xs whitespace-nowrap"
+                                      style={navInline}
                                   >
                                       {cat.name}
                                   </button>
                               ))}
-                              <button onClick={() => handleNavigate('/catalogo')} className="hover:text-black transition-colors uppercase tracking-wider text-xs">Todos</button>
+                              <button onClick={() => handleNavigate('/catalogo')} className="hover:text-black transition-colors uppercase tracking-wider text-xs whitespace-nowrap" style={navInline}>Todos</button>
                           </nav>
-                      )}
+                          );
+                      })()}
                       {pos === 'left' && (
                           <div className="cursor-pointer" onClick={() => handleNavigate('/tienda')}>
                               <LogoDisplay
@@ -495,15 +507,19 @@ export const FashionHeroTemplate = (props: any) => {
                                     </div>
                                 )}
                                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8 z-10">
-                                    <h2 className="text-5xl md:text-8xl font-black text-white uppercase tracking-tighter mb-6">
-                                        {textBanner?.text || "Sin Límites"}
-                                    </h2>
-                                    <Button
+                                    {textBanner?.showTitle !== false && (
+                                      <h2 className="text-5xl md:text-8xl font-black text-white uppercase tracking-tighter mb-6">
+                                          {textBanner?.text || "Sin Límites"}
+                                      </h2>
+                                    )}
+                                    {textBanner?.buttonEnabled !== false && (
+                                      <Button
                                         className="bg-white text-black text-xs md:text-base px-10 py-5 md:py-7 font-bold uppercase tracking-widest hover:scale-105 transition-transform rounded-none"
                                         onClick={() => handleNavigate('/catalogo')}
-                                    >
-                                        Explorar Colección
-                                    </Button>
+                                      >
+                                        {textBanner?.buttonLabel || "Explorar Colección"}
+                                      </Button>
+                                    )}
                                 </div>
                             </div>
                         </section>

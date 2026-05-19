@@ -1255,32 +1255,65 @@ export const StorePreview = ({
     return (
       <div className="min-h-screen font-sans text-black relative" style={{ backgroundColor: bgColor }}>
 
-        {/* Header */}
-        <header className="sticky top-0 z-50 border-b border-gray-100 h-16 flex items-center justify-between px-6" style={{ backgroundColor: navColor }}>
-          <nav className="hidden md:flex gap-6 text-xs font-medium text-gray-600 uppercase tracking-wider">
-            {categories.filter((c: any) => !c.parent_id).map((cat: any) => (
-              <span key={cat.id || cat.name} className="cursor-pointer hover:text-black">{cat.name}</span>
-            ))}
-            {categories.filter((c: any) => !c.parent_id).length === 0 && (
-              <><span>Mujer</span><span>Hombre</span><span>Kids</span></>
+        {/* Header — mirrors production layout so the bar grows with logo size */}
+        {(() => {
+          const pos = (data as any)?.settings?.logo_position || (settings as any)?.logo_position || 'center';
+          const allCats = categories.filter((c: any) => !c.parent_id);
+          const navItems = allCats.length > 0 ? allCats : [{ name: 'Mujer' }, { name: 'Hombre' }, { name: 'Kids' }];
+          return (
+        <header className="sticky top-0 z-50 border-b border-gray-100" style={{ backgroundColor: navColor }}>
+          <div className="w-full px-6 min-h-16 py-3 flex items-center gap-4">
+            {/* LEFT */}
+            <div className={`flex items-center gap-3 ${pos === 'center' ? 'flex-1' : pos === 'left' ? 'flex-shrink-0' : 'flex-1 min-w-0'}`}>
+              <Button variant="ghost" size="icon" className="md:hidden h-8 w-8">
+                <Menu className="w-5 h-5" style={{ color: headerIconColor }} />
+              </Button>
+              {pos !== 'left' && (
+                <EditableElement type="menú" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'navMenu')}>
+                  <nav
+                    className="hidden md:flex gap-5 text-xs font-medium text-gray-600 uppercase tracking-wider overflow-x-auto max-w-[40vw] no-scrollbar"
+                    style={{
+                      fontFamily: heroStyleFontFamily(data.hero?.styles?.navMenu?.fontFamily),
+                      fontSize: data.hero?.styles?.navMenu?.fontSize ? `${data.hero.styles.navMenu.fontSize}px` : undefined,
+                      color: data.hero?.styles?.navMenu?.color || undefined,
+                    }}
+                  >
+                    {navItems.map((cat: any, i: number) => (
+                      <span key={cat.id || cat.name || i} className="cursor-pointer hover:text-black whitespace-nowrap">{cat.name}</span>
+                    ))}
+                  </nav>
+                </EditableElement>
+              )}
+              {pos === 'left' && (
+                <EditableElement type="logo" isEditorMode={isEditorMode} onEdit={() => onEditElement('logo')}>
+                  <LogoDisplay logoUrl={(data as any)?.logo?.url} logoSize={(settings as any)?.logo_size} fallbackText="FASHION" disableFetch className="text-xl font-black uppercase tracking-tighter" />
+                </EditableElement>
+              )}
+            </div>
+
+            {/* CENTER */}
+            {pos === 'center' && (
+              <div className="flex-shrink-0">
+                <EditableElement type="logo" isEditorMode={isEditorMode} onEdit={() => onEditElement('logo')}>
+                  <LogoDisplay logoUrl={(data as any)?.logo?.url} logoSize={(settings as any)?.logo_size} fallbackText="FASHION" disableFetch className="text-xl font-black uppercase tracking-tighter" />
+                </EditableElement>
+              </div>
             )}
-          </nav>
 
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <Menu className="w-5 h-5" style={{ color: headerIconColor }} />
-          </Button>
-
-          <div className="absolute left-1/2 -translate-x-1/2">
-            <EditableElement type="logo" isEditorMode={isEditorMode} onEdit={() => onEditElement('logo')}>
-              <LogoDisplay size="sm" fallbackText="FASHION" className="text-xl font-black uppercase tracking-tighter" />
-            </EditableElement>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Search style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
-            <ShoppingCart style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
+            {/* RIGHT */}
+            <div className={`flex items-center gap-4 ${pos === 'center' ? 'flex-1 justify-end' : pos === 'right' ? 'flex-1 justify-end' : 'flex-shrink-0 justify-end'}`}>
+              {pos === 'right' && (
+                <EditableElement type="logo" isEditorMode={isEditorMode} onEdit={() => onEditElement('logo')}>
+                  <LogoDisplay logoUrl={(data as any)?.logo?.url} logoSize={(settings as any)?.logo_size} fallbackText="FASHION" disableFetch className="text-xl font-black uppercase tracking-tighter mr-auto" />
+                </EditableElement>
+              )}
+              <Search style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
+              <ShoppingCart style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
+            </div>
           </div>
         </header>
+          );
+        })()}
 
         {/* Hero - Photo + Text split. In Indico each text element is independently
             editable: clicking the photo opens the banner modal, clicking any text
@@ -1460,9 +1493,18 @@ export const StorePreview = ({
                     <div className="absolute inset-0 bg-black/40" />
                   </>
                 ) : null}
-                <span className="text-white font-black text-4xl uppercase tracking-tighter z-10 relative text-center px-4">
-                  {data.textBanner?.text || "Sin Límites"}
-                </span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 z-10 gap-3">
+                  {(data.textBanner as any)?.showTitle !== false && (
+                    <span className="text-white font-black text-3xl uppercase tracking-tighter">
+                      {data.textBanner?.text || "Sin Límites"}
+                    </span>
+                  )}
+                  {(data.textBanner as any)?.buttonEnabled !== false && (
+                    <Button className="bg-white text-black text-xs px-6 py-3 font-bold uppercase tracking-widest rounded-none">
+                      {(data.textBanner as any)?.buttonLabel || "Explorar Colección"}
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </EditableElement>
