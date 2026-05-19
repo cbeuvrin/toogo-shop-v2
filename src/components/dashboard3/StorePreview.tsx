@@ -1288,20 +1288,20 @@ export const StorePreview = ({
             </div>
 
             {/* Text Side */}
-            <div className="w-full lg:w-2/5 flex flex-col justify-center px-8 md:px-12 py-12 bg-white">
-              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400 mb-4">Nueva Colección</p>
-              <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-[0.95] mb-4">
+            <div className="w-full lg:w-2/5 flex flex-col justify-center px-6 md:px-12 py-10 bg-white min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400 mb-4 break-words">Nueva Colección</p>
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-tighter leading-[0.95] mb-4 break-words [overflow-wrap:anywhere]">
                 {welcomeTitle || "Estilo\nque Inspira"}
               </h1>
-              <p className="text-gray-500 text-xs leading-relaxed mb-8 max-w-xs">
+              <p className="text-gray-500 text-xs leading-relaxed mb-8 max-w-xs break-words">
                 {welcomeMessage || "Descubre nuestra nueva colección. Calidad, estilo y comodidad en cada pieza."}
               </p>
-              <div className="flex gap-3">
-                <Button className="bg-black text-white hover:bg-gray-800 font-bold rounded-none px-8 py-5 text-xs uppercase tracking-widest">
-                  Ver Colección
+              <div className="flex gap-3 flex-wrap">
+                <Button className="bg-black text-white hover:bg-gray-800 font-bold rounded-none px-6 py-4 text-xs uppercase tracking-widest">
+                  {data.hero?.cta1Label || "Ver Colección"}
                 </Button>
-                <Button variant="outline" className="border-black text-black hover:bg-black hover:text-white rounded-none px-8 py-5 text-xs uppercase tracking-widest">
-                  Novedades
+                <Button variant="outline" className="border-black text-black hover:bg-black hover:text-white rounded-none px-6 py-4 text-xs uppercase tracking-widest">
+                  {data.hero?.cta2Label || "Novedades"}
                 </Button>
               </div>
             </div>

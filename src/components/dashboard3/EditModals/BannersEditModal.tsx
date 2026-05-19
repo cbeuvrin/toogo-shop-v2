@@ -58,11 +58,16 @@ interface BannerItem {
 interface BannersEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: BannerItem[], heroText: { title: string; description: string }) => void;
+  onSave: (
+    data: BannerItem[],
+    heroText: { title: string; description: string; cta1Label?: string; cta2Label?: string }
+  ) => void;
   initialData?: BannerItem[];
   initialHeroText?: {
     title: string;
     description: string;
+    cta1Label?: string;
+    cta2Label?: string;
   };
   templateId?: string;
 }
@@ -165,6 +170,8 @@ export const BannersEditModal = ({
   const [banners, setBanners] = useState<BannerItem[]>([]);
   const [heroTitle, setHeroTitle] = useState("");
   const [heroDescription, setHeroDescription] = useState("");
+  const [cta1Label, setCta1Label] = useState("");
+  const [cta2Label, setCta2Label] = useState("");
   const [uploadingStates, setUploadingStates] = useState<boolean[]>([false, false, false, false]);
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([null, null, null, null]);
   const {
@@ -190,6 +197,8 @@ export const BannersEditModal = ({
     if (initialHeroText) {
       setHeroTitle(initialHeroText.title || "");
       setHeroDescription(initialHeroText.description || "");
+      setCta1Label(initialHeroText.cta1Label || "");
+      setCta2Label(initialHeroText.cta2Label || "");
     }
   }, [initialData, initialHeroText, isOpen]);
 
@@ -342,7 +351,12 @@ export const BannersEditModal = ({
         position: b.position || "center center",
       }));
 
-    onSave(validBanners, { title: heroTitle, description: heroDescription });
+    onSave(validBanners, {
+      title: heroTitle,
+      description: heroDescription,
+      cta1Label: cta1Label || undefined,
+      cta2Label: cta2Label || undefined,
+    });
     toast.success("Imágenes y textos guardados exitosamente");
   };
 
@@ -407,6 +421,28 @@ export const BannersEditModal = ({
                 onChange={(e) => setHeroDescription(e.target.value)}
                 placeholder="Ej. Cuando lo das todo, tu equipo también debería hacerlo."
               />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border/40">
+              <div>
+                <Label htmlFor="hero-cta1">Botón principal</Label>
+                <Input
+                  id="hero-cta1"
+                  value={cta1Label}
+                  onChange={(e) => setCta1Label(e.target.value)}
+                  placeholder="Ej. Ver Colección"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">Si lo dejas vacío se usa el texto por defecto de la plantilla.</p>
+              </div>
+              <div>
+                <Label htmlFor="hero-cta2">Botón secundario</Label>
+                <Input
+                  id="hero-cta2"
+                  value={cta2Label}
+                  onChange={(e) => setCta2Label(e.target.value)}
+                  placeholder="Ej. Novedades"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">Vacío para usar el texto por defecto.</p>
+              </div>
             </div>
           </div>
 

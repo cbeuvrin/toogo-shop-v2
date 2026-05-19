@@ -106,6 +106,8 @@ export interface EditorData {
     message?: string;
     shape?: string;
     scale?: number;
+    cta1Label?: string;
+    cta2Label?: string;
   };
   featuredProducts?: string[];
   testimonials?: any;
@@ -544,7 +546,7 @@ export const DashboardVisualEditor = () => {
     id: string;
     imageUrl: string;
     sort: number;
-  }>, heroText?: { title: string; description: string }, heroShape?: string) => {
+  }>, heroText?: { title: string; description: string; cta1Label?: string; cta2Label?: string }, heroShape?: string) => {
     if (!tenantId) return;
     console.log('handleSaveBanners called with', bannersData, heroText, heroShape);
     setIsSaving(true);
@@ -575,7 +577,9 @@ export const DashboardVisualEditor = () => {
         const mergedHero = {
           ...currentHero,
           title: heroText.title,
-          message: heroText.description
+          message: heroText.description,
+          cta1Label: heroText.cta1Label,
+          cta2Label: heroText.cta2Label,
         };
 
         await saveEditorData('hero', 'main_hero', mergedHero);
@@ -910,7 +914,9 @@ export const DashboardVisualEditor = () => {
         initialData={editorData.banners}
         initialHeroText={{
           title: editorData.hero?.title || settings?.welcome_title || "",
-          description: editorData.hero?.message || settings?.welcome_message || ""
+          description: editorData.hero?.message || settings?.welcome_message || "",
+          cta1Label: editorData.hero?.cta1Label || "",
+          cta2Label: editorData.hero?.cta2Label || ""
         }}
         initialHeroShape={settings?.hero_image_shape || "organic"}
         templateId={settings?.template_id}
