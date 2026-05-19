@@ -108,7 +108,7 @@ export const FashionHeroTemplate = (props: any) => {
 
             {/* ─── HEADER ─── */}
             <header className="sticky top-0 z-50 border-b border-gray-100 transition-all duration-200" style={{ backgroundColor: settings?.navbar_bg_color || '#ffffff' }}>
-                <div className="w-full px-6 h-16 flex items-center justify-between">
+                <div className="w-full px-6 min-h-16 py-2 flex items-center justify-between">
 
                     {/* Left Nav (Desktop) */}
                     {!isCatalog ? (
