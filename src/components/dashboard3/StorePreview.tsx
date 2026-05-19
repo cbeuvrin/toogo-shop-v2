@@ -1454,31 +1454,51 @@ export const StorePreview = ({
             </EditableElement>
 
             <div className="flex gap-3 flex-wrap mt-2">
-              <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta1')}>
-                <Button
-                  className="bg-black text-white hover:bg-gray-800 font-bold rounded-none px-6 py-4 text-xs uppercase tracking-widest"
-                  style={{
-                    fontFamily: heroStyleFontFamily(data.hero?.styles?.cta1?.fontFamily),
-                    fontSize: data.hero?.styles?.cta1?.fontSize ? `${data.hero.styles.cta1.fontSize}px` : undefined,
-                    color: data.hero?.styles?.cta1?.color || undefined,
-                  }}
-                >
-                  {data.hero?.cta1Label || "Ver Colección"}
-                </Button>
-              </EditableElement>
-              <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta2')}>
-                <Button
-                  variant="outline"
-                  className="border-black text-black hover:bg-black hover:text-white rounded-none px-6 py-4 text-xs uppercase tracking-widest"
-                  style={{
-                    fontFamily: heroStyleFontFamily(data.hero?.styles?.cta2?.fontFamily),
-                    fontSize: data.hero?.styles?.cta2?.fontSize ? `${data.hero.styles.cta2.fontSize}px` : undefined,
-                    color: data.hero?.styles?.cta2?.color || undefined,
-                  }}
-                >
-                  {data.hero?.cta2Label || "Novedades"}
-                </Button>
-              </EditableElement>
+              {(() => {
+                const cta1Disabled = data.hero?.styles?.cta1?.enabled === false;
+                const cta2Disabled = data.hero?.styles?.cta2?.enabled === false;
+                return (
+                  <>
+                    <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta1')}>
+                      {cta1Disabled ? (
+                        <div className="px-4 py-2 border border-dashed border-gray-300 text-gray-400 text-[11px] italic uppercase tracking-widest cursor-pointer hover:bg-gray-50">
+                          Botón principal oculto — click para activar
+                        </div>
+                      ) : (
+                        <Button
+                          className="bg-black text-white hover:bg-gray-800 font-bold rounded-none px-6 py-4 text-xs uppercase tracking-widest"
+                          style={{
+                            fontFamily: heroStyleFontFamily(data.hero?.styles?.cta1?.fontFamily),
+                            fontSize: data.hero?.styles?.cta1?.fontSize ? `${data.hero.styles.cta1.fontSize}px` : undefined,
+                            color: data.hero?.styles?.cta1?.color || undefined,
+                          }}
+                        >
+                          {data.hero?.cta1Label || "Ver Colección"}
+                        </Button>
+                      )}
+                    </EditableElement>
+                    <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta2')}>
+                      {cta2Disabled ? (
+                        <div className="px-4 py-2 border border-dashed border-gray-300 text-gray-400 text-[11px] italic uppercase tracking-widest cursor-pointer hover:bg-gray-50">
+                          Botón secundario oculto — click para activar
+                        </div>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="border-black text-black hover:bg-black hover:text-white rounded-none px-6 py-4 text-xs uppercase tracking-widest"
+                          style={{
+                            fontFamily: heroStyleFontFamily(data.hero?.styles?.cta2?.fontFamily),
+                            fontSize: data.hero?.styles?.cta2?.fontSize ? `${data.hero.styles.cta2.fontSize}px` : undefined,
+                            color: data.hero?.styles?.cta2?.color || undefined,
+                          }}
+                        >
+                          {data.hero?.cta2Label || "Novedades"}
+                        </Button>
+                      )}
+                    </EditableElement>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </section>

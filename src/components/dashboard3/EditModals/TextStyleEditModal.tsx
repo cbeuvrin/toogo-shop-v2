@@ -12,6 +12,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 /**
  * Generic per-element text editor used by Indico's hero so each element
@@ -26,6 +27,11 @@ export interface TextStyle {
   fontFamily?: string;
   fontSize?: number; // px
   color?: string;
+  // Button-specific (cta1, cta2): visibility + action routing.
+  enabled?: boolean;
+  action?: 'catalog' | 'category' | 'link';
+  categorySlug?: string;
+  customUrl?: string;
 }
 
 interface TextStyleEditModalProps {
@@ -43,6 +49,10 @@ interface TextStyleEditModalProps {
   hidePreview?: boolean;
   /** Optional info note rendered after the controls (e.g. "if too many → hamburger"). */
   infoText?: string;
+  /** Render the button-specific Action section (visibility + catalog/category/link routing). */
+  isButton?: boolean;
+  /** Categories list for the "Ir a categoría" picker. */
+  categories?: Array<{ id?: string; name: string; slug?: string }>;
   onSave: (elementKey: string, text: string, style: TextStyle) => void;
 }
 
@@ -65,12 +75,18 @@ export const TextStyleEditModal = ({
   hideText,
   hidePreview,
   infoText,
+  isButton,
+  categories = [],
   onSave,
 }: TextStyleEditModalProps) => {
   const [text, setText] = useState("");
   const [fontFamily, setFontFamily] = useState("default");
   const [fontSize, setFontSize] = useState<number>(0);
   const [color, setColor] = useState<string>("#000000");
+  const [enabled, setEnabled] = useState(true);
+  const [action, setAction] = useState<'catalog' | 'category' | 'link'>('catalog');
+  const [categorySlug, setCategorySlug] = useState<string>("");
+  const [customUrl, setCustomUrl] = useState<string>("");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -78,6 +94,10 @@ export const TextStyleEditModal = ({
     setFontFamily(initialStyle?.fontFamily || "default");
     setFontSize(initialStyle?.fontSize || 0);
     setColor(initialStyle?.color || "#000000");
+    setEnabled(initialStyle?.enabled !== false);
+    setAction(initialStyle?.action || 'catalog');
+    setCategorySlug(initialStyle?.categorySlug || "");
+    setCustomUrl(initialStyle?.customUrl || "");
   }, [isOpen, initialText, initialStyle]);
 
   const handleSave = () => {
@@ -85,6 +105,12 @@ export const TextStyleEditModal = ({
       fontFamily: fontFamily === "default" ? undefined : fontFamily,
       fontSize: fontSize > 0 ? fontSize : undefined,
       color: color && color !== "#000000" ? color : initialStyle?.color,
+      ...(isButton && {
+        enabled,
+        action,
+        categorySlug: action === 'category' ? categorySlug : undefined,
+        customUrl: action === 'link' ? customUrl : undefined,
+      }),
     });
     onClose();
   };
@@ -180,6 +206,65 @@ export const TextStyleEditModal = ({
               />
             </div>
           </div>
+
+          {isButton && (
+            <div className="space-y-3 border rounded-md p-3 bg-muted/20">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="btn-enabled">Mostrar botón</Label>
+                <Switch
+                  id="btn-enabled"
+                  checked={enabled}
+                  onCheckedChange={setEnabled}
+                />
+              </div>
+              {enabled && (
+                <>
+                  <div className="space-y-2">
+                    <Label className="text-xs">Acción al hacer click</Label>
+                    <Select value={action} onValueChange={(v) => setAction(v as 'catalog' | 'category' | 'link')}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="catalog">Ir al catálogo completo</SelectItem>
+                        <SelectItem value="category">Ir a una categoría</SelectItem>
+                        <SelectItem value="link">Enlace personalizado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {action === 'category' && (
+                    <div className="space-y-2">
+                      <Label className="text-xs">Categoría</Label>
+                      <Select value={categorySlug} onValueChange={setCategorySlug}>
+                        <SelectTrigger><SelectValue placeholder="Elige una categoría" /></SelectTrigger>
+                        <SelectContent>
+                          {categories.length === 0 ? (
+                            <SelectItem value="__none__" disabled>No hay categorías aún</SelectItem>
+                          ) : (
+                            categories.map((cat) => (
+                              <SelectItem key={cat.id || cat.slug || cat.name} value={(cat.slug || cat.name).toLowerCase()}>
+                                {cat.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {action === 'link' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="custom-url" className="text-xs">URL</Label>
+                      <Input
+                        id="custom-url"
+                        value={customUrl}
+                        onChange={(e) => setCustomUrl(e.target.value)}
+                        placeholder="https://ejemplo.com"
+                      />
+                      <p className="text-[10px] text-muted-foreground">Se abrirá en una nueva pestaña.</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           {!hidePreview && (
             <div className="rounded-md border bg-muted/30 p-3">

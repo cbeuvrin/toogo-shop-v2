@@ -119,7 +119,7 @@ export interface EditorData {
     // Keys with their own dedicated text field above (title/message/etc.)
     // store only styles here; keys for the rest of the page (sectionTitle1,
     // midBannerTitle, footerHeading1…) also store a `text` override here.
-    styles?: Record<string, { text?: string; fontFamily?: string; fontSize?: number; color?: string }>;
+    styles?: Record<string, { text?: string; fontFamily?: string; fontSize?: number; color?: string; enabled?: boolean; action?: 'catalog' | 'category' | 'link'; categorySlug?: string; customUrl?: string }>;
     // Background color per section ('section1' = Recién Llegados, 'section2' = Populares ahora).
     sectionBg?: Record<string, string | null>;
   };
@@ -1148,6 +1148,8 @@ export const DashboardVisualEditor = () => {
             infoText={key === 'navMenu'
               ? 'Las categorías vienen de la pestaña Productos → Categorías. Aquí solo puedes cambiar fuente, tamaño y color. Si son muchas, el menú se convierte automáticamente en hamburguesa.'
               : undefined}
+            isButton={key === 'cta1' || key === 'cta2'}
+            categories={editorData.categories?.filter((c: any) => !c.parent_id) || []}
             onSave={handleSaveHeroElement}
           />
         );

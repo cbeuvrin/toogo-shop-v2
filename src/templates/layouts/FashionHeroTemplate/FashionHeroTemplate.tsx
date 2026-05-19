@@ -346,22 +346,45 @@ export const FashionHeroTemplate = (props: any) => {
                             {welcomeMessage || props.welcomeMessage || settings?.welcome_message || "Descubre nuestra nueva colección diseñada para quienes viven con propósito. Calidad, estilo y comodidad en cada pieza."}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <Button
-                                className="bg-black text-white hover:bg-gray-800 font-bold rounded-none px-8 sm:px-10 py-5 sm:py-6 text-xs uppercase tracking-widest group"
-                                style={styleFor('cta1')}
-                                onClick={() => handleNavigate('/catalogo')}
-                            >
-                                {props.cta1Label || "Ver Colección"}
-                                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                            </Button>
-                            <Button
-                                variant="outline"
-                                className="border-black text-black hover:bg-black hover:text-white rounded-none px-8 sm:px-10 py-5 sm:py-6 text-xs uppercase tracking-widest transition-colors"
-                                style={styleFor('cta2')}
-                                onClick={() => handleNavigate('/catalogo')}
-                            >
-                                {props.cta2Label || "Novedades"}
-                            </Button>
+                            {(() => {
+                              // Build click handler from styles[key].action / categorySlug / customUrl
+                              const ctaClick = (k: 'cta1' | 'cta2') => () => {
+                                const cfg = s?.[k] || {};
+                                if (cfg.action === 'link' && cfg.customUrl) {
+                                  window.open(cfg.customUrl, '_blank', 'noopener,noreferrer');
+                                  return;
+                                }
+                                if (cfg.action === 'category' && cfg.categorySlug) {
+                                  handleNavigate('/catalogo', { category: cfg.categorySlug });
+                                  return;
+                                }
+                                handleNavigate('/catalogo');
+                              };
+                              return (
+                                <>
+                                  {(s?.cta1?.enabled !== false) && (
+                                    <Button
+                                      className="bg-black text-white hover:bg-gray-800 font-bold rounded-none px-8 sm:px-10 py-5 sm:py-6 text-xs uppercase tracking-widest group"
+                                      style={styleFor('cta1')}
+                                      onClick={ctaClick('cta1')}
+                                    >
+                                      {props.cta1Label || "Ver Colección"}
+                                      <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                    </Button>
+                                  )}
+                                  {(s?.cta2?.enabled !== false) && (
+                                    <Button
+                                      variant="outline"
+                                      className="border-black text-black hover:bg-black hover:text-white rounded-none px-8 sm:px-10 py-5 sm:py-6 text-xs uppercase tracking-widest transition-colors"
+                                      style={styleFor('cta2')}
+                                      onClick={ctaClick('cta2')}
+                                    >
+                                      {props.cta2Label || "Novedades"}
+                                    </Button>
+                                  )}
+                                </>
+                              );
+                            })()}
                         </div>
                     </div>
                   );
