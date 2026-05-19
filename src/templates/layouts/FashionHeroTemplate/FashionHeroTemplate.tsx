@@ -108,54 +108,71 @@ export const FashionHeroTemplate = (props: any) => {
 
             {/* ─── HEADER ─── */}
             <header className="sticky top-0 z-50 border-b border-gray-100 transition-all duration-200" style={{ backgroundColor: settings?.navbar_bg_color || '#ffffff' }}>
-                <div className="w-full px-6 min-h-16 py-2 flex items-center justify-between">
+                {(() => {
+                  const pos = (settings as any)?.logo_position || 'center';
+                  // Logo is a static flex item so the header grows with logo_size.
+                  // logo_position chooses which of the three columns it lives in.
+                  return (
+                <div className="w-full px-6 min-h-16 py-3 flex items-center gap-4">
 
-                    {/* Left Nav (Desktop) */}
-                    {!isCatalog ? (
-                        <nav className="hidden md:flex gap-7 text-sm font-medium text-gray-600">
-                            {categories?.filter((cat: any) => !cat.parent_id).map((cat: any) => (
-                                <button
-                                    key={cat.id}
-                                    onClick={() => handleNavigate('/catalogo', { category: cat.name.toLowerCase() })}
-                                    className="hover:text-black transition-colors uppercase tracking-wider text-xs"
-                                >
-                                    {cat.name}
-                                </button>
-                            ))}
-                            <button onClick={() => handleNavigate('/catalogo')} className="hover:text-black transition-colors uppercase tracking-wider text-xs">Todos</button>
-                        </nav>
-                    ) : (
-                        <div className="hidden md:block w-px" />
+                    {/* LEFT slot — nav + mobile menu, plus logo when position=left */}
+                    <div className={`flex items-center gap-4 ${pos === 'center' ? 'flex-1' : pos === 'left' ? 'flex-shrink-0' : 'flex-1 min-w-0'}`}>
+                      <button className="md:hidden" onClick={() => setIsMenuOpen(true)}>
+                          <Menu className="w-6 h-6" style={{ color: headerIconColor }} />
+                      </button>
+                      {!isCatalog && pos !== 'left' && (
+                          <nav className="hidden md:flex gap-7 text-sm font-medium text-gray-600">
+                              {categories?.filter((cat: any) => !cat.parent_id).map((cat: any) => (
+                                  <button
+                                      key={cat.id}
+                                      onClick={() => handleNavigate('/catalogo', { category: cat.name.toLowerCase() })}
+                                      className="hover:text-black transition-colors uppercase tracking-wider text-xs"
+                                  >
+                                      {cat.name}
+                                  </button>
+                              ))}
+                              <button onClick={() => handleNavigate('/catalogo')} className="hover:text-black transition-colors uppercase tracking-wider text-xs">Todos</button>
+                          </nav>
+                      )}
+                      {pos === 'left' && (
+                          <div className="cursor-pointer" onClick={() => handleNavigate('/tienda')}>
+                              <LogoDisplay
+                                  logoUrl={settings?.logo_url}
+                                  logoSize={settings?.logo_size}
+                                  fallbackText={settings?.store_name || 'LOGO'}
+                                  disableFetch={true}
+                                  className="text-2xl font-black uppercase tracking-tighter"
+                              />
+                          </div>
+                      )}
+                    </div>
+
+                    {/* CENTER slot — logo when position=center */}
+                    {pos === 'center' && (
+                      <div className="flex-shrink-0 cursor-pointer" onClick={() => handleNavigate('/tienda')}>
+                          <LogoDisplay
+                              logoUrl={settings?.logo_url}
+                              logoSize={settings?.logo_size}
+                              fallbackText={settings?.store_name || 'LOGO'}
+                              disableFetch={true}
+                              className="text-2xl font-black uppercase tracking-tighter"
+                          />
+                      </div>
                     )}
 
-                    {/* Mobile Menu Button */}
-                    <button className="md:hidden" onClick={() => setIsMenuOpen(true)}>
-                        <Menu className="w-6 h-6" style={{ color: headerIconColor }} />
-                    </button>
-
-                    {/* Logo — position driven by settings.logo_position (left | center | right) */}
-                    {(() => {
-                      const pos = (settings as any)?.logo_position || 'center';
-                      const posClass = pos === 'left'
-                        ? 'absolute left-6 top-1/2 -translate-y-1/2'
-                        : pos === 'right'
-                          ? 'absolute right-6 top-1/2 -translate-y-1/2'
-                          : 'absolute left-1/2 -translate-x-1/2';
-                      return (
-                        <div className={`${posClass} cursor-pointer`} onClick={() => handleNavigate('/tienda')}>
-                          <LogoDisplay
-                            logoUrl={settings?.logo_url}
-                            logoSize={settings?.logo_size}
-                            fallbackText={settings?.store_name || 'LOGO'}
-                            disableFetch={true}
-                            className="text-2xl font-black uppercase tracking-tighter"
-                          />
-                        </div>
-                      );
-                    })()}
-
-                    {/* Right Icons */}
-                    <div className="flex items-center gap-5">
+                    {/* RIGHT slot — icons, plus logo when position=right */}
+                    <div className={`flex items-center gap-5 ${pos === 'center' ? 'flex-1 justify-end' : pos === 'right' ? 'flex-1 justify-end' : 'flex-shrink-0 justify-end'}`}>
+                        {pos === 'right' && (
+                            <div className="cursor-pointer mr-auto" onClick={() => handleNavigate('/tienda')}>
+                                <LogoDisplay
+                                    logoUrl={settings?.logo_url}
+                                    logoSize={settings?.logo_size}
+                                    fallbackText={settings?.store_name || 'LOGO'}
+                                    disableFetch={true}
+                                    className="text-2xl font-black uppercase tracking-tighter"
+                                />
+                            </div>
+                        )}
                         <form onSubmit={handleSearch} className="hidden md:flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-full px-4 py-2 hover:bg-gray-100 transition-colors w-52">
                             <Search className="text-gray-400" style={{ color: headerIconColor, width: `${14 * headerIconScale}px`, height: `${14 * headerIconScale}px` }} />
                             <input
@@ -183,6 +200,8 @@ export const FashionHeroTemplate = (props: any) => {
                         </div>
                     </div>
                 </div>
+                  );
+                })()}
 
                 {/* Mobile Search Overlay */}
                 {showMobileSearch && (
