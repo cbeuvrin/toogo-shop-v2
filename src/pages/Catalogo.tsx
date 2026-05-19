@@ -311,6 +311,28 @@ const Catalogo = () => {
         // the RPC-loaded settings here so the rest of the page (template chooser,
         // colors, etc.) works without authentication.
         setPublicSettings(settings);
+
+        // Same story for the hero/banners visual_editor_data record: loadVisualData()
+        // does a direct table fetch that anonymous shoppers can't read. Extract the
+        // hero element from the RPC's visual array so sectionBg, heroStyles and
+        // hero text propagate to the template on /catalogo too.
+        const visualArr = Array.isArray(result.data.visual) ? result.data.visual : [];
+        const heroItem = visualArr.find((it: any) => it.element_type === 'hero' && it.element_id === 'main_hero');
+        if (heroItem?.data) {
+          setHeroData(heroItem.data);
+        }
+        const rpcBanners = visualArr
+          .filter((it: any) => it.element_type === 'banner')
+          .map((it: any) => ({
+            id: it.element_id,
+            imageUrl: it.data?.imageUrl,
+            sort: it.data?.sort ?? 0,
+            position: it.data?.position,
+          }))
+          .sort((a: any, b: any) => a.sort - b.sort);
+        if (rpcBanners.length > 0) {
+          setBanners(rpcBanners);
+        }
         const methods: any[] = [];
 
         if (settings.mercadopago_public_key) {
