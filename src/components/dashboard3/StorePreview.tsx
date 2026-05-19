@@ -1252,68 +1252,111 @@ export const StorePreview = ({
     const mainHeroImage = banners[0]?.image;
     const secondaryBanner = banners[1] || banners[0];
 
+    // Same auto-collapse pattern as production FashionHeroTemplate: compare a
+    // hidden measurer's intrinsic width vs the left column's available space.
+    const navColRef = useRef<HTMLDivElement>(null);
+    const navMeasurerRef = useRef<HTMLDivElement>(null);
+    const [navOverflows, setNavOverflows] = useState(false);
+    const [hamburgerOpen, setHamburgerOpen] = useState(false);
+    useEffect(() => {
+      const col = navColRef.current;
+      const measurer = navMeasurerRef.current;
+      if (!col || !measurer) return;
+      const check = () => {
+        const available = col.clientWidth - 8;
+        const needed = measurer.offsetWidth + 24;
+        setNavOverflows(needed > available);
+      };
+      check();
+      const ro = new ResizeObserver(check);
+      ro.observe(col);
+      window.addEventListener('resize', check);
+      return () => { ro.disconnect(); window.removeEventListener('resize', check); };
+    }, [data.categories]);
+
     return (
       <div className="min-h-screen font-sans text-black relative" style={{ backgroundColor: bgColor }}>
 
-        {/* Header — mirrors production layout so the bar grows with logo size */}
+        {/* Header — mirrors production: logo locked center, hamburger auto when nav overflows */}
         {(() => {
-          const pos = (data as any)?.settings?.logo_position || (settings as any)?.logo_position || 'center';
-          // Use the raw category list from data (not the showOnHome+products
-          // filtered one used elsewhere in the preview) so the header menu
-          // shows every top-level category, like production does.
           const allCats = (data.categories || []).filter((c: any) => !c.parent_id);
           const navItems = allCats.length > 0 ? allCats : [{ name: 'Mujer' }, { name: 'Hombre' }, { name: 'Kids' }];
+          const navInline = {
+            fontFamily: heroStyleFontFamily(data.hero?.styles?.navMenu?.fontFamily),
+            fontSize: data.hero?.styles?.navMenu?.fontSize ? `${data.hero.styles.navMenu.fontSize}px` : undefined,
+            color: data.hero?.styles?.navMenu?.color || undefined,
+          };
+          const showNavVisible = !navOverflows;
           return (
         <header className="sticky top-0 z-50 border-b border-gray-100" style={{ backgroundColor: navColor }}>
-          <div className="w-full px-6 min-h-16 py-3 flex items-center gap-4">
-            {/* LEFT */}
-            <div className={`flex items-center gap-3 ${pos === 'center' ? 'flex-1' : pos === 'left' ? 'flex-shrink-0' : 'flex-1 min-w-0'}`}>
-              <Button variant="ghost" size="icon" className="md:hidden h-8 w-8">
+          <div className="w-full px-6 min-h-16 py-3 grid items-center gap-4" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
+            {/* LEFT col — hamburger when needed + nav (or measurer) */}
+            <div ref={navColRef} className="flex items-center gap-3 min-w-0 justify-start relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`${showNavVisible ? 'md:hidden' : 'md:flex'} h-8 w-8 flex-shrink-0`}
+                onClick={() => setHamburgerOpen(true)}
+                aria-label="Abrir menú"
+              >
                 <Menu className="w-5 h-5" style={{ color: headerIconColor }} />
               </Button>
-              {pos !== 'left' && (
+              {showNavVisible && (
                 <EditableElement type="menú" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'navMenu')}>
                   <nav
-                    className="hidden md:flex gap-5 text-xs font-medium text-gray-600 uppercase tracking-wider overflow-x-auto max-w-[40vw] no-scrollbar"
-                    style={{
-                      fontFamily: heroStyleFontFamily(data.hero?.styles?.navMenu?.fontFamily),
-                      fontSize: data.hero?.styles?.navMenu?.fontSize ? `${data.hero.styles.navMenu.fontSize}px` : undefined,
-                      color: data.hero?.styles?.navMenu?.color || undefined,
-                    }}
+                    className="hidden md:flex gap-5 text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap"
+                    style={navInline}
                   >
                     {navItems.map((cat: any, i: number) => (
-                      <span key={cat.id || cat.name || i} className="cursor-pointer hover:text-black whitespace-nowrap">{cat.name}</span>
+                      <span key={cat.id || cat.name || i} className="cursor-pointer hover:text-black flex-shrink-0">{cat.name}</span>
                     ))}
                   </nav>
                 </EditableElement>
               )}
-              {pos === 'left' && (
-                <EditableElement type="logo" isEditorMode={isEditorMode} onEdit={() => onEditElement('logo')}>
-                  <LogoDisplay logoUrl={(data as any)?.logo?.url} logoSize={(settings as any)?.logo_size} fallbackText="FASHION" disableFetch className="text-xl font-black uppercase tracking-tighter" />
-                </EditableElement>
-              )}
+              {/* Off-screen measurer */}
+              <div
+                ref={navMeasurerRef}
+                aria-hidden="true"
+                className="hidden md:flex gap-5 text-xs font-medium whitespace-nowrap absolute left-0 top-0 pointer-events-none invisible"
+                style={{ ...navInline, transform: 'translateY(-9999px)' }}
+              >
+                {navItems.map((cat: any, i: number) => (
+                  <span key={`m-${i}`} className="uppercase tracking-wider flex-shrink-0">{cat.name}</span>
+                ))}
+              </div>
             </div>
 
-            {/* CENTER */}
-            {pos === 'center' && (
-              <div className="flex-shrink-0">
-                <EditableElement type="logo" isEditorMode={isEditorMode} onEdit={() => onEditElement('logo')}>
-                  <LogoDisplay logoUrl={(data as any)?.logo?.url} logoSize={(settings as any)?.logo_size} fallbackText="FASHION" disableFetch className="text-xl font-black uppercase tracking-tighter" />
-                </EditableElement>
-              </div>
-            )}
+            {/* CENTER col — logo always center */}
+            <div className="flex-shrink-0 justify-self-center">
+              <EditableElement type="logo" isEditorMode={isEditorMode} onEdit={() => onEditElement('logo')}>
+                <LogoDisplay logoUrl={(data as any)?.logo?.url} logoSize={(settings as any)?.logo_size} fallbackText="FASHION" disableFetch className="text-xl font-black uppercase tracking-tighter" />
+              </EditableElement>
+            </div>
 
-            {/* RIGHT */}
-            <div className={`flex items-center gap-4 ${pos === 'center' ? 'flex-1 justify-end' : pos === 'right' ? 'flex-1 justify-end' : 'flex-shrink-0 justify-end'}`}>
-              {pos === 'right' && (
-                <EditableElement type="logo" isEditorMode={isEditorMode} onEdit={() => onEditElement('logo')}>
-                  <LogoDisplay logoUrl={(data as any)?.logo?.url} logoSize={(settings as any)?.logo_size} fallbackText="FASHION" disableFetch className="text-xl font-black uppercase tracking-tighter mr-auto" />
-                </EditableElement>
-              )}
+            {/* RIGHT col — icons */}
+            <div className="flex items-center gap-4 justify-end min-w-0">
               <Search style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
               <ShoppingCart style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
             </div>
           </div>
+
+          {/* Hamburger drawer — preview only opens it for visual feedback */}
+          {hamburgerOpen && (
+            <div className="fixed inset-0 z-50" onClick={() => setHamburgerOpen(false)}>
+              <div className="absolute inset-0 bg-black/50" />
+              <div className="absolute right-0 top-0 h-full w-72 bg-white shadow-2xl flex flex-col" onClick={(e) => e.stopPropagation()}>
+                <div className="flex justify-between items-center p-6 border-b">
+                  <span className="font-black uppercase tracking-tighter text-lg">Menú</span>
+                  <button onClick={() => setHamburgerOpen(false)}><X className="w-5 h-5" /></button>
+                </div>
+                <nav className="flex-1 p-6 space-y-5">
+                  {navItems.map((cat: any, i: number) => (
+                    <div key={`d-${i}`} className="block font-medium uppercase tracking-widest text-sm" style={navInline}>{cat.name}</div>
+                  ))}
+                </nav>
+              </div>
+            </div>
+          )}
         </header>
           );
         })()}
