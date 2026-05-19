@@ -83,7 +83,11 @@ const Catalogo = () => {
   const tenantId = currentTenantId;
   const { products, isLoading: productsLoading } = useProducts();
   const { categories, isLoading: categoriesLoading } = useCategories();
-  const { settings } = useTenantSettings();
+  const { settings: tenantSettings } = useTenantSettings();
+  // Settings from the public RPC (anonymous-visitor friendly). Fall back to the
+  // private hook settings for authenticated admin views (they're identical shape).
+  const [publicSettings, setPublicSettings] = useState<any>(null);
+  const settings: any = publicSettings || tenantSettings;
 
   const [tenantPlan, setTenantPlan] = useState<string>('');
 
@@ -303,6 +307,10 @@ const Catalogo = () => {
 
         // Prepare checkout config from loaded settings
         const settings = result.data.settings || {};
+        // Anonymous visitors can't read tenant_settings directly under RLS — keep
+        // the RPC-loaded settings here so the rest of the page (template chooser,
+        // colors, etc.) works without authentication.
+        setPublicSettings(settings);
         const methods: any[] = [];
 
         if (settings.mercadopago_public_key) {
