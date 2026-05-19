@@ -49,6 +49,7 @@ interface StorePreviewProps {
   ticker?: {
     text: string;
     enabled: boolean;
+    fontSize?: number;
   };
   textBanner?: {
     text: string;
@@ -590,7 +591,10 @@ export const StorePreview = ({
               </div>
             ) : (
               <div className={`bg-black text-white py-2 overflow-hidden ${isEditorMode ? 'cursor-pointer hover:bg-zinc-800' : ''}`}>
-                <div className="flex justify-center text-[10px] font-bold uppercase tracking-widest">
+                <div
+                  className={`flex justify-center font-bold uppercase tracking-widest ${data.ticker?.fontSize ? '' : 'text-[10px]'}`}
+                  style={data.ticker?.fontSize ? { fontSize: `${data.ticker.fontSize}px` } : undefined}
+                >
                   <span>{data.ticker?.text || "Nuevos estilos cada semana"}</span>
                 </div>
               </div>
@@ -1135,7 +1139,10 @@ export const StorePreview = ({
               </div>
             ) : (
               <div className={`border-y-2 border-black bg-white py-4 overflow-hidden ${isEditorMode ? 'cursor-pointer hover:bg-gray-50' : ''}`}>
-                <div className="flex justify-center flex-nowrap whitespace-nowrap gap-8 text-lg lg:text-3xl font-black uppercase tracking-tighter">
+                <div
+                  className={`flex justify-center flex-nowrap whitespace-nowrap gap-8 font-black uppercase tracking-tighter ${data.ticker?.fontSize ? '' : 'text-lg lg:text-3xl'}`}
+                  style={data.ticker?.fontSize ? { fontSize: `${data.ticker.fontSize}px` } : undefined}
+                >
                   {Array(6).fill(data.ticker?.text || "24/7 SUPPORT • HIGH QUALITY COTTON • FREE DELIVERY • MONEY BACK GUARANTEE").map((text, i) => (
                     <span key={i}>{text}</span>
                   ))}
@@ -1309,7 +1316,10 @@ export const StorePreview = ({
               </div>
             ) : (
               <div className={`bg-black text-white py-2 overflow-hidden ${isEditorMode ? 'cursor-pointer hover:bg-zinc-800' : ''}`}>
-                <div className="flex justify-center text-[10px] font-bold uppercase tracking-widest">
+                <div
+                  className={`flex justify-center font-bold uppercase tracking-widest ${data.ticker?.fontSize ? '' : 'text-[10px]'}`}
+                  style={data.ticker?.fontSize ? { fontSize: `${data.ticker.fontSize}px` } : undefined}
+                >
                   <span>{data.ticker?.text || "Envíos rápidos · Calidad garantizada · Atención personalizada"}</span>
                 </div>
               </div>

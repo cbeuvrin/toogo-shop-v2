@@ -92,6 +92,7 @@ export interface EditorData {
   ticker?: {
     text: string;
     enabled: boolean;
+    fontSize?: number;
   };
   textBanner?: {
     text: string;

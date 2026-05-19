@@ -308,7 +308,10 @@ export const SimpleLiveTemplate = (props: any) => {
                         {
                             (ticker?.enabled !== false) && (
                                 <div className="bg-black text-white py-3 overflow-hidden whitespace-nowrap">
-                                    <div className="flex gap-16 justify-center text-xs font-bold uppercase tracking-widest animate-marquee">
+                                    <div
+                                        className={`flex gap-16 justify-center font-bold uppercase tracking-widest animate-marquee ${ticker?.fontSize ? '' : 'text-xs'}`}
+                                        style={ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : undefined}
+                                    >
                                         <span>{ticker?.text || "Nuevos estilos cada semana"}</span>
                                         <span>•</span>
                                         <span>{ticker?.text || "Nuevos estilos cada semana"}</span>

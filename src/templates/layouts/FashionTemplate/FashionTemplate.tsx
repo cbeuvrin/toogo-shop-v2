@@ -247,7 +247,10 @@ export const FashionTemplate = (props: any) => {
             {/* ─── TICKER ─── */}
             {(ticker?.enabled !== false) && !isCatalog && (
                 <div className="border-y-2 border-black bg-white py-4 overflow-hidden">
-                    <div className="flex justify-center flex-nowrap whitespace-nowrap gap-8 text-lg lg:text-3xl font-black uppercase tracking-tighter">
+                    <div
+                        className={`flex justify-center flex-nowrap whitespace-nowrap gap-8 font-black uppercase tracking-tighter ${ticker?.fontSize ? '' : 'text-lg lg:text-3xl'}`}
+                        style={ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : undefined}
+                    >
                         {Array(4).fill(ticker?.text || "SOPORTE 24/7 • CALIDAD PREMIUM • ENVÍO GRATIS • GARANTÍA TOTAL").map((text, i) => (
                             <span key={i}>{text}</span>
                         ))}

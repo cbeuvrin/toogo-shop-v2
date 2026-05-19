@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import {
     Dialog,
     DialogContent,
@@ -14,6 +15,7 @@ import {
 interface TickerData {
     text: string;
     enabled: boolean;
+    fontSize?: number; // px applied as inline style on the ticker text
 }
 
 interface TickerEditModalProps {
@@ -26,7 +28,8 @@ interface TickerEditModalProps {
 export const TickerEditModal = ({ isOpen, onClose, onSave, initialData }: TickerEditModalProps) => {
     const [formData, setFormData] = useState<TickerData>({
         text: "New Styles Added Weekly",
-        enabled: true
+        enabled: true,
+        fontSize: 12
     });
 
     useEffect(() => {
@@ -75,6 +78,27 @@ export const TickerEditModal = ({ isOpen, onClose, onSave, initialData }: Ticker
                         />
                         <p className="text-xs text-muted-foreground">
                             Este texto se repetirá automáticamente.
+                        </p>
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <Label>Tamaño del texto</Label>
+                            <span className="text-xs text-muted-foreground">{formData.fontSize || 12}px</span>
+                        </div>
+                        <Slider
+                            value={[formData.fontSize || 12]}
+                            onValueChange={(v) => setFormData(prev => ({ ...prev, fontSize: v[0] }))}
+                            min={10}
+                            max={32}
+                            step={1}
+                        />
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Pequeño</span>
+                            <span>Grande</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                            La barra ajusta su altura automáticamente al tamaño del texto.
                         </p>
                     </div>
                 </div>

@@ -314,10 +314,13 @@ export const FashionHeroTemplate = (props: any) => {
             {/* ─── HOME SECTIONS ─── */}
             {!isCatalog && (
                 <>
-                    {/* Ticker / USP Bar */}
+                    {/* Ticker / USP Bar — height grows with fontSize via py + line-height */}
                     {(ticker?.enabled !== false) && (
                         <div className="bg-black text-white py-3 overflow-hidden whitespace-nowrap">
-                            <div className="flex gap-16 justify-center text-[10px] font-bold uppercase tracking-widest animate-marquee">
+                            <div
+                                className="flex gap-16 justify-center font-bold uppercase tracking-widest animate-marquee"
+                                style={{ fontSize: `${ticker?.fontSize || 10}px` }}
+                            >
                                 <span>{ticker?.text || "Envíos en 24h · Calidad Premium · Garantía Total"}</span>
                                 <span>•</span>
                                 <span>{ticker?.text || "Envíos en 24h · Calidad Premium · Garantía Total"}</span>
