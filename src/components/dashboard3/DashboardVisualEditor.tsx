@@ -11,7 +11,6 @@ import { TickerEditModal } from "@/components/dashboard3/EditModals/TickerEditMo
 import { TextStyleEditModal } from "./EditModals/TextStyleEditModal";
 import { SectionBgEditModal } from "./EditModals/SectionBgEditModal";
 import { HamburgerStyleEditModal } from "./EditModals/HamburgerStyleEditModal";
-import type { HamburgerVariant } from "@/components/ui/HamburgerButton";
 import { TextBannerEditModal } from "@/components/dashboard3/EditModals/TextBannerEditModal";
 import { FeaturedProductsEditModal } from "./EditModals/FeaturedProductsEditModal";
 import { TestimonialsEditModal } from "./EditModals/TestimonialsEditModal";
@@ -127,9 +126,12 @@ export interface EditorData {
     styles?: Record<string, { text?: string; fontFamily?: string; fontSize?: number; color?: string; enabled?: boolean; action?: 'catalog' | 'category' | 'link'; categorySlug?: string; customUrl?: string }>;
     // Background color per section ('section1' = Recién Llegados, 'section2' = Populares ahora).
     sectionBg?: Record<string, string | null>;
-    // Animated hamburger icon variant ('classic' default).
-    hamburgerVariant?: 'classic' | 'dots' | 'plus' | 'grid';
+    // Classic line hamburger config — count of lines, line thickness, overall size.
+    hamburgerCount?: number;
+    hamburgerThickness?: number;
     hamburgerSize?: number;
+    // Legacy (older variants) — read-only kept for back-compat, no longer written.
+    hamburgerVariant?: string;
   };
   featuredProducts?: string[];
   testimonials?: any;
@@ -557,9 +559,9 @@ export const DashboardVisualEditor = () => {
     }
   };
 
-  const handleSaveHamburgerVariant = async (variant: HamburgerVariant, size: number) => {
+  const handleSaveHamburgerVariant = async (count: number, thickness: number, size: number) => {
     const currentHero = editorData.hero || {};
-    const mergedHero = { ...currentHero, hamburgerVariant: variant, hamburgerSize: size };
+    const mergedHero = { ...currentHero, hamburgerCount: count, hamburgerThickness: thickness, hamburgerSize: size };
     await saveEditorData('hero', 'main_hero', mergedHero);
     setEditorData(prev => ({ ...prev, hero: mergedHero }));
     setActiveModal(null);
@@ -1101,11 +1103,12 @@ export const DashboardVisualEditor = () => {
         initialScale={editorData.hero?.scale || 100}
       />
 
-      {/* Hamburger style picker (Indico). 4 animated variants + size slider. */}
+      {/* Hamburger picker (Indico). Classic lines with configurable count / thickness / size. */}
       <HamburgerStyleEditModal
         isOpen={activeModal === 'hamburger_style'}
         onClose={() => setActiveModal(null)}
-        initialVariant={editorData.hero?.hamburgerVariant || 'classic'}
+        initialCount={editorData.hero?.hamburgerCount || 3}
+        initialThickness={editorData.hero?.hamburgerThickness || 2}
         initialSize={editorData.hero?.hamburgerSize || 24}
         onSave={handleSaveHamburgerVariant}
       />

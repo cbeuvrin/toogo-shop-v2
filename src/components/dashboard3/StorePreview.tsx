@@ -1300,7 +1300,8 @@ export const StorePreview = ({
                 <HamburgerButton
                   isOpen={hamburgerOpen}
                   onClick={() => setHamburgerOpen(!hamburgerOpen)}
-                  variant={(data.hero?.hamburgerVariant as any) || 'classic'}
+                  count={data.hero?.hamburgerCount || 3}
+                  thickness={data.hero?.hamburgerThickness || 2}
                   color={headerIconColor}
                   size={data.hero?.hamburgerSize || 22}
                   className={`${showNavVisible ? 'md:hidden' : 'md:flex'}`}

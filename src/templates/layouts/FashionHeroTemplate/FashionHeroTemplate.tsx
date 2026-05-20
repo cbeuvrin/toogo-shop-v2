@@ -4,7 +4,7 @@ import { ShoppingCart, Heart, Search, Menu, X, User, ChevronRight, ArrowRight } 
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
-import { HamburgerButton, HamburgerVariant } from "@/components/ui/HamburgerButton";
+import { HamburgerButton } from "@/components/ui/HamburgerButton";
 
 export const FashionHeroTemplate = (props: any) => {
     const {
@@ -158,7 +158,8 @@ export const FashionHeroTemplate = (props: any) => {
                       <HamburgerButton
                         isOpen={isMenuOpen}
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        variant={(props.hamburgerVariant as HamburgerVariant) || 'classic'}
+                        count={props.hamburgerCount || 3}
+                        thickness={props.hamburgerThickness || 2}
                         color={headerIconColor}
                         size={props.hamburgerSize || 24}
                         className={`${showNavVisible ? 'md:hidden' : 'md:block'}`}
