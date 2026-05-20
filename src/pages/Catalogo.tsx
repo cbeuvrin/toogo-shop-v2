@@ -799,6 +799,7 @@ const Catalogo = () => {
         eyebrowText={heroData?.eyebrowText}
         heroStyles={heroData?.styles}
         sectionBg={heroData?.sectionBg}
+        hamburgerVariant={heroData?.hamburgerVariant}
       />
     );
   }

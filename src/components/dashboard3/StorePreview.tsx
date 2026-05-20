@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { HamburgerButton } from "@/components/ui/HamburgerButton";
 import { ContactSection } from "@/components/ui/ContactSection";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { AutoCarousel } from "@/components/ui/AutoCarousel";
@@ -1295,15 +1296,16 @@ export const StorePreview = ({
           <div className="w-full px-6 min-h-16 py-3 grid items-center gap-4" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
             {/* LEFT col — hamburger when needed + nav (or measurer) */}
             <div ref={navColRef} className="flex items-center gap-3 min-w-0 justify-start relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`${showNavVisible ? 'md:hidden' : 'md:flex'} h-8 w-8 flex-shrink-0`}
-                onClick={() => setHamburgerOpen(true)}
-                aria-label="Abrir menú"
-              >
-                <Menu className="w-5 h-5" style={{ color: headerIconColor }} />
-              </Button>
+              <EditableElement type="botón hamburguesa" isEditorMode={isEditorMode} onEdit={() => onEditElement('hamburger_style')}>
+                <HamburgerButton
+                  isOpen={hamburgerOpen}
+                  onClick={() => setHamburgerOpen(!hamburgerOpen)}
+                  variant={(data.hero?.hamburgerVariant as any) || 'classic'}
+                  color={headerIconColor}
+                  size={22}
+                  className={`${showNavVisible ? 'md:hidden' : 'md:flex'}`}
+                />
+              </EditableElement>
               {showNavVisible && (
                 <EditableElement type="menú" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'navMenu')}>
                   <nav

@@ -10,6 +10,8 @@ import { AnnouncementEditModal } from "@/components/dashboard3/EditModals/Announ
 import { TickerEditModal } from "@/components/dashboard3/EditModals/TickerEditModal";
 import { TextStyleEditModal } from "./EditModals/TextStyleEditModal";
 import { SectionBgEditModal } from "./EditModals/SectionBgEditModal";
+import { HamburgerStyleEditModal } from "./EditModals/HamburgerStyleEditModal";
+import type { HamburgerVariant } from "@/components/ui/HamburgerButton";
 import { TextBannerEditModal } from "@/components/dashboard3/EditModals/TextBannerEditModal";
 import { FeaturedProductsEditModal } from "./EditModals/FeaturedProductsEditModal";
 import { TestimonialsEditModal } from "./EditModals/TestimonialsEditModal";
@@ -125,11 +127,13 @@ export interface EditorData {
     styles?: Record<string, { text?: string; fontFamily?: string; fontSize?: number; color?: string; enabled?: boolean; action?: 'catalog' | 'category' | 'link'; categorySlug?: string; customUrl?: string }>;
     // Background color per section ('section1' = Recién Llegados, 'section2' = Populares ahora).
     sectionBg?: Record<string, string | null>;
+    // Animated hamburger icon variant ('classic' default).
+    hamburgerVariant?: 'classic' | 'dots' | 'plus' | 'grid';
   };
   featuredProducts?: string[];
   testimonials?: any;
 }
-type EditModalType = 'logo' | 'banners' | 'contact' | 'all-colors' | 'announcement' | 'ticker' | 'text_banner' | 'featured_products' | 'testimonials' | 'hero_shape' | 'hero_element' | 'section_bg' | null;
+type EditModalType = 'logo' | 'banners' | 'contact' | 'all-colors' | 'announcement' | 'ticker' | 'text_banner' | 'featured_products' | 'testimonials' | 'hero_shape' | 'hero_element' | 'section_bg' | 'hamburger_style' | null;
 type SectionBgKey = 'section1' | 'section2';
 // Keys for every individually editable text node in Indico — hero, mid-page
 // section headers, footer column headers. Each stores text + style in
@@ -550,6 +554,14 @@ export const DashboardVisualEditor = () => {
     } else if (type !== 'section_bg') {
       setActiveSectionBg(null);
     }
+  };
+
+  const handleSaveHamburgerVariant = async (variant: HamburgerVariant) => {
+    const currentHero = editorData.hero || {};
+    const mergedHero = { ...currentHero, hamburgerVariant: variant };
+    await saveEditorData('hero', 'main_hero', mergedHero);
+    setEditorData(prev => ({ ...prev, hero: mergedHero }));
+    setActiveModal(null);
   };
 
   const handleSaveSectionBg = async (sectionKey: string, bgColor: string | null) => {
@@ -1086,6 +1098,14 @@ export const DashboardVisualEditor = () => {
         initialShape={editorData.hero?.shape || 'organic'}
         initialBanner={editorData.banners?.[0]}
         initialScale={editorData.hero?.scale || 100}
+      />
+
+      {/* Hamburger style picker (Indico). 4 animated variants. */}
+      <HamburgerStyleEditModal
+        isOpen={activeModal === 'hamburger_style'}
+        onClose={() => setActiveModal(null)}
+        initialVariant={editorData.hero?.hamburgerVariant || 'classic'}
+        onSave={handleSaveHamburgerVariant}
       />
 
       {/* Per-element editor (Indico). Works for hero text nodes AND for the

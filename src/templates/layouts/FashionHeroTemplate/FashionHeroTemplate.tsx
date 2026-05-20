@@ -4,6 +4,7 @@ import { ShoppingCart, Heart, Search, Menu, X, User, ChevronRight, ArrowRight } 
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { HamburgerButton, HamburgerVariant } from "@/components/ui/HamburgerButton";
 
 export const FashionHeroTemplate = (props: any) => {
     const {
@@ -154,13 +155,14 @@ export const FashionHeroTemplate = (props: any) => {
                     {/* LEFT col — nav (desktop, no overflow) OR hamburger */}
                     <div ref={navColRef} className="flex items-center gap-3 min-w-0 justify-start relative">
                       {/* Hamburger: always on mobile; on desktop only when nav overflows */}
-                      <button
-                        className={`${showNavVisible ? 'md:hidden' : 'md:block'} flex-shrink-0`}
-                        onClick={() => setIsMenuOpen(true)}
-                        aria-label="Abrir menú"
-                      >
-                          <Menu className="w-6 h-6" style={{ color: headerIconColor }} />
-                      </button>
+                      <HamburgerButton
+                        isOpen={isMenuOpen}
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        variant={(props.heroStyles?.hamburger?.variant as HamburgerVariant) || (props.hamburgerVariant as HamburgerVariant) || 'classic'}
+                        color={headerIconColor}
+                        size={24}
+                        className={`${showNavVisible ? 'md:hidden' : 'md:block'}`}
+                      />
                       {/* Visible desktop nav when there is room */}
                       {!isCatalog && showNavVisible && (
                           <nav className="hidden md:flex gap-7 text-sm font-medium text-gray-600 whitespace-nowrap">
