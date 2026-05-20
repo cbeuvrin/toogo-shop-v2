@@ -158,9 +158,9 @@ export const FashionHeroTemplate = (props: any) => {
                       <HamburgerButton
                         isOpen={isMenuOpen}
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        variant={(props.heroStyles?.hamburger?.variant as HamburgerVariant) || (props.hamburgerVariant as HamburgerVariant) || 'classic'}
+                        variant={(props.hamburgerVariant as HamburgerVariant) || 'classic'}
                         color={headerIconColor}
-                        size={24}
+                        size={props.hamburgerSize || 24}
                         className={`${showNavVisible ? 'md:hidden' : 'md:block'}`}
                       />
                       {/* Visible desktop nav when there is room */}
@@ -274,7 +274,13 @@ export const FashionHeroTemplate = (props: any) => {
                             >
                               {props.heroStyles?.menuDrawerTitle?.text || "Categorías"}
                             </span>
-                            <button onClick={() => setIsMenuOpen(false)}><X className="w-6 h-6" /></button>
+                            <button
+                              onClick={() => setIsMenuOpen(false)}
+                              className="group p-1 transition-transform duration-200 hover:rotate-90 hover:scale-110"
+                              aria-label="Cerrar menú"
+                            >
+                              <X className="w-6 h-6 transition-colors group-hover:text-red-500" />
+                            </button>
                         </div>
                         <nav className="flex-1 p-6 space-y-6">
                             {categories?.filter((cat: any) => !cat.parent_id).map((cat: any) => (

@@ -25,7 +25,7 @@ const TemplateRenderer = (props: any) => {
     case 'minimal':
       return <MinimalTemplate {...props} />;
     case 'fashion_hero':
-      return <FashionHeroTemplate {...props} welcomeTitle={props.hero?.title} welcomeMessage={props.hero?.message} cta1Label={props.hero?.cta1Label} cta2Label={props.hero?.cta2Label} eyebrowText={props.hero?.eyebrowText} heroStyles={props.hero?.styles} sectionBg={props.hero?.sectionBg} hamburgerVariant={props.hero?.hamburgerVariant} featuredProducts={props.featuredProducts} />;
+      return <FashionHeroTemplate {...props} welcomeTitle={props.hero?.title} welcomeMessage={props.hero?.message} cta1Label={props.hero?.cta1Label} cta2Label={props.hero?.cta2Label} eyebrowText={props.hero?.eyebrowText} heroStyles={props.hero?.styles} sectionBg={props.hero?.sectionBg} hamburgerVariant={props.hero?.hamburgerVariant} hamburgerSize={props.hero?.hamburgerSize} featuredProducts={props.featuredProducts} />;
     case 'trendy_fashion':
       return <TrendyFashionTemplate {...props} welcomeTitle={props.hero?.title} welcomeMessage={props.hero?.message} heroShape={props.hero?.shape} heroShapeScale={props.hero?.scale} banners={props.banners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} />;
     case 'fashion':

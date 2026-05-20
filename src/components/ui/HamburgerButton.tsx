@@ -69,23 +69,25 @@ const ClassicHamburger = ({ isOpen, color, size }: { isOpen: boolean; color: str
   );
 };
 
-// ─── Variant 2: Three dots → X ───────────────────────────────────────────
+// ─── Variant 2: Three stacked dots → X ───────────────────────────────────
 const DotsHamburger = ({ isOpen, color, size }: { isOpen: boolean; color: string; size: number }) => {
+  // Three vertically stacked dots with wide spacing so they read as dots.
+  const dotR = size * 0.13;
   const dot: React.CSSProperties = {
     position: 'absolute',
-    width: size * 0.18,
-    height: size * 0.18,
+    width: dotR * 2,
+    height: dotR * 2,
     borderRadius: '50%',
     backgroundColor: color,
-    transition: 'transform 250ms ease, opacity 200ms ease, border-radius 250ms ease',
+    transition: 'transform 280ms ease, opacity 200ms ease, border-radius 280ms ease',
     left: '50%',
-    marginLeft: -size * 0.09,
+    marginLeft: -dotR,
   };
   return (
     <span aria-hidden="true" style={{ position: 'relative', width: size, height: size }}>
-      <span style={{ ...dot, top: '20%', transform: isOpen ? `translateY(${size * 0.3}px) rotate(45deg) scaleX(2.5)` : 'none', borderRadius: isOpen ? 0 : '50%' }} />
-      <span style={{ ...dot, top: '50%', marginTop: -size * 0.09, opacity: isOpen ? 0 : 1 }} />
-      <span style={{ ...dot, bottom: '20%', transform: isOpen ? `translateY(-${size * 0.3}px) rotate(-45deg) scaleX(2.5)` : 'none', borderRadius: isOpen ? 0 : '50%' }} />
+      <span style={{ ...dot, top: '12%', transform: isOpen ? `translateY(${size * 0.38}px) rotate(45deg) scaleX(2.8)` : 'none', borderRadius: isOpen ? 0 : '50%' }} />
+      <span style={{ ...dot, top: '50%', marginTop: -dotR, opacity: isOpen ? 0 : 1 }} />
+      <span style={{ ...dot, bottom: '12%', transform: isOpen ? `translateY(-${size * 0.38}px) rotate(-45deg) scaleX(2.8)` : 'none', borderRadius: isOpen ? 0 : '50%' }} />
     </span>
   );
 };
@@ -113,23 +115,23 @@ const PlusHamburger = ({ isOpen, color, size }: { isOpen: boolean; color: string
 
 // ─── Variant 4: 2x2 grid → X ─────────────────────────────────────────────
 const GridHamburger = ({ isOpen, color, size }: { isOpen: boolean; color: string; size: number }) => {
+  // Smaller squares with bigger gap between them so they read as a grid,
+  // not as one big block.
+  const sqSize = size * 0.2;
   const sq: React.CSSProperties = {
     position: 'absolute',
-    width: size * 0.28,
-    height: size * 0.28,
+    width: sqSize,
+    height: sqSize,
     backgroundColor: color,
-    transition: 'transform 280ms ease',
+    transition: 'transform 300ms ease, border-radius 300ms ease',
   };
-  const offset = size * 0.36;
+  // Each square offsets by ~half the grid to converge into the center on open.
+  const offset = size * 0.3;
   return (
     <span aria-hidden="true" style={{ position: 'relative', width: size, height: size }}>
-      {/* Top-left */}
       <span style={{ ...sq, top: '15%', left: '15%', transform: isOpen ? `translate(${offset}px, ${offset}px) rotate(45deg)` : 'none' }} />
-      {/* Top-right */}
       <span style={{ ...sq, top: '15%', right: '15%', transform: isOpen ? `translate(-${offset}px, ${offset}px) rotate(-45deg)` : 'none' }} />
-      {/* Bottom-left */}
       <span style={{ ...sq, bottom: '15%', left: '15%', transform: isOpen ? `translate(${offset}px, -${offset}px) rotate(-45deg)` : 'none' }} />
-      {/* Bottom-right */}
       <span style={{ ...sq, bottom: '15%', right: '15%', transform: isOpen ? `translate(-${offset}px, -${offset}px) rotate(45deg)` : 'none' }} />
     </span>
   );

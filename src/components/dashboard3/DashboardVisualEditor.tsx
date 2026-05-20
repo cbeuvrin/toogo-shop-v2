@@ -129,6 +129,7 @@ export interface EditorData {
     sectionBg?: Record<string, string | null>;
     // Animated hamburger icon variant ('classic' default).
     hamburgerVariant?: 'classic' | 'dots' | 'plus' | 'grid';
+    hamburgerSize?: number;
   };
   featuredProducts?: string[];
   testimonials?: any;
@@ -556,9 +557,9 @@ export const DashboardVisualEditor = () => {
     }
   };
 
-  const handleSaveHamburgerVariant = async (variant: HamburgerVariant) => {
+  const handleSaveHamburgerVariant = async (variant: HamburgerVariant, size: number) => {
     const currentHero = editorData.hero || {};
-    const mergedHero = { ...currentHero, hamburgerVariant: variant };
+    const mergedHero = { ...currentHero, hamburgerVariant: variant, hamburgerSize: size };
     await saveEditorData('hero', 'main_hero', mergedHero);
     setEditorData(prev => ({ ...prev, hero: mergedHero }));
     setActiveModal(null);
@@ -1100,11 +1101,12 @@ export const DashboardVisualEditor = () => {
         initialScale={editorData.hero?.scale || 100}
       />
 
-      {/* Hamburger style picker (Indico). 4 animated variants. */}
+      {/* Hamburger style picker (Indico). 4 animated variants + size slider. */}
       <HamburgerStyleEditModal
         isOpen={activeModal === 'hamburger_style'}
         onClose={() => setActiveModal(null)}
         initialVariant={editorData.hero?.hamburgerVariant || 'classic'}
+        initialSize={editorData.hero?.hamburgerSize || 24}
         onSave={handleSaveHamburgerVariant}
       />
 

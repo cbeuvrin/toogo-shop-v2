@@ -800,6 +800,7 @@ const Catalogo = () => {
         heroStyles={heroData?.styles}
         sectionBg={heroData?.sectionBg}
         hamburgerVariant={heroData?.hamburgerVariant}
+        hamburgerSize={heroData?.hamburgerSize}
       />
     );
   }

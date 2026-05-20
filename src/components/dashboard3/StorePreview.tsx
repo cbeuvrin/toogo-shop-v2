@@ -1302,7 +1302,7 @@ export const StorePreview = ({
                   onClick={() => setHamburgerOpen(!hamburgerOpen)}
                   variant={(data.hero?.hamburgerVariant as any) || 'classic'}
                   color={headerIconColor}
-                  size={22}
+                  size={data.hero?.hamburgerSize || 22}
                   className={`${showNavVisible ? 'md:hidden' : 'md:flex'}`}
                 />
               </EditableElement>
@@ -1372,7 +1372,13 @@ export const StorePreview = ({
                       {data.hero?.styles?.menuDrawerTitle?.text || "Categorías"}
                     </span>
                   </EditableElement>
-                  <button onClick={() => setHamburgerOpen(false)}><X className="w-5 h-5" /></button>
+                  <button
+                    onClick={() => setHamburgerOpen(false)}
+                    className="group p-1 transition-transform duration-200 hover:rotate-90 hover:scale-110"
+                    aria-label="Cerrar menú"
+                  >
+                    <X className="w-5 h-5 transition-colors group-hover:text-red-500" />
+                  </button>
                 </div>
                 <nav className="flex-1 p-6 space-y-5">
                   {navItems.map((cat: any, i: number) => (

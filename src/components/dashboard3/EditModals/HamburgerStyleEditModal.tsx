@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +15,8 @@ interface HamburgerStyleEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialVariant?: HamburgerVariant;
-  onSave: (variant: HamburgerVariant) => void;
+  initialSize?: number;
+  onSave: (variant: HamburgerVariant, size: number) => void;
 }
 
 const VARIANTS: { id: HamburgerVariant; label: string; description: string }[] = [
@@ -27,9 +30,11 @@ export const HamburgerStyleEditModal = ({
   isOpen,
   onClose,
   initialVariant = 'classic',
+  initialSize = 24,
   onSave,
 }: HamburgerStyleEditModalProps) => {
   const [selected, setSelected] = useState<HamburgerVariant>(initialVariant);
+  const [size, setSize] = useState<number>(initialSize);
   // Each variant card animates between open/closed so the user previews the
   // effect on hover/focus without having to actually toggle anything.
   const [hoverOpen, setHoverOpen] = useState<Record<HamburgerVariant, boolean>>({
@@ -39,10 +44,11 @@ export const HamburgerStyleEditModal = ({
   useEffect(() => {
     if (!isOpen) return;
     setSelected(initialVariant);
-  }, [isOpen, initialVariant]);
+    setSize(initialSize);
+  }, [isOpen, initialVariant, initialSize]);
 
   const handleSave = () => {
-    onSave(selected);
+    onSave(selected, size);
     onClose();
   };
 
@@ -85,6 +91,23 @@ export const HamburgerStyleEditModal = ({
         <p className="text-[11px] text-muted-foreground">
           Pasa el mouse sobre cada opción para ver la animación.
         </p>
+
+        <div className="space-y-2 pt-3 border-t">
+          <div className="flex items-center justify-between">
+            <Label>Tamaño</Label>
+            <span className="text-xs text-muted-foreground">{size}px</span>
+          </div>
+          <Slider
+            value={[size]}
+            onValueChange={(v) => setSize(v[0])}
+            min={18}
+            max={48}
+            step={1}
+          />
+          <div className="flex items-center justify-center pt-2">
+            <HamburgerButton isOpen={false} onClick={() => {}} variant={selected} size={size} />
+          </div>
+        </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
