@@ -533,7 +533,7 @@ export const FashionHeroTemplate = (props: any) => {
                                 const newArrivals = products?.filter((p: any) => p.features?.includes("new_arrival")) || [];
                                 const productsToShow = newArrivals.length > 0 ? newArrivals : products?.slice(0, 6);
                                 return productsToShow?.map((product: any) => (
-                                    <div key={product.id} className="w-[240px] md:w-[280px] group cursor-pointer" onClick={() => addToCart(product)}>
+                                    <div key={product.id} className="w-[240px] md:w-[280px] group cursor-pointer" onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}>
                                         <div className="relative aspect-[3/4] overflow-hidden mb-3" style={{ backgroundColor: cardBgColor }}>
                                             <img
                                                 src={(product.images?.[0] && typeof product.images[0] === 'object') ? product.images[0].url : (product.images?.[0] || product.image || "/placeholder.svg")}

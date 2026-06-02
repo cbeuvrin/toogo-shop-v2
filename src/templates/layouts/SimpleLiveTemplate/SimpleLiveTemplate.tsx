@@ -368,7 +368,7 @@ export const SimpleLiveTemplate = (props: any) => {
                                     const productsToShow = newArrivals.length > 0 ? newArrivals : products?.slice(0, 4);
 
                                     return productsToShow.map((product: any) => (
-                                        <div key={product.id} className="w-[280px] md:w-[320px] group cursor-pointer" onClick={() => addToCart(product)}>
+                                        <div key={product.id} className="w-[280px] md:w-[320px] group cursor-pointer" onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}>
                                             <div className="relative aspect-[3/4] bg-gray-100 rounded-sm overflow-hidden mb-4">
                                                 <img
                                                     src={(product.images?.[0] && typeof product.images[0] === 'object') ? product.images[0].url : (product.images?.[0] || product.image || "/placeholder.svg")}

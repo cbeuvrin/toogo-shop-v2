@@ -344,13 +344,21 @@ const ProductDetail = () => {
 
             <div className="space-y-2.5 sm:space-y-3 pt-1 sm:pt-2">
               {isService ? (
-                effectiveSettings?.whatsapp_number && (
+                effectiveSettings?.whatsapp_number ? (
                   <button
                     onClick={handleWhatsApp}
                     className={`w-full ${theme.buttonPrimary} px-5 py-3 sm:py-4 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base`}
                   >
                     <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                     {product.cta_label?.trim() || 'Consultar por WhatsApp'}
+                  </button>
+                ) : (
+                  <button
+                    disabled
+                    className={`w-full ${theme.buttonPrimary} px-5 py-3 sm:py-4 opacity-50 cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base`}
+                  >
+                    <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                    WhatsApp aún no configurado
                   </button>
                 )
               ) : (

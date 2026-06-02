@@ -1335,7 +1335,7 @@ const Catalogo = () => {
 
                       <div className="space-y-3">
                         {isService ? (
-                          settings?.whatsapp_number && (
+                          settings?.whatsapp_number ? (
                             <Button
                               onClick={() => sendWhatsAppMessage(selectedProduct)}
                               className="w-full"
@@ -1343,6 +1343,15 @@ const Catalogo = () => {
                             >
                               <MessageCircle className="w-5 h-5 mr-2" />
                               {selectedProduct.cta_label?.trim() || 'Consultar por WhatsApp'}
+                            </Button>
+                          ) : (
+                            <Button
+                              disabled
+                              className="w-full opacity-50 cursor-not-allowed"
+                              size="lg"
+                            >
+                              <MessageCircle className="w-5 h-5 mr-2" />
+                              WhatsApp aún no configurado
                             </Button>
                           )
                         ) : (
