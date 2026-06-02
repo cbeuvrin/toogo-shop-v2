@@ -35,8 +35,9 @@
     <meta property="og:site_name" content="TOOGO">
     <meta property="og:locale" content="es_MX">
     
-    <!-- Build Version for Cache Invalidation -->
-    <meta name="build-version" content="3.0.1">
+    <!-- Build Version for Cache Invalidation — bumped per deploy so the inline
+         script below invalidates SW caches on new releases. -->
+    <meta name="build-version" content="3.1.0-2026-05-19">
     
     <!-- DNS Preconnect for Faster Loading -->
     <link rel="preconnect" href="https://herqxhfmsstbteahhxpr.supabase.co">
@@ -72,6 +73,46 @@
           }
         } catch (e) {
           console.warn('SW cleanup:', e);
+        }
+      })();
+    </script>
+
+    <!--
+      Storefront SW kill switch.
+      VitePWA registers a service worker at "/" for the admin panel.
+      On custom-domain stores (anything that is NOT /admin) that SW ends up
+      caching the admin bundle and, after we deploy new hashes, serves
+      stale /assets/index-XYZ.{js,css} that no longer exist — producing
+      CORS-blocked 404s and a white page until the user does a hard
+      refresh. Here we proactively unregister any SW + clear caches when
+      the user lands on a storefront route, then reload exactly once.
+    -->
+    <script>
+      (function() {
+        try {
+          if (location.pathname.startsWith('/admin') || location.pathname.startsWith('/dashboard')) return;
+          if (!('serviceWorker' in navigator)) return;
+          navigator.serviceWorker.getRegistrations().then(async function (regs) {
+            if (!regs || regs.length === 0) return;
+            for (var i = 0; i < regs.length; i++) {
+              try { await regs[i].unregister(); } catch (e) {}
+            }
+            if (window.caches && caches.keys) {
+              try {
+                var keys = await caches.keys();
+                for (var j = 0; j < keys.length; j++) {
+                  try { await caches.delete(keys[j]); } catch (e) {}
+                }
+              } catch (e) {}
+            }
+            // Reload once so the freshly-cleared SW lets through real network requests.
+            if (!sessionStorage.getItem('toogo-sw-cleanup-done')) {
+              sessionStorage.setItem('toogo-sw-cleanup-done', '1');
+              location.reload();
+            }
+          });
+        } catch (e) {
+          console.warn('storefront SW cleanup error:', e);
         }
       })();
     </script>
