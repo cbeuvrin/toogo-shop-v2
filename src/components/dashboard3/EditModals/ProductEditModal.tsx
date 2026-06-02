@@ -241,6 +241,8 @@ export const ProductEditModal = ({
           images: initialData.images || [],
           category: initialData.categories?.[0]?.id || "",
           product_type: initialData.product_type || 'simple',
+          pricing_mode: initialData.pricing_mode || undefined,
+          cta_label: initialData.cta_label || "",
           variables: productVariables.map(v => v.id) || [],
           variations: initialData.variations || []
         });
@@ -966,7 +968,9 @@ export const ProductEditModal = ({
               !formData.name.trim() ||
               (formData.product_type === 'simple'
                 ? formData.price_mxn <= 0
-                : (!formData.variations || formData.variations.length === 0))
+                : formData.product_type === 'service'
+                  ? ((formData.pricing_mode || 'fixed') !== 'quote' && formData.price_mxn <= 0)
+                  : (!formData.variations || formData.variations.length === 0))
             }
             className={`${isMobile ? 'w-full' : 'min-w-[120px]'} rounded-3xl`}
           >
