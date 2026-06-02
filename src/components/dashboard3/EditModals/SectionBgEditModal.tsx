@@ -48,7 +48,7 @@ export const SectionBgEditModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="sm:max-w-sm max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Fondo de {sectionLabel}</DialogTitle>
         </DialogHeader>

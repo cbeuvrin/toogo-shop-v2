@@ -161,7 +161,7 @@ export const TextBannerEditModal = ({ isOpen, onClose, onSave, initialData, cate
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Editar Banner de Texto</DialogTitle>
                 </DialogHeader>

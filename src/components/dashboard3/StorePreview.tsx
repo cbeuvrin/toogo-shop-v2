@@ -26,16 +26,11 @@ import {
 import { EditableElement } from "./EditableElement";
 import { EditorData } from "./DashboardVisualEditor";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
+import { heroFontFamily } from "@/lib/heroFonts";
 
-/** Map hero.styles.<element>.fontFamily token to a real CSS font stack. */
-const heroStyleFontFamily = (token?: string): string | undefined => {
-  switch (token) {
-    case 'serif': return 'ui-serif, Georgia, serif';
-    case 'mono': return 'ui-monospace, SFMono-Regular, Menlo, monospace';
-    case 'sans': return 'ui-sans-serif, system-ui, sans-serif';
-    default: return undefined;
-  }
-};
+// Hero font tokens resolve via the shared picker (see src/lib/heroFonts.ts)
+// so the editor preview and the live store always render the same family.
+const heroStyleFontFamily = heroFontFamily;
 
 interface StorePreviewProps {
   data: EditorData;
@@ -1425,7 +1420,7 @@ export const StorePreview = ({
           <div className={`flex flex-col justify-center px-6 md:px-12 py-10 bg-white min-w-0 gap-4 ${deviceMode === 'desktop' ? 'w-2/5' : 'w-full'}`}>
             <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'eyebrow')}>
               <p
-                className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400 break-words"
+                className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400 break-words [overflow-wrap:anywhere]"
                 style={{
                   fontFamily: heroStyleFontFamily(data.hero?.styles?.eyebrow?.fontFamily),
                   fontSize: data.hero?.styles?.eyebrow?.fontSize ? `${data.hero.styles.eyebrow.fontSize}px` : undefined,
@@ -1451,7 +1446,7 @@ export const StorePreview = ({
 
             <EditableElement type="mensaje" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'message')}>
               <p
-                className="text-gray-500 text-xs leading-relaxed max-w-xs break-words"
+                className="text-gray-500 text-xs leading-relaxed max-w-xs break-words [overflow-wrap:anywhere]"
                 style={{
                   fontFamily: heroStyleFontFamily(data.hero?.styles?.message?.fontFamily),
                   fontSize: data.hero?.styles?.message?.fontSize ? `${data.hero.styles.message.fontSize}px` : undefined,
@@ -1480,6 +1475,7 @@ export const StorePreview = ({
                             fontFamily: heroStyleFontFamily(data.hero?.styles?.cta1?.fontFamily),
                             fontSize: data.hero?.styles?.cta1?.fontSize ? `${data.hero.styles.cta1.fontSize}px` : undefined,
                             color: data.hero?.styles?.cta1?.color || undefined,
+                            backgroundColor: data.hero?.styles?.cta1?.bgColor || undefined,
                           }}
                         >
                           {data.hero?.cta1Label || "Ver Colección"}
@@ -1499,6 +1495,7 @@ export const StorePreview = ({
                             fontFamily: heroStyleFontFamily(data.hero?.styles?.cta2?.fontFamily),
                             fontSize: data.hero?.styles?.cta2?.fontSize ? `${data.hero.styles.cta2.fontSize}px` : undefined,
                             color: data.hero?.styles?.cta2?.color || undefined,
+                            backgroundColor: data.hero?.styles?.cta2?.bgColor || undefined,
                           }}
                         >
                           {data.hero?.cta2Label || "Novedades"}

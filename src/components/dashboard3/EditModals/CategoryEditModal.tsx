@@ -67,7 +67,7 @@ export const CategoryEditModal = ({ isOpen, onClose, onSave, initialData }: Cate
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {initialData ? "Editar Categoría" : "Agregar Categoría"}

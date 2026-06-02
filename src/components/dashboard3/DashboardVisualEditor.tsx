@@ -583,7 +583,7 @@ export const DashboardVisualEditor = () => {
     setActiveSectionBg(null);
   };
 
-  const handleSaveHeroElement = async (elementKey: string, text: string, style: { fontFamily?: string; fontSize?: number; color?: string }) => {
+  const handleSaveHeroElement = async (elementKey: string, text: string, style: { fontFamily?: string; fontSize?: number; color?: string; bgColor?: string }) => {
     const key = elementKey as HeroElementKey;
     const currentHero = editorData.hero || {};
     const currentStyles = currentHero.styles || {};

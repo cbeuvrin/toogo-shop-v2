@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { HERO_FONT_OPTIONS, heroFontFamily } from "@/lib/heroFonts";
 
 /**
  * Generic per-element text editor used by Indico's hero so each element
@@ -27,7 +28,8 @@ export interface TextStyle {
   fontFamily?: string;
   fontSize?: number; // px
   color?: string;
-  // Button-specific (cta1, cta2): visibility + action routing.
+  // Button-specific (cta1, cta2): background color + visibility + action routing.
+  bgColor?: string;
   enabled?: boolean;
   action?: 'catalog' | 'category' | 'link';
   categorySlug?: string;
@@ -56,12 +58,7 @@ interface TextStyleEditModalProps {
   onSave: (elementKey: string, text: string, style: TextStyle) => void;
 }
 
-const FONT_OPTIONS = [
-  { value: "default", label: "Default (heredar)" },
-  { value: "sans", label: "Sans-serif" },
-  { value: "serif", label: "Serif" },
-  { value: "mono", label: "Monospace" },
-];
+const FONT_OPTIONS = HERO_FONT_OPTIONS;
 
 export const TextStyleEditModal = ({
   isOpen,
@@ -83,6 +80,7 @@ export const TextStyleEditModal = ({
   const [fontFamily, setFontFamily] = useState("default");
   const [fontSize, setFontSize] = useState<number>(0);
   const [color, setColor] = useState<string>("#000000");
+  const [bgColor, setBgColor] = useState<string>("");
   const [enabled, setEnabled] = useState(true);
   const [action, setAction] = useState<'catalog' | 'category' | 'link'>('catalog');
   const [categorySlug, setCategorySlug] = useState<string>("");
@@ -94,6 +92,7 @@ export const TextStyleEditModal = ({
     setFontFamily(initialStyle?.fontFamily || "default");
     setFontSize(initialStyle?.fontSize || 0);
     setColor(initialStyle?.color || "#000000");
+    setBgColor(initialStyle?.bgColor || "");
     setEnabled(initialStyle?.enabled !== false);
     setAction(initialStyle?.action || 'catalog');
     setCategorySlug(initialStyle?.categorySlug || "");
@@ -106,6 +105,7 @@ export const TextStyleEditModal = ({
       fontSize: fontSize > 0 ? fontSize : undefined,
       color: color && color !== "#000000" ? color : initialStyle?.color,
       ...(isButton && {
+        bgColor: bgColor || undefined,
         enabled,
         action,
         categorySlug: action === 'category' ? categorySlug : undefined,
@@ -116,21 +116,20 @@ export const TextStyleEditModal = ({
   };
 
   const previewStyle: React.CSSProperties = {
-    fontFamily:
-      fontFamily === "serif"
-        ? "ui-serif, Georgia, serif"
-        : fontFamily === "mono"
-          ? "ui-monospace, SFMono-Regular, monospace"
-          : fontFamily === "sans"
-            ? "ui-sans-serif, system-ui, sans-serif"
-            : undefined,
+    fontFamily: heroFontFamily(fontFamily),
     fontSize: fontSize > 0 ? `${fontSize}px` : undefined,
     color: color || undefined,
+    ...(isButton && bgColor && {
+      backgroundColor: bgColor,
+      display: "inline-block",
+      padding: "0.5rem 1rem",
+      borderRadius: "0.25rem",
+    }),
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar {elementLabel}</DialogTitle>
         </DialogHeader>
@@ -189,7 +188,7 @@ export const TextStyleEditModal = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="text-color">Color</Label>
+            <Label htmlFor="text-color">{isButton ? "Color de la letra" : "Color"}</Label>
             <div className="flex items-center gap-2">
               <input
                 id="text-color"
@@ -206,6 +205,33 @@ export const TextStyleEditModal = ({
               />
             </div>
           </div>
+
+          {isButton && (
+            <div className="space-y-2">
+              <Label htmlFor="btn-bg-color">Color de fondo</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  id="btn-bg-color"
+                  type="color"
+                  value={bgColor || "#000000"}
+                  onChange={(e) => setBgColor(e.target.value)}
+                  className="h-9 w-12 rounded border cursor-pointer"
+                />
+                <Input
+                  value={bgColor}
+                  onChange={(e) => setBgColor(e.target.value)}
+                  placeholder="Por defecto"
+                  className="font-mono text-xs"
+                />
+                {bgColor && (
+                  <Button variant="ghost" size="sm" className="text-xs" onClick={() => setBgColor("")}>
+                    Quitar
+                  </Button>
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground">Vacío = usar el fondo por defecto de la plantilla.</p>
+            </div>
+          )}
 
           {isButton && (
             <div className="space-y-3 border rounded-md p-3 bg-muted/20">
@@ -267,9 +293,9 @@ export const TextStyleEditModal = ({
           )}
 
           {!hidePreview && (
-            <div className="rounded-md border bg-muted/30 p-3">
+            <div className="rounded-md border bg-muted/30 p-3 overflow-hidden">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2">Vista previa</p>
-              <div style={previewStyle} className="break-words">
+              <div style={previewStyle} className="break-words [overflow-wrap:anywhere] max-w-full leading-tight">
                 {text || defaultText}
               </div>
             </div>

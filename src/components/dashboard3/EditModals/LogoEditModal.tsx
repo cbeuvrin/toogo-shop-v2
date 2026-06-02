@@ -114,7 +114,7 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData, deviceMode
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md rounded-[30px]">
+      <DialogContent className="sm:max-w-md rounded-[30px] max-h-[90vh] overflow-y-auto">
         <DialogHeader className="relative">
           <DialogTitle>Editar Logo</DialogTitle>
           <DialogClose className="absolute right-0 top-0 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">

@@ -50,7 +50,7 @@ export const TickerEditModal = ({ isOpen, onClose, onSave, initialData }: Ticker
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Editar Barra de Noticias (Ticker)</DialogTitle>
                 </DialogHeader>
