@@ -344,6 +344,8 @@ export const FashionHeroTemplate = (props: any) => {
                     fontFamily: fontTok(s?.[k]?.fontFamily),
                     fontSize: s?.[k]?.fontSize ? `${s[k].fontSize}px` : undefined,
                     color: s?.[k]?.color || undefined,
+                    // Buttons (cta1/cta2) can override their background; text nodes leave it undefined.
+                    backgroundColor: s?.[k]?.bgColor || undefined,
                   });
                   return (
                     <div className="w-full lg:w-2/5 flex flex-col justify-center px-6 sm:px-8 md:px-14 py-12 sm:py-16 bg-white min-w-0">
