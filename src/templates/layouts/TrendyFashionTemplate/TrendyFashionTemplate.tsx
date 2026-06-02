@@ -84,7 +84,13 @@ export const TrendyFashionTemplate = (props: any) => {
     `;
 
     // Product Card
-    const ProductCard = ({ product }: { product: any }) => (
+    const ProductCard = ({ product }: { product: any }) => {
+        const isService = product.product_type === 'service';
+        const pricingMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
+        const isQuoteOnly = isService && pricingMode === 'quote';
+        const basePrice = product.price_mxn || product.price;
+        const displayPrice = !isService ? (product.sale_price_mxn || basePrice) : basePrice;
+        return (
         <div
             className="group cursor-pointer"
             onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}
@@ -109,10 +115,19 @@ export const TrendyFashionTemplate = (props: any) => {
             <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">{settings?.store_name || 'Brand'}</p>
                 <h3 className="font-medium text-gray-900 text-sm leading-snug line-clamp-2 mb-1 group-hover:text-gray-600">{product.title || product.name}</h3>
-                <span className="font-bold text-gray-900 text-sm">${product.sale_price_mxn || product.price_mxn || product.price}</span>
+                {isQuoteOnly ? (
+                    <span className="font-bold text-gray-900 text-sm italic">A cotizar</span>
+                ) : isService && pricingMode === 'starting_from' ? (
+                    <span className="font-bold text-gray-900 text-sm">Desde ${displayPrice} MXN</span>
+                ) : isService ? (
+                    <span className="font-bold text-gray-900 text-sm">${displayPrice} MXN</span>
+                ) : (
+                    <span className="font-bold text-gray-900 text-sm">${displayPrice}</span>
+                )}
             </div>
         </div>
-    );
+        );
+    };
 
     // Determine hero shape style
     const getHeroShapeRadius = () => {

@@ -60,7 +60,10 @@ interface Product {
   status: 'active' | 'inactive';
   images: string[];
   features: string[];
-  product_type: 'simple' | 'variable';
+  product_type: 'simple' | 'variable' | 'service';
+  pricing_mode?: 'fixed' | 'starting_from' | 'quote' | null;
+  cta_label?: string | null;
+  sale_price_mxn?: number;
   category_id?: string;
   tenant_id: string;
   categories?: { name: string; slug: string }[]; // For display compatibility
@@ -571,6 +574,12 @@ const Catalogo = () => {
   };
 
   const addToCart = (product: Product) => {
+    // Servicios: nunca van al carrito. Disparamos WhatsApp y cerramos el modal.
+    if (product.product_type === 'service') {
+      sendWhatsAppMessage(product);
+      setSelectedProduct(null);
+      return;
+    }
     // Para productos variables, validar que se haya seleccionado una variación
     if (product.product_type === 'variable') {
       if (!canAddToCart || !selectedVariation?.id) {
@@ -636,11 +645,19 @@ const Catalogo = () => {
     const messageTemplate = settings.whatsapp_message ||
       `Hola 👋, quisiera más información sobre\n\n📦 {product_name}\nSKU: {sku}\nPrecio: ${'{price}'} MXN\n\n¿Está disponible y cuáles son las formas de pago?`;
 
-    // Process the template with product data
+    // Para servicios, el precio se muestra según pricing_mode.
+    const priceText = product.product_type === 'service'
+      ? (product.pricing_mode === 'quote'
+          ? 'A cotizar'
+          : product.pricing_mode === 'starting_from'
+            ? `Desde $${Number(product.price_mxn || 0).toFixed(2)}`
+            : `$${Number(product.price_mxn || 0).toFixed(2)}`)
+      : String(product.price_mxn);
+
     const processedMessage = messageTemplate
       .replace(/{product_name}/g, product.title)
       .replace(/{sku}/g, (product.sku ?? '').toString().trim() || 'N/A')
-      .replace(/{price}/g, String(product.price_mxn));
+      .replace(/{price}/g, priceText);
 
     const whatsappUrl = `https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent(processedMessage)}`;
     window.open(whatsappUrl, '_blank');
@@ -727,12 +744,22 @@ const Catalogo = () => {
 
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <p className="text-lg font-bold text-gray-900 group-hover:text-white transition-colors duration-300">
-              ${product.price_mxn} MXN
-            </p>
-            <p className="text-xs text-gray-500 group-hover:text-gray-300 transition-colors duration-300">
-              ${product.price_usd} USD
-            </p>
+            {product.product_type === 'service' && product.pricing_mode === 'quote' ? (
+              <p className="text-lg font-bold text-gray-900 group-hover:text-white transition-colors duration-300 italic">
+                A cotizar
+              </p>
+            ) : (
+              <>
+                <p className="text-lg font-bold text-gray-900 group-hover:text-white transition-colors duration-300">
+                  {product.product_type === 'service' && product.pricing_mode === 'starting_from' ? 'Desde ' : ''}${product.price_mxn} MXN
+                </p>
+                {product.product_type !== 'service' && (
+                  <p className="text-xs text-gray-500 group-hover:text-gray-300 transition-colors duration-300">
+                    ${product.price_usd} USD
+                  </p>
+                )}
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-1">
@@ -1193,6 +1220,11 @@ const Catalogo = () => {
 
               {(() => {
                 const isVariable = selectedProduct.product_type === 'variable';
+                const isService = selectedProduct.product_type === 'service';
+                const servicePricingMode: 'fixed' | 'starting_from' | 'quote' = isService
+                  ? (selectedProduct.pricing_mode || 'fixed')
+                  : 'fixed';
+                const isQuoteOnly = isService && servicePricingMode === 'quote';
                 const sourceVariations = modalVariations.length > 0 ? modalVariations : (selectedProduct.variations || []);
                 const hasAnyVariantStock = isVariable
                   ? Array.isArray(sourceVariations) && sourceVariations.some((v: any) => Number(v.stock) > 0)
@@ -1204,14 +1236,14 @@ const Catalogo = () => {
                       <ProductImageGallery
                         images={selectedProduct.images || [selectedProduct.image]}
                         productName={selectedProduct.title}
-                        showOutOfStock={isVariable ? !hasAnyVariantStock : currentStock === 0}
+                        showOutOfStock={isService ? false : (isVariable ? !hasAnyVariantStock : currentStock === 0)}
                       />
                     </div>
 
                     <div className="space-y-6">
                       <h3 className="font-bold text-gray-900 text-xl md:text-2xl lg:text-3xl flex items-center gap-2 flex-wrap">
                         {selectedProduct.title}
-                        {selectedProduct.sale_price_mxn > 0 && selectedProduct.sale_price_mxn < selectedProduct.price_mxn && (
+                        {!isService && selectedProduct.sale_price_mxn > 0 && selectedProduct.sale_price_mxn < selectedProduct.price_mxn && (
                           <span className="text-xs font-semibold bg-red-500 text-white px-2 py-0.5 rounded-full">
                             -{Math.round(((selectedProduct.price_mxn - selectedProduct.sale_price_mxn) / selectedProduct.price_mxn) * 100)}% OFF
                           </span>
@@ -1239,19 +1271,29 @@ const Catalogo = () => {
                       )}
 
                       {/* Product Variables */}
-                      <ProductVariationSelector
-                        productId={selectedProduct.id}
-                        variations={modalVariations.length > 0 ? modalVariations : selectedProduct.variations}
-                        onPriceChange={(price) => setCurrentPrice(price)}
-                        onStockChange={(stock) => setCurrentStock(stock)}
-                        onVariationComplete={(isComplete) => setCanAddToCart(isComplete)}
-                        onVariationChange={(variation) => setSelectedVariation(variation)}
-                      />
+                      {!isService && (
+                        <ProductVariationSelector
+                          productId={selectedProduct.id}
+                          variations={modalVariations.length > 0 ? modalVariations : selectedProduct.variations}
+                          onPriceChange={(price) => setCurrentPrice(price)}
+                          onStockChange={(stock) => setCurrentStock(stock)}
+                          onVariationComplete={(isComplete) => setCanAddToCart(isComplete)}
+                          onVariationChange={(variation) => setSelectedVariation(variation)}
+                        />
+                      )}
 
                       {/* Price Display */}
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                          {currentPrice > 0 ? (
+                          {isService ? (
+                            isQuoteOnly ? (
+                              <span className="text-3xl font-bold italic">A cotizar</span>
+                            ) : (
+                              <span className="text-3xl font-bold">
+                                {servicePricingMode === 'starting_from' ? 'Desde ' : ''}${Number(selectedProduct.price_mxn || 0).toFixed(2)} MXN
+                              </span>
+                            )
+                          ) : currentPrice > 0 ? (
                             <span className="text-3xl font-bold">
                               ${currentPrice.toFixed(2)} MXN
                             </span>
@@ -1269,46 +1311,68 @@ const Catalogo = () => {
                             </span>
                           )}
                         </div>
-                        {currentPrice === 0 && selectedProduct.sale_price_mxn > 0 && selectedProduct.sale_price_mxn < selectedProduct.price_mxn && (
+                        {!isService && currentPrice === 0 && selectedProduct.sale_price_mxn > 0 && selectedProduct.sale_price_mxn < selectedProduct.price_mxn && (
                           <p className="text-lg line-through text-muted-foreground">
                             ${selectedProduct.price_mxn.toFixed(2)} MXN
                           </p>
                         )}
-                        {currentStock > 0 && (
+                        {!isService && currentStock > 0 && (
                           <p className="text-sm text-green-600">
                             ✓ {currentStock} disponibles
                           </p>
                         )}
-                        {isVariable && !canAddToCart && hasAnyVariantStock && (
+                        {!isService && isVariable && !canAddToCart && hasAnyVariantStock && (
                           <p className="text-sm text-gray-500">Selecciona las opciones para ver el stock disponible.</p>
+                        )}
+                        {isService && (
+                          <p className="text-sm text-gray-500">
+                            {isQuoteOnly
+                              ? 'Coordina precio y detalles por WhatsApp.'
+                              : 'Coordina disponibilidad y detalles por WhatsApp.'}
+                          </p>
                         )}
                       </div>
 
                       <div className="space-y-3">
-                        <Button
-                          onClick={() => addToCart(selectedProduct)}
-                          className="w-full"
-                          size="lg"
-                          disabled={!canAddToCart || (!isVariable && currentStock === 0)}
-                        >
-                          <ShoppingCart className="w-5 h-5 mr-2" />
-                          {isVariable && !canAddToCart
-                            ? 'Selecciona opciones'
-                            : currentStock === 0
-                              ? 'Agotado'
-                              : 'Agregar al carrito'}
-                        </Button>
+                        {isService ? (
+                          settings?.whatsapp_number && (
+                            <Button
+                              onClick={() => sendWhatsAppMessage(selectedProduct)}
+                              className="w-full"
+                              size="lg"
+                            >
+                              <MessageCircle className="w-5 h-5 mr-2" />
+                              {selectedProduct.cta_label?.trim() || 'Consultar por WhatsApp'}
+                            </Button>
+                          )
+                        ) : (
+                          <>
+                            <Button
+                              onClick={() => addToCart(selectedProduct)}
+                              className="w-full"
+                              size="lg"
+                              disabled={!canAddToCart || (!isVariable && currentStock === 0)}
+                            >
+                              <ShoppingCart className="w-5 h-5 mr-2" />
+                              {isVariable && !canAddToCart
+                                ? 'Selecciona opciones'
+                                : currentStock === 0
+                                  ? 'Agotado'
+                                  : 'Agregar al carrito'}
+                            </Button>
 
-                        {settings?.whatsapp_number && (
-                          <Button
-                            onClick={() => sendWhatsAppMessage(selectedProduct)}
-                            variant="outline"
-                            className="w-full"
-                            size="lg"
-                          >
-                            <MessageCircle className="w-5 h-5 mr-2" />
-                            Consultar por WhatsApp
-                          </Button>
+                            {settings?.whatsapp_number && (
+                              <Button
+                                onClick={() => sendWhatsAppMessage(selectedProduct)}
+                                variant="outline"
+                                className="w-full"
+                                size="lg"
+                              >
+                                <MessageCircle className="w-5 h-5 mr-2" />
+                                Consultar por WhatsApp
+                              </Button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>

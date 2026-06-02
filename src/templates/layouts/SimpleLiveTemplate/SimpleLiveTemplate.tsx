@@ -100,7 +100,13 @@ export const SimpleLiveTemplate = (props: any) => {
     const cardHoverColor = settings?.product_card_hover_color || '#000000'; // Hover black
 
     // Product Card Component
-    const ProductCard = ({ product }: { product: any }) => (
+    const ProductCard = ({ product }: { product: any }) => {
+        const isService = product.product_type === 'service';
+        const pricingMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
+        const isQuoteOnly = isService && pricingMode === 'quote';
+        const basePrice = product.price_mxn || product.price;
+        const displayPrice = !isService ? (product.sale_price_mxn || basePrice) : basePrice;
+        return (
         <div className="w-full group cursor-pointer" onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}>
             <div className="relative aspect-[3/4] rounded-sm overflow-hidden mb-4 transition-colors duration-300" style={{ backgroundColor: cardBgColor }}>
                 <div className="absolute inset-0 transition-colors duration-300 opacity-0 group-hover:opacity-100" style={{ backgroundColor: cardHoverColor }} />
@@ -118,10 +124,19 @@ export const SimpleLiveTemplate = (props: any) => {
             </div>
             <div>
                 <h3 className="font-bold text-gray-900 leading-tight mb-1">{product.title || product.name}</h3>
-                <span className="font-bold">${product.sale_price_mxn || product.price_mxn || product.price}</span>
+                {isQuoteOnly ? (
+                    <span className="font-bold italic">A cotizar</span>
+                ) : isService && pricingMode === 'starting_from' ? (
+                    <span className="font-bold">Desde ${displayPrice} MXN</span>
+                ) : isService ? (
+                    <span className="font-bold">${displayPrice} MXN</span>
+                ) : (
+                    <span className="font-bold">${displayPrice}</span>
+                )}
             </div>
         </div>
-    );
+        );
+    };
 
     return (
         <div className="min-h-screen font-sans text-black" style={{ backgroundColor: settings?.store_background_color || '#ffffff' }}>

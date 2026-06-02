@@ -127,10 +127,14 @@ serve(async (req) => {
       } else {
         const { data: p } = await supabase
           .from("products")
-          .select("price_mxn, sale_price_mxn")
+          .select("price_mxn, sale_price_mxn, product_type, title")
           .eq("id", it.product_id)
           .single();
         if (!p) throw new Error(`Product ${it.product_id} not found`);
+        // Services are contact-only and must never reach checkout.
+        if (p.product_type === 'service') {
+          throw new Error(`"${p.title}" es un servicio: contáctanos por WhatsApp para coordinarlo.`);
+        }
         const real = p.sale_price_mxn || p.price_mxn;
         validated.push({ ...it, price_mxn: real });
       }

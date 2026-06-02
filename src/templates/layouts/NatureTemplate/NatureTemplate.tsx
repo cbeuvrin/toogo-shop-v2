@@ -71,9 +71,13 @@ export const NatureTemplate = (props: any) => {
 
     // Product Card
     const ProductCard = ({ product }: { product: any }) => {
+        const isService = product.product_type === 'service';
+        const pricingMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
+        const isQuoteOnly = isService && pricingMode === 'quote';
         const salePrice = product.sale_price_mxn || product.price_mxn || product.price;
         const regularPrice = product.originalPrice || product.price * 1.2; // Mocking regular price if sale
-        const isOnSale = product.sale_price_mxn || product.originalPrice;
+        const isOnSale = !isService && (product.sale_price_mxn || product.originalPrice);
+        const servicePrice = product.price_mxn || product.price || 0;
 
         return (
             <div
@@ -99,7 +103,15 @@ export const NatureTemplate = (props: any) => {
                     </div>
                     <h3 className="font-serif text-sm font-semibold text-gray-900 leading-snug mb-1">{product.title || product.name}</h3>
                     <div className="flex items-center gap-2 text-sm">
-                        {isOnSale ? (
+                        {isService ? (
+                            isQuoteOnly ? (
+                                <span className="text-gray-900 italic">A cotizar</span>
+                            ) : pricingMode === 'starting_from' ? (
+                                <span className="text-gray-900">Desde ${Number(servicePrice).toFixed(2)} MXN</span>
+                            ) : (
+                                <span className="text-gray-900">${Number(servicePrice).toFixed(2)} MXN</span>
+                            )
+                        ) : isOnSale ? (
                             <>
                                 <span className="text-gray-500 line-through">${Number(regularPrice).toFixed(2)}</span>
                                 <span className="text-[#9b3b3b]">

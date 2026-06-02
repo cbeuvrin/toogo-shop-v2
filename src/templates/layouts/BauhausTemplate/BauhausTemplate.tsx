@@ -182,10 +182,13 @@ export const BauhausTemplate = (props: any) => {
                 {displayProducts.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 md:gap-10">
                         {displayProducts.map((product: any, i: number) => {
+                            const isService = product.product_type === 'service';
+                            const pricingMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
+                            const isQuoteOnly = isService && pricingMode === 'quote';
                             const colors = [bauhausRed, bauhausYellow, bauhausBlue];
                             const accentColor = colors[i % 3];
                             const image = (product.images?.[0] && typeof product.images[0] === 'object') ? product.images[0].url : (product.images?.[0] || product.image || '/placeholder.svg');
-                            const price = product.sale_price_mxn || product.price_mxn || product.price || 0;
+                            const price = !isService ? (product.sale_price_mxn || product.price_mxn || product.price || 0) : (product.price_mxn || product.price || 0);
                             return (
                                 <div
                                     key={product.id}
@@ -200,14 +203,24 @@ export const BauhausTemplate = (props: any) => {
                                     </div>
                                     <div className="flex items-baseline justify-between">
                                         <h3 className="text-lg font-bold uppercase tracking-tight line-clamp-1">{product.title || product.name}</h3>
-                                        <span className="text-base font-black" style={{ color: accentColor }}>${Number(price).toFixed(0)}</span>
+                                        {isQuoteOnly ? (
+                                            <span className="text-base font-black italic" style={{ color: accentColor }}>A cotizar</span>
+                                        ) : isService && pricingMode === 'starting_from' ? (
+                                            <span className="text-base font-black" style={{ color: accentColor }}>Desde ${Number(price).toFixed(0)} MXN</span>
+                                        ) : isService ? (
+                                            <span className="text-base font-black" style={{ color: accentColor }}>${Number(price).toFixed(0)} MXN</span>
+                                        ) : (
+                                            <span className="text-base font-black" style={{ color: accentColor }}>${Number(price).toFixed(0)}</span>
+                                        )}
                                     </div>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); addToCart(product); }}
-                                        className="mt-3 text-xs font-bold tracking-widest uppercase underline underline-offset-4 hover:no-underline"
-                                    >
-                                        Agregar al carrito
-                                    </button>
+                                    {!isService && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); addToCart(product); }}
+                                            className="mt-3 text-xs font-bold tracking-widest uppercase underline underline-offset-4 hover:no-underline"
+                                        >
+                                            Agregar al carrito
+                                        </button>
+                                    )}
                                 </div>
                             );
                         })}

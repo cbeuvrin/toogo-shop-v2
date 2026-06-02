@@ -32,7 +32,9 @@ interface ProductData {
   status: string;
   images: string[];
   category: string;
-  product_type: 'simple' | 'variable';
+  product_type: 'simple' | 'variable' | 'service';
+  pricing_mode?: 'fixed' | 'starting_from' | 'quote';
+  cta_label?: string;
   variables?: string[];
   variations?: ProductVariation[];
 }
@@ -314,17 +316,31 @@ export const ProductEditModal = ({
         });
         return;
       }
+    } else if (formData.product_type === 'service') {
+      // Servicios: precio obligatorio solo si pricing_mode no es 'quote'.
+      const mode = formData.pricing_mode || 'fixed';
+      if (mode !== 'quote' && (!formData.price_mxn || formData.price_mxn <= 0)) {
+        toast({
+          title: "Precio requerido",
+          description: mode === 'starting_from'
+            ? "Indica el precio mínimo (modo 'Desde $X')"
+            : "El precio debe ser mayor a $0 — o elige el modo 'A cotizar'",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
+    const isService = formData.product_type === 'service';
+    const isQuoteOnly = isService && formData.pricing_mode === 'quote';
     const productToSave = {
       title: formData.name,
       description: formData.description,
-      // Para productos variables, enviar precio 0
-      price_mxn: formData.product_type === 'variable' ? 0 : formData.price_mxn,
-      sale_price_mxn: formData.product_type === 'variable' ? 0 : (formData.sale_price_mxn || 0),
-      // Para productos variables, enviar stock 0
-      stock: formData.product_type === 'variable' ? 0 : formData.stock,
-      // Para productos variables, enviar SKU null
+      // Variables: price 0; Quote-only services: price 0; otherwise the entered price.
+      price_mxn: (formData.product_type === 'variable' || isQuoteOnly) ? 0 : formData.price_mxn,
+      sale_price_mxn: (formData.product_type === 'variable' || isQuoteOnly) ? 0 : (formData.sale_price_mxn || 0),
+      // Variables: stock 0 (per-variation); services: stock 0 (not tracked).
+      stock: (formData.product_type === 'variable' || isService) ? 0 : formData.stock,
       sku: formData.product_type === 'variable' ? null : formData.sku,
       features: formData.features,
       status: formData.status,
@@ -333,8 +349,11 @@ export const ProductEditModal = ({
         ? [formData.category]
         : [],
       product_type: formData.product_type,
-      variables: selectedVariables,
-      variations: formData.variations
+      pricing_mode: isService ? (formData.pricing_mode || 'fixed') : null,
+      cta_label: isService ? (formData.cta_label?.trim() || null) : null,
+      // Services don't take variations; force empty.
+      variables: isService ? [] : selectedVariables,
+      variations: isService ? [] : formData.variations
     };
 
     console.log('[ProductEditModal] Guardando producto:', {
@@ -587,6 +606,7 @@ export const ProductEditModal = ({
                                   <div className="text-xs max-w-xs space-y-1">
                                     <p><strong>Simple:</strong> Un producto con un solo precio y sin variaciones (ej: un libro, una taza básica).</p>
                                     <p><strong>Variable:</strong> Un producto con diferentes opciones que el cliente puede elegir, como tallas, colores o materiales, cada una con su propio precio y stock.</p>
+                                    <p><strong>Servicio / Por pedido:</strong> Para servicios o productos por encargo. Sin stock. Precio fijo, "desde $X" o "a cotizar". El botón abre WhatsApp en vez de agregar al carrito.</p>
                                   </div>
                                 </TooltipContent>
                               </Tooltip>
@@ -604,16 +624,76 @@ export const ProductEditModal = ({
                             Crear Variables
                           </Button>
                         </div>
-                        <Select value={formData.product_type} onValueChange={(value: 'simple' | 'variable') => handleInputChange('product_type', value)}>
+                        <Select value={formData.product_type} onValueChange={(value: 'simple' | 'variable' | 'service') => handleInputChange('product_type', value)}>
                           <SelectTrigger className="mt-1 border-primary/30 focus:ring-primary/20">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="simple">Simple</SelectItem>
                             <SelectItem value="variable">Variable</SelectItem>
+                            <SelectItem value="service">Servicio / Por pedido</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
+                      {formData.product_type === 'service' && (
+                        <>
+                          <div className="mt-4">
+                            <div className="flex items-center gap-1 mb-1">
+                              <Label htmlFor="pricing_mode" className="text-xs font-medium text-primary">MODO DE PRECIO</Label>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <div className="text-xs max-w-xs space-y-1">
+                                      <p><strong>Fijo:</strong> Muestra el precio exacto.</p>
+                                      <p><strong>Desde $X:</strong> Muestra "Desde $X" — útil cuando el precio mínimo es referencia.</p>
+                                      <p><strong>A cotizar:</strong> No muestra precio. El cliente lo pide por WhatsApp.</p>
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                            <Select
+                              value={formData.pricing_mode || 'fixed'}
+                              onValueChange={(value: 'fixed' | 'starting_from' | 'quote') => handleInputChange('pricing_mode', value)}
+                            >
+                              <SelectTrigger className="mt-1 border-primary/30 focus:ring-primary/20">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="fixed">Fijo</SelectItem>
+                                <SelectItem value="starting_from">Desde $X</SelectItem>
+                                <SelectItem value="quote">A cotizar</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="mt-4">
+                            <div className="flex items-center gap-1 mb-1">
+                              <Label htmlFor="cta_label" className="text-xs font-medium text-primary">TEXTO DEL BOTÓN (OPCIONAL)</Label>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="text-xs max-w-xs">Texto del botón que abre WhatsApp. Si lo dejas vacío se usa "Consultar por WhatsApp".</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                            <Input
+                              id="cta_label"
+                              value={formData.cta_label || ''}
+                              onChange={(e) => handleInputChange('cta_label', e.target.value)}
+                              placeholder="Ej: Reservar fecha, Pedir cotización, Agendar cita..."
+                              className="mt-1 border-primary/30 focus:ring-primary/20"
+                              maxLength={40}
+                            />
+                          </div>
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -654,6 +734,57 @@ export const ProductEditModal = ({
                       </div>
                       <div>
                         <Label htmlFor="status" className="text-xs font-medium text-muted-foreground">ESTADO</Label>
+                        <Select value={formData.status} onValueChange={value => handleInputChange('status', value)}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">Activo</SelectItem>
+                            <SelectItem value="inactive">Inactivo</SelectItem>
+                            <SelectItem value="draft">Borrador</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>}
+
+                {/* Pricing Section for Service / Por pedido */}
+                {formData.product_type === 'service' && <Card>
+                  <CardHeader className={isMobile ? 'pb-2 px-3 pt-3' : 'pb-3'}>
+                    <CardTitle className={`${isMobile ? 'text-xs' : 'text-sm'} flex items-center gap-2`}>
+                      <DollarSign className="h-4 w-4" />
+                      Precio del servicio
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formData.pricing_mode === 'quote'
+                        ? "Sin precio visible — el cliente lo pide por WhatsApp."
+                        : formData.pricing_mode === 'starting_from'
+                        ? 'Se mostrará como "Desde $X".'
+                        : 'Precio fijo del servicio.'}
+                    </p>
+                  </CardHeader>
+                  <CardContent className={isMobile ? 'px-3' : ''}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {formData.pricing_mode !== 'quote' && (
+                        <div>
+                          <Label htmlFor="service_price_mxn" className="text-xs font-medium text-muted-foreground">
+                            {formData.pricing_mode === 'starting_from' ? 'PRECIO MÍNIMO MXN *' : 'PRECIO MXN *'}
+                          </Label>
+                          <Input
+                            id="service_price_mxn"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={formData.price_mxn || ''}
+                            onChange={e => handleInputChange('price_mxn', parseFloat(e.target.value) || 0)}
+                            placeholder="0.00"
+                            className="mt-1"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <Label htmlFor="service_status" className="text-xs font-medium text-muted-foreground">ESTADO</Label>
                         <Select value={formData.status} onValueChange={value => handleInputChange('status', value)}>
                           <SelectTrigger className="mt-1">
                             <SelectValue />

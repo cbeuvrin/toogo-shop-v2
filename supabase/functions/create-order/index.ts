@@ -128,6 +128,21 @@ serve(async (req) => {
         });
       }
 
+      // Services are quote/contact-only and must never reach checkout.
+      // The UI already routes service clicks to WhatsApp; this is a defensive guard.
+      if (productData.product_type === 'service') {
+        logStep("Validation error - service in order", { product_id: item.product_id, product_title: productData.title });
+        return new Response(JSON.stringify({
+          error: "Service product not orderable",
+          message: `"${productData.title}" es un servicio: contáctanos por WhatsApp para coordinarlo.`,
+          product_id: item.product_id,
+          product_title: productData.title
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+
       if (productData.product_type === 'variable' && !item.variation_id) {
         logStep("Validation error - missing variation_id", { product_id: item.product_id, product_title: productData.title });
         return new Response(JSON.stringify({

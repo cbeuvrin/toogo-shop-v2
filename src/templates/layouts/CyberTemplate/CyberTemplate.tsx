@@ -258,9 +258,12 @@ export const CyberTemplate = (props: any) => {
                 {displayProducts.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                         {displayProducts.map((product: any) => {
+                            const isService = product.product_type === 'service';
+                            const pricingMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
+                            const isQuoteOnly = isService && pricingMode === 'quote';
                             const image = (product.images?.[0] && typeof product.images[0] === 'object') ? product.images[0].url : (product.images?.[0] || product.image || '/placeholder.svg');
-                            const price = product.sale_price_mxn || product.price_mxn || product.price || 0;
-                            const onSale = product.sale_price_mxn !== null && product.sale_price_mxn !== undefined;
+                            const price = !isService ? (product.sale_price_mxn || product.price_mxn || product.price || 0) : (product.price_mxn || product.price || 0);
+                            const onSale = !isService && product.sale_price_mxn !== null && product.sale_price_mxn !== undefined;
                             return (
                                 <div
                                     key={product.id}
@@ -281,14 +284,24 @@ export const CyberTemplate = (props: any) => {
                                     <div className="p-4">
                                         <h3 className="text-sm font-bold uppercase tracking-tight line-clamp-1 mb-1">{product.title || product.name}</h3>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-base font-black" style={{ color: cyberNeon }}>${Number(price).toFixed(0)}</span>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); addToCart(product); }}
-                                                className="text-[10px] font-bold tracking-widest uppercase opacity-60 hover:opacity-100"
-                                                style={{ color: cyberMagenta }}
-                                            >
-                                                + ADD
-                                            </button>
+                                            {isQuoteOnly ? (
+                                                <span className="text-base font-black italic" style={{ color: cyberNeon }}>A cotizar</span>
+                                            ) : isService && pricingMode === 'starting_from' ? (
+                                                <span className="text-base font-black" style={{ color: cyberNeon }}>Desde ${Number(price).toFixed(0)} MXN</span>
+                                            ) : isService ? (
+                                                <span className="text-base font-black" style={{ color: cyberNeon }}>${Number(price).toFixed(0)} MXN</span>
+                                            ) : (
+                                                <span className="text-base font-black" style={{ color: cyberNeon }}>${Number(price).toFixed(0)}</span>
+                                            )}
+                                            {!isService && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); addToCart(product); }}
+                                                    className="text-[10px] font-bold tracking-widest uppercase opacity-60 hover:opacity-100"
+                                                    style={{ color: cyberMagenta }}
+                                                >
+                                                    + ADD
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

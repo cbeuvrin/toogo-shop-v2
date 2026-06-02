@@ -44,6 +44,11 @@ const ProductDetail = () => {
   }, [products, slug]);
 
   const isVariable = product?.product_type === "variable";
+  const isService = product?.product_type === "service";
+  const pricingMode: 'fixed' | 'starting_from' | 'quote' = isService
+    ? (product?.pricing_mode || 'fixed')
+    : 'fixed';
+  const isQuoteOnly = isService && pricingMode === 'quote';
 
   const [currentPrice, setCurrentPrice] = useState(0);
   const [currentStock, setCurrentStock] = useState(0);
@@ -52,7 +57,11 @@ const ProductDetail = () => {
 
   useEffect(() => {
     if (!product) return;
-    if (!isVariable) {
+    if (isService) {
+      setCurrentPrice(product.price_mxn || 0);
+      setCurrentStock(0);
+      setCanAddToCart(false);
+    } else if (!isVariable) {
       setCurrentPrice(product.sale_price_mxn > 0 && product.sale_price_mxn < product.price_mxn
         ? product.sale_price_mxn
         : product.price_mxn);
@@ -63,7 +72,7 @@ const ProductDetail = () => {
       setCurrentStock(0);
       setCanAddToCart(false);
     }
-  }, [product, isVariable]);
+  }, [product, isVariable, isService]);
 
   const buildHomeUrl = () => {
     const host = searchParams.get("host");
@@ -96,7 +105,7 @@ const ProductDetail = () => {
   }, [effectiveSettings]);
 
   const handleAddToCart = () => {
-    if (!product) return;
+    if (!product || isService) return;
     if (!canAddToCart || (!isVariable && currentStock === 0)) return;
     const finalPrice = currentPrice || product.price_mxn;
     addItem({
@@ -117,8 +126,21 @@ const ProductDetail = () => {
   const handleWhatsApp = () => {
     const number = effectiveSettings?.whatsapp_number;
     if (!number || !product) return;
-    const finalPrice = currentPrice || product.price_mxn;
-    const text = `Hola 👋, me interesa este producto:\n\n*${product.title}*\nPrecio: $${finalPrice.toFixed(2)} MXN\n\n¿Está disponible?`;
+    const tpl: string | undefined = effectiveSettings?.whatsapp_message;
+    let text: string;
+    if (isService) {
+      const priceText = isQuoteOnly
+        ? 'A cotizar'
+        : pricingMode === 'starting_from'
+          ? `Desde $${(product.price_mxn || 0).toFixed(2)} MXN`
+          : `$${(product.price_mxn || 0).toFixed(2)} MXN`;
+      text = tpl && tpl.trim()
+        ? tpl.replace(/{producto}/gi, product.title).replace(/{precio}/gi, priceText)
+        : `Hola 👋, me interesa este servicio:\n\n*${product.title}*\nPrecio: ${priceText}\n\n¿Podemos coordinar?`;
+    } else {
+      const finalPrice = currentPrice || product.price_mxn;
+      text = `Hola 👋, me interesa este producto:\n\n*${product.title}*\nPrecio: $${finalPrice.toFixed(2)} MXN\n\n¿Está disponible?`;
+    }
     window.open(`https://wa.me/${number}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -196,7 +218,7 @@ const ProductDetail = () => {
     );
   }
 
-  const hasDiscount = !isVariable
+  const hasDiscount = !isVariable && !isService
     && product.sale_price_mxn > 0
     && product.sale_price_mxn < product.price_mxn;
 
@@ -215,7 +237,7 @@ const ProductDetail = () => {
               <ProductImageGallery
                 images={product.images || []}
                 productName={product.title}
-                showOutOfStock={isVariable ? !hasAnyVariantStock : currentStock === 0}
+                showOutOfStock={isService ? false : (isVariable ? !hasAnyVariantStock : currentStock === 0)}
               />
             </div>
           </div>
@@ -257,18 +279,30 @@ const ProductDetail = () => {
               </div>
             )}
 
-            <ProductVariationSelector
-              productId={product.id}
-              variations={product.variations}
-              onPriceChange={(price: number) => setCurrentPrice(price)}
-              onStockChange={(stock: number) => setCurrentStock(stock)}
-              onVariationComplete={(isComplete: boolean) => setCanAddToCart(isComplete)}
-              onVariationChange={(variation: any) => setSelectedVariation(variation)}
-            />
+            {!isService && (
+              <ProductVariationSelector
+                productId={product.id}
+                variations={product.variations}
+                onPriceChange={(price: number) => setCurrentPrice(price)}
+                onStockChange={(stock: number) => setCurrentStock(stock)}
+                onVariationComplete={(isComplete: boolean) => setCanAddToCart(isComplete)}
+                onVariationChange={(variation: any) => setSelectedVariation(variation)}
+              />
+            )}
 
             <div className="space-y-1.5 sm:space-y-2">
               <div className="flex items-baseline gap-2 sm:gap-3 flex-wrap">
-                {currentPrice > 0 ? (
+                {isService ? (
+                  isQuoteOnly ? (
+                    <span className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${theme.textPrimary} italic`}>
+                      A cotizar
+                    </span>
+                  ) : (
+                    <span className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${theme.textPrimary}`}>
+                      {pricingMode === 'starting_from' ? 'Desde ' : ''}${(product.price_mxn || 0).toFixed(2)} <span className="text-base sm:text-lg font-normal opacity-60">MXN</span>
+                    </span>
+                  )
+                ) : currentPrice > 0 ? (
                   <span className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${theme.textPrimary}`}>
                     ${currentPrice.toFixed(2)} <span className="text-base sm:text-lg font-normal opacity-60">MXN</span>
                   </span>
@@ -287,42 +321,63 @@ const ProductDetail = () => {
                   </span>
                 )}
               </div>
-              {!isVariable && currentStock > 0 && (
+              {!isService && !isVariable && currentStock > 0 && (
                 <p className={`text-xs sm:text-sm ${theme.textAccent} opacity-90`}>✓ {currentStock} disponibles</p>
               )}
-              {!isVariable && currentStock === 0 && (
+              {!isService && !isVariable && currentStock === 0 && (
                 <p className={`text-xs sm:text-sm ${theme.textAccent}`}>Producto agotado</p>
               )}
-              {isVariable && !canAddToCart && hasAnyVariantStock && (
+              {!isService && isVariable && !canAddToCart && hasAnyVariantStock && (
                 <p className={`text-xs sm:text-sm ${theme.textSecondary}`}>Selecciona las opciones para ver disponibilidad.</p>
               )}
-              {isVariable && !hasAnyVariantStock && (
+              {!isService && isVariable && !hasAnyVariantStock && (
                 <p className={`text-xs sm:text-sm ${theme.textAccent}`}>Sin stock en ninguna variación</p>
+              )}
+              {isService && (
+                <p className={`text-xs sm:text-sm ${theme.textSecondary}`}>
+                  {isQuoteOnly
+                    ? 'Coordina precio y detalles por WhatsApp.'
+                    : 'Coordina disponibilidad y detalles por WhatsApp.'}
+                </p>
               )}
             </div>
 
             <div className="space-y-2.5 sm:space-y-3 pt-1 sm:pt-2">
-              <button
-                onClick={handleAddToCart}
-                disabled={!canAddToCart || (!isVariable && currentStock === 0)}
-                className={`w-full ${theme.buttonPrimary} px-5 py-3 sm:py-4 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-sm sm:text-base`}
-              >
-                <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
-                {isVariable && !canAddToCart
-                  ? "Selecciona opciones"
-                  : (currentStock === 0 && !isVariable)
-                    ? "Agotado"
-                    : "Agregar al carrito"}
-              </button>
+              {isService ? (
+                effectiveSettings?.whatsapp_number && (
+                  <button
+                    onClick={handleWhatsApp}
+                    className={`w-full ${theme.buttonPrimary} px-5 py-3 sm:py-4 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base`}
+                  >
+                    <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                    {product.cta_label?.trim() || 'Consultar por WhatsApp'}
+                  </button>
+                )
+              ) : (
+                <>
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={!canAddToCart || (!isVariable && currentStock === 0)}
+                    className={`w-full ${theme.buttonPrimary} px-5 py-3 sm:py-4 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-sm sm:text-base`}
+                  >
+                    <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
+                    {isVariable && !canAddToCart
+                      ? "Selecciona opciones"
+                      : (currentStock === 0 && !isVariable)
+                        ? "Agotado"
+                        : "Agregar al carrito"}
+                  </button>
 
-              {effectiveSettings?.whatsapp_number && (
-                <button
-                  onClick={handleWhatsApp}
-                  className={`w-full ${theme.buttonSecondary} px-5 py-3 sm:py-4 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base`}
-                >
-                  <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
-                  Consultar por WhatsApp
-                </button>
+                  {effectiveSettings?.whatsapp_number && (
+                    <button
+                      onClick={handleWhatsApp}
+                      className={`w-full ${theme.buttonSecondary} px-5 py-3 sm:py-4 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base`}
+                    >
+                      <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                      Consultar por WhatsApp
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>

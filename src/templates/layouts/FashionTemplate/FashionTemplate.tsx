@@ -68,7 +68,13 @@ export const FashionTemplate = (props: any) => {
     const thirdHeroImg = banners?.[2]?.imageUrl || banners?.[2]?.image;
 
     // Product card
-    const ProductCard = ({ product }: { product: any }) => (
+    const ProductCard = ({ product }: { product: any }) => {
+        const isService = product.product_type === 'service';
+        const pricingMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
+        const isQuoteOnly = isService && pricingMode === 'quote';
+        const basePrice = product.price_mxn || product.price;
+        const displayPrice = !isService ? (product.sale_price_mxn || basePrice) : basePrice;
+        return (
         <div
             className="group cursor-pointer"
             onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}
@@ -89,10 +95,19 @@ export const FashionTemplate = (props: any) => {
             </div>
             <div className="text-center">
                 <h3 className="text-sm text-gray-900 font-medium mb-1 line-clamp-1">{product.title || product.name}</h3>
-                <span className="text-gray-500 font-light">${product.sale_price_mxn || product.price_mxn || product.price}</span>
+                {isQuoteOnly ? (
+                    <span className="text-gray-500 font-light italic">A cotizar</span>
+                ) : isService && pricingMode === 'starting_from' ? (
+                    <span className="text-gray-500 font-light">Desde ${displayPrice} MXN</span>
+                ) : isService ? (
+                    <span className="text-gray-500 font-light">${displayPrice} MXN</span>
+                ) : (
+                    <span className="text-gray-500 font-light">${displayPrice}</span>
+                )}
             </div>
         </div>
-    );
+        );
+    };
 
     return (
         <div className="min-h-screen font-sans bg-white text-black" style={{ backgroundColor: settings?.store_background_color || '#ffffff' }}>

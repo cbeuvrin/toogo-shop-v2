@@ -254,7 +254,15 @@ export const PremiumBrandTemplate = (props: any) => {
                                             </div>
                                             <div className="p-6 text-center">
                                                 <h3 className="font-bold text-[#023f66] text-lg mb-2 line-clamp-2">{product.title || product.name}</h3>
-                                                <span className="font-bold text-[#e98063] text-xl">${product.sale_price_mxn || product.price_mxn || product.price}</span>
+                                                {(() => {
+                                                    const isService = product.product_type === 'service';
+                                                    const pricingMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
+                                                    if (isService && pricingMode === 'quote') return <span className="font-bold text-[#e98063] text-xl italic">A cotizar</span>;
+                                                    const p = !isService ? (product.sale_price_mxn || product.price_mxn || product.price) : (product.price_mxn || product.price);
+                                                    if (isService && pricingMode === 'starting_from') return <span className="font-bold text-[#e98063] text-xl">Desde ${p} MXN</span>;
+                                                    if (isService) return <span className="font-bold text-[#e98063] text-xl">${p} MXN</span>;
+                                                    return <span className="font-bold text-[#e98063] text-xl">${p}</span>;
+                                                })()}
                                             </div>
                                         </div>
                                     );

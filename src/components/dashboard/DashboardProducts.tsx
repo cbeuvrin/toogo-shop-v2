@@ -270,7 +270,14 @@ export const DashboardProducts = ({ onNavigateToCategories, onNavigateToVariable
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
                       <div className="text-sm">
-                        <div className="font-medium">${product.price_mxn} MXN</div>
+                        {product.product_type === 'service' && product.pricing_mode === 'quote' ? (
+                          <div className="font-medium text-muted-foreground italic">A cotizar</div>
+                        ) : (
+                          <div className="font-medium">
+                            {product.product_type === 'service' && product.pricing_mode === 'starting_from' ? 'Desde ' : ''}
+                            ${product.price_mxn} MXN
+                          </div>
+                        )}
                         {product.sale_price_mxn > 0 && product.sale_price_mxn < product.price_mxn && (
                           <div className="text-xs text-green-600">Oferta: ${product.sale_price_mxn} MXN</div>
                         )}
@@ -278,13 +285,22 @@ export const DashboardProducts = ({ onNavigateToCategories, onNavigateToVariable
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
                       <div className="text-sm">
-                        {product.stock}
+                        {product.product_type === 'service' ? (
+                          <span className="text-muted-foreground">—</span>
+                        ) : (
+                          product.stock
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="hidden sm:table-cell">
-                      <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
-                        {product.status === 'active' ? 'Activo' : 'Inactivo'}
-                      </Badge>
+                      <div className="flex flex-col gap-1 items-start">
+                        <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
+                          {product.status === 'active' ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                        {product.product_type === 'service' && (
+                          <Badge variant="outline" className="text-[10px]">Servicio</Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-2 justify-end">

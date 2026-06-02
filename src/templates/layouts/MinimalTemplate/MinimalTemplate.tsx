@@ -44,6 +44,10 @@ const Navigation = ({ onCategoryClick, onContactClick, isMenuOpen, setIsMenuOpen
 };
 
 const ProductCard = ({ product, addToCart, toggleFavorite, isFavorite }: any) => {
+    const isService = product.product_type === 'service';
+    const pricingMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
+    const isQuoteOnly = isService && pricingMode === 'quote';
+    const basePrice = product.price_mxn || product.price || 0;
     return (
         <div className="group cursor-pointer">
             <div className="relative aspect-[3/4] bg-gray-50 overflow-hidden mb-4">
@@ -52,7 +56,7 @@ const ProductCard = ({ product, addToCart, toggleFavorite, isFavorite }: any) =>
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
-                {product.compare_at_price > (product.price_mxn || product.price) && (
+                {!isService && product.compare_at_price > (product.price_mxn || product.price) && (
                     <span className="absolute top-2 left-2 bg-black text-white text-[10px] uppercase tracking-widest px-2 py-1">
                         Sale
                     </span>
@@ -64,20 +68,30 @@ const ProductCard = ({ product, addToCart, toggleFavorite, isFavorite }: any) =>
                     <Heart className={`h-5 w-5 ${isFavorite ? "fill-black text-black" : "text-black"}`} />
                 </button>
 
-                <div className="absolute bottom-0 inset-x-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/50 to-transparent flex justify-center">
-                    <Button
-                        onClick={(e) => { e.stopPropagation(); addToCart(product); }}
-                        className="bg-white text-black hover:bg-gray-100 border-none rounded-none uppercase text-xs tracking-widest w-full"
-                    >
-                        Agregar al carrito
-                    </Button>
-                </div>
+                {!isService && (
+                    <div className="absolute bottom-0 inset-x-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/50 to-transparent flex justify-center">
+                        <Button
+                            onClick={(e) => { e.stopPropagation(); addToCart(product); }}
+                            className="bg-white text-black hover:bg-gray-100 border-none rounded-none uppercase text-xs tracking-widest w-full"
+                        >
+                            Agregar al carrito
+                        </Button>
+                    </div>
+                )}
             </div>
             <div className="text-center">
                 <h3 className="text-sm text-gray-900 font-medium mb-1 line-clamp-1">{product.name || product.title}</h3>
                 <div className="flex justify-center gap-3 text-sm">
-                    <span className="text-gray-500 font-light">${(product.price_mxn || product.price || 0).toFixed(2)}</span>
-                    {product.compare_at_price > (product.price_mxn || product.price) && (
+                    {isQuoteOnly ? (
+                        <span className="text-gray-500 font-light italic">A cotizar</span>
+                    ) : isService && pricingMode === 'starting_from' ? (
+                        <span className="text-gray-500 font-light">Desde ${Number(basePrice).toFixed(2)} MXN</span>
+                    ) : isService ? (
+                        <span className="text-gray-500 font-light">${Number(basePrice).toFixed(2)} MXN</span>
+                    ) : (
+                        <span className="text-gray-500 font-light">${(product.price_mxn || product.price || 0).toFixed(2)}</span>
+                    )}
+                    {!isService && product.compare_at_price > (product.price_mxn || product.price) && (
                         <span className="text-gray-300 line-through font-light">${product.compare_at_price}</span>
                     )}
                 </div>

@@ -38,7 +38,11 @@ export interface Product {
   images: string[];
   sku?: string;
   features: string[];
-  product_type: 'simple' | 'variable';
+  product_type: 'simple' | 'variable' | 'service';
+  // Service-only — how the price is presented. Null on existing rows is treated as 'fixed'.
+  pricing_mode?: 'fixed' | 'starting_from' | 'quote' | null;
+  // Service-only — custom label for the WhatsApp CTA. Falls back to "Consultar por WhatsApp".
+  cta_label?: string | null;
   category_id?: string;
   tenant_id: string;
   created_at?: string;

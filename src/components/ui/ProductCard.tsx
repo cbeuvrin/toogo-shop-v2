@@ -50,8 +50,14 @@ export const ProductCard = ({
   };
   const regularPrice = product.price_mxn || product.price;
   const offerPrice = product.sale_price_mxn || 0;
-  const hasOffer = offerPrice > 0 && offerPrice < regularPrice;
   const isVariableProduct = (product as any).product_type === 'variable';
+  const isServiceProduct = (product as any).product_type === 'service';
+  const servicePricingMode: 'fixed' | 'starting_from' | 'quote' = isServiceProduct
+    ? ((product as any).pricing_mode || 'fixed')
+    : 'fixed';
+  const isQuoteOnly = isServiceProduct && servicePricingMode === 'quote';
+  // Services never use sale_price (no discount badge for services).
+  const hasOffer = !isServiceProduct && offerPrice > 0 && offerPrice < regularPrice;
 
   // Calculate if hover color is dark for text color adjustment
   const isColorDark = (hexColor: string): boolean => {
@@ -113,7 +119,15 @@ export const ProductCard = ({
 
       <div className="flex items-center justify-between">
         <div className="flex flex-col space-y-1">
-          {hasOffer ? <>
+          {isServiceProduct ? (
+            <span className="font-semibold transition-colors duration-300" style={{
+              color: textColor || (isHovered ? '#ffffff' : '#111827')
+            }}>
+              {isQuoteOnly
+                ? <span className="italic">A cotizar</span>
+                : <>{servicePricingMode === 'starting_from' && 'Desde: '}${regularPrice} MXN</>}
+            </span>
+          ) : hasOffer ? <>
             <div className="flex items-center space-x-2">
               <span className="font-semibold transition-colors duration-300" style={{
                 color: textColor || (isHovered ? '#ffffff' : '#111827')

@@ -81,6 +81,14 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   }, [items, CART_KEY]);
 
   const addItem = (product: Omit<CartItem, 'quantity'>) => {
+    // Defensive: 'service' items are quote/contact-only and must never enter the cart.
+    // The UI already routes them to WhatsApp, but a stray caller could bypass that.
+    if ((product as any).product_type === 'service') {
+      if (typeof console !== 'undefined') {
+        console.warn('[cart] blocked attempt to add service item to cart:', product.id);
+      }
+      return;
+    }
     setItems(currentItems => {
       // Para productos con variaciones, comparar por id + variation_id
       const itemKey = product.variation_id ? `${product.id}_${product.variation_id}` : product.id;

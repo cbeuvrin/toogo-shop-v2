@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
 import { HamburgerButton } from "@/components/ui/HamburgerButton";
+import { heroFontFamily } from "@/lib/heroFonts";
 
 export const FashionHeroTemplate = (props: any) => {
     const {
@@ -104,7 +105,13 @@ export const FashionHeroTemplate = (props: any) => {
     const cardHoverColor = settings?.product_card_hover_color || '#000000';
 
     // Compact Product Card Component
-    const ProductCard = ({ product }: { product: any }) => (
+    const ProductCard = ({ product }: { product: any }) => {
+        const isService = product.product_type === 'service';
+        const pricingMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
+        const isQuoteOnly = isService && pricingMode === 'quote';
+        const basePrice = product.price_mxn || product.price;
+        const displayPrice = !isService ? (product.sale_price_mxn || basePrice) : basePrice;
+        return (
         <div className="w-full group cursor-pointer" onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}>
             <div className="relative aspect-[3/4] overflow-hidden mb-3 transition-colors duration-300" style={{ backgroundColor: cardBgColor }}>
                 <div className="absolute inset-0 transition-colors duration-300 opacity-0 group-hover:opacity-100" style={{ backgroundColor: cardHoverColor }} />
@@ -122,10 +129,19 @@ export const FashionHeroTemplate = (props: any) => {
             </div>
             <div>
                 <h3 className="font-semibold text-gray-900 leading-tight mb-1 text-sm">{product.title || product.name}</h3>
-                <span className="font-bold text-sm">${product.sale_price_mxn || product.price_mxn || product.price}</span>
+                {isQuoteOnly ? (
+                    <span className="font-bold text-sm italic">A cotizar</span>
+                ) : isService && pricingMode === 'starting_from' ? (
+                    <span className="font-bold text-sm">Desde ${displayPrice} MXN</span>
+                ) : isService ? (
+                    <span className="font-bold text-sm">${displayPrice} MXN</span>
+                ) : (
+                    <span className="font-bold text-sm">${displayPrice}</span>
+                )}
             </div>
         </div>
-    );
+        );
+    };
 
     return (
         <div className="min-h-screen font-sans text-black" style={{ backgroundColor: settings?.store_background_color || '#ffffff' }}>
@@ -137,9 +153,7 @@ export const FashionHeroTemplate = (props: any) => {
                   // an auto-width center keeps the logo on the geometric middle no matter
                   // how wide the nav or icons grow.
                   const navStyle = props.heroStyles?.navMenu || {};
-                  const navFontFamily = navStyle.fontFamily === 'serif' ? 'ui-serif, Georgia, serif'
-                    : navStyle.fontFamily === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace'
-                    : navStyle.fontFamily === 'sans' ? 'ui-sans-serif, system-ui, sans-serif' : undefined;
+                  const navFontFamily = heroFontFamily(navStyle.fontFamily);
                   const navInline = {
                     fontFamily: navFontFamily,
                     fontSize: navStyle.fontSize ? `${navStyle.fontSize}px` : undefined,
@@ -268,7 +282,7 @@ export const FashionHeroTemplate = (props: any) => {
                             <span
                               className="font-black uppercase tracking-tighter text-lg"
                               style={{
-                                fontFamily: props.heroStyles?.menuDrawerTitle?.fontFamily === 'serif' ? 'ui-serif, Georgia, serif' : props.heroStyles?.menuDrawerTitle?.fontFamily === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace' : props.heroStyles?.menuDrawerTitle?.fontFamily === 'sans' ? 'ui-sans-serif, system-ui, sans-serif' : undefined,
+                                fontFamily: heroFontFamily(props.heroStyles?.menuDrawerTitle?.fontFamily),
                                 fontSize: props.heroStyles?.menuDrawerTitle?.fontSize ? `${props.heroStyles.menuDrawerTitle.fontSize}px` : undefined,
                                 color: props.heroStyles?.menuDrawerTitle?.color || undefined,
                               }}
@@ -324,11 +338,7 @@ export const FashionHeroTemplate = (props: any) => {
                 {/* Text Side — each text element can carry its own styles from the
                     Indico per-element editor (props.heroStyles.{eyebrow|title|message|cta1|cta2}). */}
                 {(() => {
-                  const fontTok = (t?: string) =>
-                    t === 'serif' ? 'ui-serif, Georgia, serif'
-                    : t === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace'
-                    : t === 'sans' ? 'ui-sans-serif, system-ui, sans-serif'
-                    : undefined;
+                  const fontTok = heroFontFamily;
                   const s = props.heroStyles || {};
                   const styleFor = (k: 'eyebrow' | 'title' | 'message' | 'cta1' | 'cta2') => ({
                     fontFamily: fontTok(s?.[k]?.fontFamily),
@@ -484,11 +494,7 @@ export const FashionHeroTemplate = (props: any) => {
                         <div>
                             {(() => {
                               const s = props.heroStyles || {};
-                              const fontTok = (t?: string) =>
-                                t === 'serif' ? 'ui-serif, Georgia, serif'
-                                : t === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace'
-                                : t === 'sans' ? 'ui-sans-serif, system-ui, sans-serif'
-                                : undefined;
+                              const fontTok = heroFontFamily;
                               const sStyle = (k: string) => ({
                                 fontFamily: fontTok(s?.[k]?.fontFamily),
                                 fontSize: s?.[k]?.fontSize ? `${s[k].fontSize}px` : undefined,
@@ -543,7 +549,7 @@ export const FashionHeroTemplate = (props: any) => {
                                                 <Button
                                                     className="w-full bg-white/90 text-black hover:bg-white font-bold backdrop-blur-sm text-xs rounded-none"
                                                     style={{
-                                                      fontFamily: props.heroStyles?.productCardCta?.fontFamily === 'serif' ? 'ui-serif, Georgia, serif' : props.heroStyles?.productCardCta?.fontFamily === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace' : props.heroStyles?.productCardCta?.fontFamily === 'sans' ? 'ui-sans-serif, system-ui, sans-serif' : undefined,
+                                                      fontFamily: heroFontFamily(props.heroStyles?.productCardCta?.fontFamily),
                                                       fontSize: props.heroStyles?.productCardCta?.fontSize ? `${props.heroStyles.productCardCta.fontSize}px` : undefined,
                                                       color: props.heroStyles?.productCardCta?.color || undefined,
                                                     }}
@@ -614,11 +620,7 @@ export const FashionHeroTemplate = (props: any) => {
                     <div className="container mx-auto px-6 py-16" id="popular-grid">
                         {(() => {
                           const s = props.heroStyles || {};
-                          const fontTok = (t?: string) =>
-                            t === 'serif' ? 'ui-serif, Georgia, serif'
-                            : t === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace'
-                            : t === 'sans' ? 'ui-sans-serif, system-ui, sans-serif'
-                            : undefined;
+                          const fontTok = heroFontFamily;
                           const sStyle = {
                             fontFamily: fontTok(s?.sectionTitle2?.fontFamily),
                             fontSize: s?.sectionTitle2?.fontSize ? `${s.sectionTitle2.fontSize}px` : undefined,
@@ -681,7 +683,7 @@ export const FashionHeroTemplate = (props: any) => {
                             <h4
                                 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500"
                                 style={{
-                                  fontFamily: props.heroStyles?.footerHeading1?.fontFamily === 'serif' ? 'ui-serif, Georgia, serif' : props.heroStyles?.footerHeading1?.fontFamily === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace' : props.heroStyles?.footerHeading1?.fontFamily === 'sans' ? 'ui-sans-serif, system-ui, sans-serif' : undefined,
+                                  fontFamily: heroFontFamily(props.heroStyles?.footerHeading1?.fontFamily),
                                   fontSize: props.heroStyles?.footerHeading1?.fontSize ? `${props.heroStyles.footerHeading1.fontSize}px` : undefined,
                                   color: props.heroStyles?.footerHeading1?.color || undefined,
                                 }}
@@ -711,7 +713,7 @@ export const FashionHeroTemplate = (props: any) => {
                             <h4
                                 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500"
                                 style={{
-                                  fontFamily: props.heroStyles?.footerHeading2?.fontFamily === 'serif' ? 'ui-serif, Georgia, serif' : props.heroStyles?.footerHeading2?.fontFamily === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace' : props.heroStyles?.footerHeading2?.fontFamily === 'sans' ? 'ui-sans-serif, system-ui, sans-serif' : undefined,
+                                  fontFamily: heroFontFamily(props.heroStyles?.footerHeading2?.fontFamily),
                                   fontSize: props.heroStyles?.footerHeading2?.fontSize ? `${props.heroStyles.footerHeading2.fontSize}px` : undefined,
                                   color: props.heroStyles?.footerHeading2?.color || undefined,
                                 }}
@@ -728,7 +730,7 @@ export const FashionHeroTemplate = (props: any) => {
                             <h4
                                 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500"
                                 style={{
-                                  fontFamily: props.heroStyles?.footerHeading3?.fontFamily === 'serif' ? 'ui-serif, Georgia, serif' : props.heroStyles?.footerHeading3?.fontFamily === 'mono' ? 'ui-monospace, SFMono-Regular, Menlo, monospace' : props.heroStyles?.footerHeading3?.fontFamily === 'sans' ? 'ui-sans-serif, system-ui, sans-serif' : undefined,
+                                  fontFamily: heroFontFamily(props.heroStyles?.footerHeading3?.fontFamily),
                                   fontSize: props.heroStyles?.footerHeading3?.fontSize ? `${props.heroStyles.footerHeading3.fontSize}px` : undefined,
                                   color: props.heroStyles?.footerHeading3?.color || undefined,
                                 }}
