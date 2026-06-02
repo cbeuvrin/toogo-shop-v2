@@ -13,6 +13,14 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     VitePWA({
+      // Self-destruct mode: ship a SW whose only job is to unregister
+      // every existing SW + wipe all CacheStorage entries on the user's
+      // browser. Needed because the previous PWA install scope leaked
+      // into custom-domain storefronts and started serving stale bundle
+      // hashes (CORS-blocked 404s, white page until hard refresh).
+      // Once the fleet has flushed (a few weeks), we can either remove
+      // VitePWA entirely or re-enable PWA scoped strictly to /admin.
+      selfDestroying: true,
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'assets/**/*'],
       manifest: {
