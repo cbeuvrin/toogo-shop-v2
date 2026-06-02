@@ -15,3 +15,10 @@ ALTER TABLE products
 
 ALTER TABLE products
   ADD COLUMN IF NOT EXISTS cta_label TEXT;
+
+-- The original CHECK only allowed 'simple' | 'variable'. Replace it so
+-- 'service' rows can be inserted/updated.
+ALTER TABLE products DROP CONSTRAINT IF EXISTS products_product_type_check;
+ALTER TABLE products
+  ADD CONSTRAINT products_product_type_check
+  CHECK (product_type IN ('simple','variable','service'));
