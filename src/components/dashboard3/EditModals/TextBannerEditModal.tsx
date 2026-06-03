@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, Loader2, Trash2 } from "lucide-react";
+import { Upload, Loader2, Trash2, Crop } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenantContext } from "@/contexts/TenantContext";
@@ -155,6 +155,27 @@ export const TextBannerEditModal = ({ isOpen, onClose, onSave, initialData, cate
         }
     };
 
+    // Re-open the cropper on the already-saved image to move/zoom/recrop it.
+    const handleRecrop = async () => {
+        const url = formData.imageUrl;
+        if (!url) return;
+        try {
+            const resp = await fetch(url, { mode: "cors" });
+            const blob = await resp.blob();
+            const dataUrl = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+            setImageToCrop(dataUrl);
+            setCropperOpen(true);
+        } catch (error) {
+            console.error("Error loading image for recrop:", error);
+            toast.error("No se pudo abrir la imagen para reencuadrar");
+        }
+    };
+
     const handleRemoveImage = () => {
         setFormData(prev => ({ ...prev, imageUrl: "" }));
     };
@@ -278,7 +299,10 @@ export const TextBannerEditModal = ({ isOpen, onClose, onSave, initialData, cate
                         <Label>Imagen de fondo (Opcional)</Label>
 
                         {/* Preview */}
-                        <div className="relative w-full aspect-[12/5] bg-muted rounded-lg overflow-hidden border border-dashed border-gray-300">
+                        <div
+                            className={`group relative w-full aspect-[12/5] bg-muted rounded-lg overflow-hidden border border-dashed border-gray-300 ${formData.imageUrl ? "cursor-pointer" : ""}`}
+                            onClick={() => { if (formData.imageUrl && !uploading) handleRecrop(); }}
+                        >
                             {formData.imageUrl ? (
                                 <>
                                     <img
@@ -287,11 +311,18 @@ export const TextBannerEditModal = ({ isOpen, onClose, onSave, initialData, cate
                                         className="w-full h-full object-cover"
                                         style={{ objectPosition: formData.imagePosition || "50% 50%" }}
                                     />
+                                    {/* Hover overlay: move/recrop affordance */}
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/45 transition-colors opacity-0 group-hover:opacity-100 pointer-events-none">
+                                        <div className="text-center text-white">
+                                            <Crop className="w-7 h-7 mx-auto mb-1" />
+                                            <p className="text-xs font-medium">Mover y recortar</p>
+                                        </div>
+                                    </div>
                                     <Button
                                         variant="destructive"
                                         size="icon"
-                                        className="absolute top-2 right-2 h-8 w-8 rounded-full"
-                                        onClick={handleRemoveImage}
+                                        className="absolute top-2 right-2 z-10 h-8 w-8 rounded-full"
+                                        onClick={(e) => { e.stopPropagation(); handleRemoveImage(); }}
                                     >
                                         <Trash2 className="h-4 w-4" />
                                     </Button>

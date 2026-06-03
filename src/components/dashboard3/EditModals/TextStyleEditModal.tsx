@@ -49,6 +49,14 @@ interface TextStyleEditModalProps {
   hideText?: boolean;
   /** Hide the live preview block. */
   hidePreview?: boolean;
+  /**
+   * Baseline typography the template applies to this element via CSS classes
+   * (font-weight, text-transform, letter-spacing…). The preview merges this
+   * UNDERNEATH the user's overrides so it matches the editor/store render —
+   * e.g. the title is `font-black uppercase tracking-tighter` (900) in Indico.
+   * Size is intentionally NOT included here (the slider already controls it).
+   */
+  previewBaseStyle?: React.CSSProperties;
   /** Optional info note rendered after the controls (e.g. "if too many → hamburger"). */
   infoText?: string;
   /** Render the button-specific Action section (visibility + catalog/category/link routing). */
@@ -71,6 +79,7 @@ export const TextStyleEditModal = ({
   multiline,
   hideText,
   hidePreview,
+  previewBaseStyle,
   infoText,
   isButton,
   categories = [],
@@ -116,6 +125,8 @@ export const TextStyleEditModal = ({
   };
 
   const previewStyle: React.CSSProperties = {
+    // Template baseline (weight/transform/tracking) first, so user overrides win.
+    ...previewBaseStyle,
     fontFamily: heroFontFamily(fontFamily),
     fontSize: fontSize > 0 ? `${fontSize}px` : undefined,
     color: color || undefined,

@@ -7,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 
 export const FashionTemplate = (props: any) => {
     const {
@@ -34,6 +35,7 @@ export const FashionTemplate = (props: any) => {
     const [searchParams] = useSearchParams();
     const activeCategory = searchParams.get('category');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const hideNav = useHideOnScroll();
 
     const { items: cartItems, removeItem, updateQuantity, totalPrice: cartTotal } = useCart();
     const cartCount = cartItems.reduce((acc: number, item: any) => acc + item.quantity, 0);
@@ -53,7 +55,7 @@ export const FashionTemplate = (props: any) => {
 
     const isCatalog = view === 'catalog';
     const displayProducts = isCatalog ? (catalogProducts || []) : products;
-    const topCategories = categories?.filter((c: any) => !c.parent_id) || [];
+    const topCategories = categories?.filter((c: any) => !c.parent_id && c.show_on_home !== false) || [];
 
     const headerIconColor = settings?.header_icon_color || '#000000';
     const headerIconScale = settings?.header_icon_scale || 1;
@@ -113,7 +115,7 @@ export const FashionTemplate = (props: any) => {
         <div className="min-h-screen font-sans bg-white text-black" style={{ backgroundColor: settings?.store_background_color || '#ffffff' }}>
 
             {/* ─── HEADER ─── */}
-            <header className="px-6 py-4 flex flex-col gap-4 border-b border-gray-200 sticky top-0 z-50 bg-white" style={{ backgroundColor: settings?.navbar_bg_color || '#ffffff' }}>
+            <header className={`px-6 py-4 flex flex-col gap-4 border-b border-gray-200 sticky top-0 z-50 bg-white transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: settings?.navbar_bg_color || '#ffffff' }}>
                 <div className="flex items-center justify-between">
                     {/* Left: Social links */}
                     <div className="hidden md:flex items-center gap-4 text-xs font-semibold tracking-wider text-gray-500">
@@ -195,9 +197,6 @@ export const FashionTemplate = (props: any) => {
                                     {cat.name}
                                 </button>
                             ))}
-                            <button onClick={() => { handleNavigate('/catalogo'); setIsMenuOpen(false); }} className="block w-full text-left font-medium uppercase tracking-widest text-sm hover:text-gray-500">
-                                Todos
-                            </button>
                         </nav>
                     </div>
                 </div>
@@ -261,10 +260,16 @@ export const FashionTemplate = (props: any) => {
 
             {/* ─── TICKER ─── */}
             {(ticker?.enabled !== false) && !isCatalog && (
-                <div className="border-y-2 border-black bg-white py-4 overflow-hidden">
+                <div
+                    className="border-y-2 border-black bg-white py-4 overflow-hidden"
+                    style={ticker?.bgColor ? { backgroundColor: ticker.bgColor } : undefined}
+                >
                     <div
                         className={`flex justify-center flex-nowrap whitespace-nowrap gap-8 font-black uppercase tracking-tighter ${ticker?.fontSize ? '' : 'text-lg lg:text-3xl'}`}
-                        style={ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : undefined}
+                        style={{
+                            ...(ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : {}),
+                            ...(ticker?.textColor ? { color: ticker.textColor } : {}),
+                        }}
                     >
                         {(ticker?.animated === false
                             ? [ticker?.text || "SOPORTE 24/7 • CALIDAD PREMIUM • ENVÍO GRATIS • GARANTÍA TOTAL"]

@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ShoppingCart, Search, Menu, X, User, Zap, ChevronRight } from 'lucide-react';
 import { useCart } from "@/contexts/CartContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 
 export const CyberTemplate = (props: any) => {
     const {
@@ -24,6 +25,7 @@ export const CyberTemplate = (props: any) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const hideNav = useHideOnScroll();
 
     const { items: cartItems, removeItem, updateQuantity, totalPrice: cartTotal } = useCart();
     const cartCount = cartItems.reduce((acc: number, item: any) => acc + item.quantity, 0);
@@ -57,7 +59,7 @@ export const CyberTemplate = (props: any) => {
     const heroMessage = props.welcomeMessage || settings?.welcome_message || 'Productos del mañana. Tecnología que se adelanta. Bienvenido al perímetro.';
 
     const heroBanner = banners?.[0];
-    const topCategories = categories?.filter((c: any) => !c.parent_id).slice(0, 5) || [];
+    const topCategories = categories?.filter((c: any) => !c.parent_id && c.show_on_home !== false).slice(0, 5) || [];
 
     const tickerText = ticker?.text || '◢ NUEVA TEMPORADA  ◢ ENVÍO INMEDIATO  ◢ 100% GARANTIZADO  ◢ COMPRA SEGURA';
 
@@ -66,12 +68,12 @@ export const CyberTemplate = (props: any) => {
 
             {/* Top ticker — animated marquee or static centered text */}
             {announcement?.enabled !== false && (
-                <div className="overflow-hidden border-b" style={{ borderColor: cyberBorder, backgroundColor: cyberSurface }}>
+                <div className="overflow-hidden border-b" style={{ borderColor: cyberBorder, backgroundColor: ticker?.bgColor || cyberSurface }}>
                     {ticker?.animated === false ? (
                         <div className="flex justify-center whitespace-nowrap py-2">
                             <span
                                 className={`font-bold tracking-[0.2em] mx-8 ${ticker?.fontSize ? '' : 'text-xs'}`}
-                                style={{ color: cyberNeon, ...(ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : {}) }}
+                                style={{ color: ticker?.textColor || cyberNeon, ...(ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : {}) }}
                             >
                                 {announcement?.text || tickerText}
                             </span>
@@ -82,7 +84,7 @@ export const CyberTemplate = (props: any) => {
                                 <span
                                     key={i}
                                     className={`font-bold tracking-[0.2em] mx-8 ${ticker?.fontSize ? '' : 'text-xs'}`}
-                                    style={{ color: cyberNeon, ...(ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : {}) }}
+                                    style={{ color: ticker?.textColor || cyberNeon, ...(ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : {}) }}
                                 >
                                     {announcement?.text || tickerText}
                                 </span>
@@ -93,7 +95,7 @@ export const CyberTemplate = (props: any) => {
             )}
 
             {/* Header — glassmorphic */}
-            <header className="sticky top-0 z-40 backdrop-blur-xl border-b" style={{ backgroundColor: settings?.navbar_bg_color || `${cyberBg}cc`, borderColor: cyberBorder }}>
+            <header className={`sticky top-0 z-40 backdrop-blur-xl border-b transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: settings?.navbar_bg_color || `${cyberBg}cc`, borderColor: cyberBorder }}>
                 <div className="container mx-auto px-6 py-4 flex items-center justify-between">
                     <button className="md:hidden" onClick={() => setIsMenuOpen(true)}>
                         <Menu className="w-6 h-6" style={{ color: cyberNeon }} />

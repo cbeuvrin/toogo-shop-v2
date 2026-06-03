@@ -59,6 +59,8 @@ interface StorePreviewProps {
     enabled: boolean;
     fontSize?: number;
     animated?: boolean;
+    bgColor?: string;
+    textColor?: string;
   };
   textBanner?: {
     text: string;
@@ -600,7 +602,13 @@ export const StorePreview = ({
                 Barra de noticias oculta — click para mostrarla
               </div>
             ) : (
-              <div className={`bg-black text-white py-2 overflow-hidden ${isEditorMode ? 'cursor-pointer hover:bg-zinc-800' : ''}`}>
+              <div
+                className={`bg-black text-white py-2 overflow-hidden ${isEditorMode ? 'cursor-pointer hover:bg-zinc-800' : ''}`}
+                style={{
+                  ...(data.ticker?.bgColor ? { backgroundColor: data.ticker.bgColor } : {}),
+                  ...(data.ticker?.textColor ? { color: data.ticker.textColor } : {}),
+                }}
+              >
                 <div
                   className={`flex justify-center font-bold uppercase tracking-widest ${data.ticker?.fontSize ? '' : 'text-[10px]'}`}
                   style={data.ticker?.fontSize ? { fontSize: `${data.ticker.fontSize}px` } : undefined}
@@ -1148,10 +1156,16 @@ export const StorePreview = ({
                 Barra de noticias oculta — click para mostrarla
               </div>
             ) : (
-              <div className={`border-y-2 border-black bg-white py-4 overflow-hidden ${isEditorMode ? 'cursor-pointer hover:bg-gray-50' : ''}`}>
+              <div
+                className={`border-y-2 border-black bg-white py-4 overflow-hidden ${isEditorMode ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+                style={data.ticker?.bgColor ? { backgroundColor: data.ticker.bgColor } : undefined}
+              >
                 <div
                   className={`flex justify-center flex-nowrap whitespace-nowrap gap-8 font-black uppercase tracking-tighter ${data.ticker?.fontSize ? '' : 'text-lg lg:text-3xl'}`}
-                  style={data.ticker?.fontSize ? { fontSize: `${data.ticker.fontSize}px` } : undefined}
+                  style={{
+                    ...(data.ticker?.fontSize ? { fontSize: `${data.ticker.fontSize}px` } : {}),
+                    ...(data.ticker?.textColor ? { color: data.ticker.textColor } : {}),
+                  }}
                 >
                   {Array(6).fill(data.ticker?.text || "24/7 SUPPORT • HIGH QUALITY COTTON • FREE DELIVERY • MONEY BACK GUARANTEE").map((text, i) => (
                     <span key={i}>{text}</span>
@@ -1403,7 +1417,7 @@ export const StorePreview = ({
           {/* Photo Side — still routes to the banners modal */}
           <div className={`relative w-full ${deviceMode === 'desktop' ? 'w-3/5' : ''}`}>
             <EditableElement type="banner" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
-              <div className={`relative w-full overflow-hidden bg-gray-100 ${deviceMode === 'desktop' ? 'aspect-auto min-h-[60vh]' : 'aspect-[4/5]'}`}>
+              <div className={`relative w-full overflow-hidden bg-gray-100 ${deviceMode === 'desktop' ? 'aspect-auto h-[78vh]' : 'aspect-[4/5]'}`}>
                 {mainHeroImage ? (
                   <img src={mainHeroImage} alt="Hero" className="w-full h-full object-cover" style={{ objectPosition: banners[0]?.position || 'center center' }} />
                 ) : (
@@ -1517,7 +1531,13 @@ export const StorePreview = ({
                 Barra de noticias oculta — click para mostrarla
               </div>
             ) : (
-              <div className={`bg-black text-white py-2 overflow-hidden ${isEditorMode ? 'cursor-pointer hover:bg-zinc-800' : ''}`}>
+              <div
+                className={`bg-black text-white py-2 overflow-hidden ${isEditorMode ? 'cursor-pointer hover:bg-zinc-800' : ''}`}
+                style={{
+                  ...(data.ticker?.bgColor ? { backgroundColor: data.ticker.bgColor } : {}),
+                  ...(data.ticker?.textColor ? { color: data.ticker.textColor } : {}),
+                }}
+              >
                 <div
                   className={`flex justify-center font-bold uppercase tracking-widest ${data.ticker?.fontSize ? '' : 'text-[10px]'}`}
                   style={data.ticker?.fontSize ? { fontSize: `${data.ticker.fontSize}px` } : undefined}

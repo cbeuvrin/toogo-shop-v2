@@ -4,6 +4,7 @@ import { ShoppingCart, Heart, Search, Menu, X, User, ChevronRight, Play } from '
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 
 export const SimpleLiveTemplate = (props: any) => {
     const {
@@ -24,6 +25,7 @@ export const SimpleLiveTemplate = (props: any) => {
     } = props;
 
     const settings = effectiveSettings || storeData?.settings || {};
+    const hideNav = useHideOnScroll();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const activeCategory = searchParams.get('category');
@@ -148,7 +150,7 @@ export const SimpleLiveTemplate = (props: any) => {
             )}
 
             {/* Header */}
-            <header className="sticky top-0 z-50 border-b border-transparent transition-all duration-200" style={{ backgroundColor: settings?.navbar_bg_color || '#ffffff' }}>
+            <header className={`sticky top-0 z-50 border-b border-transparent transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: settings?.navbar_bg_color || '#ffffff' }}>
                 <div className="w-full px-6 h-20 flex items-center justify-between">
 
 
@@ -156,7 +158,7 @@ export const SimpleLiveTemplate = (props: any) => {
                     {/* Left Nav (Desktop) - Only on Home View */}
                     {!isCatalog ? (
                         <nav className="hidden md:flex gap-8 text-sm font-semibold text-gray-700">
-                            {categories?.filter((cat: any) => !cat.parent_id).map((cat: any) => (
+                            {categories?.filter((cat: any) => !cat.parent_id && cat.show_on_home !== false).map((cat: any) => (
                                 <button
                                     key={cat.id}
                                     onClick={() => handleNavigate('/catalogo', { category: cat.name.toLowerCase() })}
@@ -165,7 +167,6 @@ export const SimpleLiveTemplate = (props: any) => {
                                     {cat.name}
                                 </button>
                             ))}
-                            <button onClick={() => handleNavigate('/catalogo')} className="hover:text-black transition-colors uppercase">Todos</button>
                         </nav>
                     ) : (
                         // Placeholder to keep Right Icons on the right
@@ -274,7 +275,7 @@ export const SimpleLiveTemplate = (props: any) => {
             {isCatalog && (
                 <div className="container mx-auto px-6 py-8">
                     <div className="flex flex-wrap justify-center gap-4">
-                        {categories?.filter((cat: any) => !cat.parent_id).map((cat: any) => {
+                        {categories?.filter((cat: any) => !cat.parent_id && cat.show_on_home !== false).map((cat: any) => {
                             const isActive = activeCategory === cat.name.toLowerCase();
                             return (
                                 <Button
@@ -322,7 +323,13 @@ export const SimpleLiveTemplate = (props: any) => {
                         {/* Scrolling Ticker / USPs */}
                         {
                             (ticker?.enabled !== false) && (
-                                <div className="bg-black text-white py-3 overflow-hidden whitespace-nowrap">
+                                <div
+                                    className="bg-black text-white py-3 overflow-hidden whitespace-nowrap"
+                                    style={{
+                                        ...(ticker?.bgColor ? { backgroundColor: ticker.bgColor } : {}),
+                                        ...(ticker?.textColor ? { color: ticker.textColor } : {}),
+                                    }}
+                                >
                                     {ticker?.animated === false ? (
                                         <div
                                             className={`flex justify-center font-bold uppercase tracking-widest ${ticker?.fontSize ? '' : 'text-xs'}`}

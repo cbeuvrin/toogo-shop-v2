@@ -8,6 +8,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 
 // --- Components (Internal to this template for cohesion) ---
 
@@ -144,6 +145,8 @@ export const MinimalTemplate = (props: any) => {
     const footerIconColor = settings?.footer_icon_color || '#9ca3af';
     const footerIconScale = settings?.footer_icon_scale || 1;
 
+    const hideNav = useHideOnScroll();
+
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -202,7 +205,7 @@ export const MinimalTemplate = (props: any) => {
             )}
 
             {/* Header */}
-            <header className="px-6 py-6 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md md:static text-center" style={{ backgroundColor: navColor }}>
+            <header className={`px-6 py-6 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md text-center transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: navColor }}>
 
                 {/* Desktop Navigation Links (Left) */}
                 <nav className="hidden md:flex md:flex-1 md:justify-start gap-8 text-sm uppercase tracking-widest text-gray-500 font-medium">
@@ -300,7 +303,7 @@ export const MinimalTemplate = (props: any) => {
                             Todo
                         </button>
                     </li>
-                    {categories?.map((cat: any) => (
+                    {categories?.filter((cat: any) => cat.show_on_home !== false).map((cat: any) => (
                         <li key={cat.id}>
                             <button onClick={() => setSelectedCategory(cat.id)} className={`hover:text-black transition-colors ${selectedCategory === cat.id ? 'text-black border-b border-black' : ''}`}>
                                 {cat.name}

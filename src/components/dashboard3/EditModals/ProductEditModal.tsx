@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Package, DollarSign, Hash, Tag, Settings, Plus, Info, Lightbulb, Eye, Camera, Edit, ShoppingCart, MessageSquare, Star, HelpCircle, Loader2 } from "lucide-react";
+import { Package, DollarSign, Hash, Tag, Settings, Plus, Info, Lightbulb, Eye, Camera, Edit, ShoppingCart, MessageSquare, Star, HelpCircle, Loader2, Crop, Upload } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -224,6 +224,42 @@ export const ProductEditModal = ({
       setIsUploading(false);
     }
   };
+  // Open the native file picker to upload/replace the photo in a slot.
+  const openFilePicker = (index: number) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = e => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) handleImageUpload(index, file);
+    };
+    input.click();
+  };
+
+  // Re-open the cropper on an ALREADY-SAVED product image so it can be moved/
+  // zoomed/recropped again — same flow as a fresh upload. Fetch to a data URL
+  // first so the crop canvas stays same-origin (no CORS taint).
+  const handleRecrop = async (index: number) => {
+    const url = formData.images[index];
+    if (!url) return;
+    try {
+      const resp = await fetch(url, { mode: 'cors' });
+      const blob = await resp.blob();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      setImageToCrop(dataUrl);
+      setCurrentImageIndex(index);
+      setCropperOpen(true);
+    } catch (error) {
+      console.error('Error loading image for recrop:', error);
+      toast({ title: "Error", description: "No se pudo abrir la imagen para reencuadrar", variant: "destructive" });
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       if (initialData) {
@@ -437,30 +473,39 @@ export const ProductEditModal = ({
                   </CardHeader>
                   <CardContent className={isMobile ? 'pb-2 px-3' : 'pb-3'}>
                     <div className={`grid ${isMobile ? 'grid-cols-1 gap-2' : 'grid-cols-2 md:grid-cols-4 gap-3'}`}>
-                      {[0, 1, 2, 3].map(index => <div key={index} className={`aspect-square border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors ${formData.images[index] ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'} ${isUploading ? 'opacity-50 pointer-events-none' : ''}`} onClick={() => {
+                      {[0, 1, 2, 3].map(index => <div key={index} className={`group aspect-square border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors ${formData.images[index] ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'} ${isUploading ? 'opacity-50 pointer-events-none' : ''}`} onClick={() => {
                         if (isUploading) return;
-                        const input = document.createElement('input');
-                        input.type = 'file';
-                        input.accept = 'image/*';
-                        input.onchange = e => {
-                          const file = (e.target as HTMLInputElement).files?.[0];
-                          if (file) {
-                            handleImageUpload(index, file);
-                          }
-                        };
-                        input.click();
+                        if (formData.images[index]) {
+                          handleRecrop(index);
+                        } else {
+                          openFilePicker(index);
+                        }
                       }}>
                         {formData.images[index] ? <div className="relative w-full h-full">
                           <img src={formData.images[index]} alt={`Producto ${index + 1}`} className="w-full h-full object-cover rounded-lg" />
-                          {index === 0 && <div className="absolute top-1 left-1 bg-primary text-primary-foreground px-1.5 py-0.5 rounded text-xs font-medium">
+                          {/* Hover overlay: move/recrop affordance */}
+                          <div className="absolute inset-0 rounded-lg flex items-center justify-center bg-black/0 group-hover:bg-black/45 transition-colors opacity-0 group-hover:opacity-100">
+                            <div className="text-center text-white">
+                              <Crop className="w-6 h-6 mx-auto mb-0.5" />
+                              <p className="text-[10px] font-medium">Mover y recortar</p>
+                            </div>
+                          </div>
+                          {index === 0 && <div className="absolute top-1 left-1 z-10 bg-primary text-primary-foreground px-1.5 py-0.5 rounded text-xs font-medium">
                             Principal
                           </div>}
+                          {/* Replace with a different photo */}
+                          <button onClick={e => {
+                            e.stopPropagation();
+                            openFilePicker(index);
+                          }} className="absolute bottom-1 right-1 z-10 bg-white/90 text-foreground rounded-full w-5 h-5 flex items-center justify-center hover:bg-white transition-colors shadow-sm" title="Reemplazar foto">
+                            <Upload className="w-3 h-3" />
+                          </button>
                           <button onClick={e => {
                             e.stopPropagation();
                             const newImages = [...formData.images];
                             newImages[index] = '';
                             handleImagesChange(newImages.filter(Boolean));
-                          }} className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center hover:bg-destructive/90 transition-colors text-xs">
+                          }} className="absolute top-1 right-1 z-10 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center hover:bg-destructive/90 transition-colors text-xs" title="Quitar foto">
                             ×
                           </button>
                         </div> : <div className="text-center p-2">

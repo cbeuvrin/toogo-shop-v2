@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ShoppingCart, Search, Menu, X, User } from 'lucide-react';
 import { useCart } from "@/contexts/CartContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 
 export const BauhausTemplate = (props: any) => {
     const {
@@ -23,6 +24,7 @@ export const BauhausTemplate = (props: any) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const hideNav = useHideOnScroll();
 
     const { items: cartItems, removeItem, updateQuantity, totalPrice: cartTotal } = useCart();
     const cartCount = cartItems.reduce((acc: number, item: any) => acc + item.quantity, 0);
@@ -57,7 +59,7 @@ export const BauhausTemplate = (props: any) => {
     const sideBanner1 = banners?.[1];
     const sideBanner2 = banners?.[2];
 
-    const topCategories = categories?.filter((c: any) => !c.parent_id).slice(0, 5) || [];
+    const topCategories = categories?.filter((c: any) => !c.parent_id && c.show_on_home !== false).slice(0, 5) || [];
 
     return (
         <div className="min-h-screen font-sans" style={{ backgroundColor: bauhausBg, color: bauhausBlack }}>
@@ -70,7 +72,7 @@ export const BauhausTemplate = (props: any) => {
             )}
 
             {/* Header — asymmetric */}
-            <header className="border-b-[3px] px-6 py-5 flex items-center justify-between" style={{ borderColor: bauhausBlack, backgroundColor: settings?.navbar_bg_color || 'transparent' }}>
+            <header className={`sticky top-0 z-40 border-b-[3px] px-6 py-5 flex items-center justify-between transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ borderColor: bauhausBlack, backgroundColor: settings?.navbar_bg_color || 'transparent' }}>
                 <button className="md:hidden" onClick={() => setIsMenuOpen(true)}>
                     <Menu className="w-6 h-6" />
                 </button>

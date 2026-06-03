@@ -17,6 +17,7 @@ import { AutoCarousel } from "@/components/ui/AutoCarousel";
 import { MobileBottomNav } from "@/components/ui/MobileBottomNav";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
 import { CartSidebar } from "@/components/cart/CartSidebar";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import React, { useState, useEffect } from "react";
 
 export const DefaultTemplate = (props: any) => {
@@ -48,6 +49,7 @@ export const DefaultTemplate = (props: any) => {
     } = props;
 
     // Local state for UI logic specific to this template
+    const hideNav = useHideOnScroll();
     const [currentBanner, setCurrentBanner] = useState(0);
     const [currentPrice, setCurrentPrice] = useState(0);
     const [currentStock, setCurrentStock] = useState(0);
@@ -101,7 +103,7 @@ export const DefaultTemplate = (props: any) => {
     }) || [];
 
     const bestSellers = formattedProducts.slice(0, 8);
-    const categoriesWithProducts = categories?.map((category: any) => ({
+    const categoriesWithProducts = categories?.filter((category: any) => category.show_on_home !== false).map((category: any) => ({
         id: category.id,
         name: category.name,
         slug: category.slug,
@@ -148,7 +150,7 @@ export const DefaultTemplate = (props: any) => {
 
     return (
         <div className="min-h-screen" style={{ backgroundColor: effectiveSettings?.store_background_color || '#ffffff' }}>
-            <header className="sticky top-0 z-50 border-b border-gray-200" style={{ backgroundColor: effectiveSettings?.navbar_bg_color || '#ffffff' }}>
+            <header className={`sticky top-0 z-50 border-b border-gray-200 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: effectiveSettings?.navbar_bg_color || '#ffffff' }}>
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">

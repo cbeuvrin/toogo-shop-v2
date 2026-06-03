@@ -97,6 +97,8 @@ export interface EditorData {
     enabled: boolean;
     fontSize?: number;
     animated?: boolean;
+    bgColor?: string;
+    textColor?: string;
   };
   textBanner?: {
     text: string;
@@ -1151,6 +1153,28 @@ export const DashboardVisualEditor = () => {
           productCardCta: 'Agregar +',
           menuDrawerTitle: 'Categorías',
         };
+        // Baseline typography each element gets from FashionHeroTemplate's CSS
+        // classes (weight/transform/tracking). The modal preview merges this so it
+        // matches the editor/store render — without this the preview showed every
+        // element at normal weight (400) while the title renders `font-black` (900).
+        // Keep in sync with FashionHeroTemplate.tsx. Size is omitted on purpose.
+        const heroPreviewBaseStyle: Partial<Record<HeroElementKey, React.CSSProperties>> = {
+          eyebrow:        { fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.25em' },
+          title:          { fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.05em' },
+          message:        { fontWeight: 400 },
+          cta1:           { fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' },
+          cta2:           { fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' },
+          sectionTitle1:  { fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.05em' },
+          sectionTitle2:  { fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.05em' },
+          sectionLink1:   { fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: '4px' },
+          midBannerTitle: { fontWeight: 900, textTransform: 'uppercase' },
+          footerHeading1: { fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' },
+          footerHeading2: { fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' },
+          footerHeading3: { fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' },
+          productCardCta: { fontWeight: 700 },
+          menuDrawerTitle:{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.05em' },
+          navMenu:        { fontWeight: 500 },
+        };
         const heroTextNodeMap: Partial<Record<HeroElementKey, string>> = {
           title: editorData.hero?.title || '',
           message: editorData.hero?.message || '',
@@ -1174,6 +1198,7 @@ export const DashboardVisualEditor = () => {
             multiline={key === 'message'}
             hideText={key === 'navMenu'}
             hidePreview={key === 'navMenu'}
+            previewBaseStyle={heroPreviewBaseStyle[key]}
             infoText={key === 'navMenu'
               ? 'Las categorías vienen de la pestaña Productos → Categorías. Aquí solo puedes cambiar fuente, tamaño y color. Si son muchas, el menú se convierte automáticamente en hamburguesa.'
               : undefined}

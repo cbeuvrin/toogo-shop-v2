@@ -44,8 +44,10 @@ const Dashboard3 = () => {
   const [profileSubTab, setProfileSubTab] = useState<"mis-datos" | "usuarios" | "mi-plan" | "mis-dominios" | "cupones" | "whatsapp-bot" | "legal">("mis-datos");
   const [logoUrl, setLogoUrl] = useState<string>('');
 
-  // Determine if onboarding is complete (only when user clicks "Ver Tienda")
-  const isOnboardingComplete = progress?.step_5_confirmed || false;
+  // Onboarding is "done" once the 5 steps are complete (step_5_publish = steps
+  // 1-4 finished → the bar reads 5/5), OR when the user explicitly confirmed via
+  // "Ver Tienda". Either way we drop the "Configuración" tab and promote Mi Perfil.
+  const isOnboardingComplete = !!progress && (progress.step_5_confirmed || progress.step_5_publish);
 
   // Set initial active tab based on onboarding status
   const getInitialTab = (): DashboardSection => {

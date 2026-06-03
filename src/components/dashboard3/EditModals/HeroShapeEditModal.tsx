@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, Crop } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ImageCropperModal } from "../../ui/ImageCropperModal";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,6 +71,27 @@ export const HeroShapeEditModal = ({
 
     const handleSave = () => {
         onSave(shape, bannerState || undefined, scale);
+    };
+
+    // Re-open the cropper on the already-saved image to zoom/recrop it.
+    const handleRecrop = async () => {
+        const url = bannerState?.imageUrl || bannerState?.image;
+        if (!url || url === "/placeholder.svg") return;
+        try {
+            const resp = await fetch(url, { mode: "cors" });
+            const blob = await resp.blob();
+            const dataUrl = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+            setImageToCrop(dataUrl);
+            setCropperOpen(true);
+        } catch (error) {
+            console.error("Error loading image for recrop:", error);
+            toast({ title: "Error", description: "No se pudo abrir la imagen para reencuadrar", variant: "destructive" });
+        }
     };
 
     const handleUploadClick = () => {
@@ -291,9 +312,14 @@ export const HeroShapeEditModal = ({
                                             draggable={false}
                                         />
                                     </div>
-                                    <Button variant="secondary" size="sm" onClick={handleUploadClick} className="w-full max-w-[200px] shadow-sm mt-4">
-                                        <Upload className="w-4 h-4 mr-2" /> Cambiar Imagen
-                                    </Button>
+                                    <div className="flex gap-2 w-full max-w-[280px] mt-4">
+                                        <Button variant="secondary" size="sm" onClick={handleRecrop} className="flex-1 shadow-sm">
+                                            <Crop className="w-4 h-4 mr-2" /> Reencuadrar
+                                        </Button>
+                                        <Button variant="outline" size="sm" onClick={handleUploadClick} className="flex-1 shadow-sm">
+                                            <Upload className="w-4 h-4 mr-2" /> Cambiar
+                                        </Button>
+                                    </div>
                                     <p className="text-[10px] text-muted-foreground text-center">
                                         Posición: {bannerState?.position || 'center'}
                                     </p>

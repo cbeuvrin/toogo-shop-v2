@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ShoppingCart, Heart, Search, Menu, X, User } from 'lucide-react';
 import { useCart } from "@/contexts/CartContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 
 export const PremiumBrandTemplate = (props: any) => {
     const {
@@ -27,6 +28,7 @@ export const PremiumBrandTemplate = (props: any) => {
     const [searchParams] = useSearchParams();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const hideNav = useHideOnScroll();
 
     const { items: cartItems, removeItem, updateQuantity, totalPrice: cartTotal } = useCart();
     const cartCount = cartItems.reduce((acc: number, item: any) => acc + item.quantity, 0);
@@ -57,7 +59,7 @@ export const PremiumBrandTemplate = (props: any) => {
     const heroTitle = props.welcomeTitle || settings?.welcome_title || "Calidad excepcional en cada detalle.\nDescubre nuestra nueva colección.";
     const heroMessage = props.welcomeMessage || settings?.welcome_message || "Conoce más";
 
-    const topCategories = categories?.filter((c: any) => !c.parent_id).slice(0, 4) || [];
+    const topCategories = categories?.filter((c: any) => !c.parent_id && c.show_on_home !== false).slice(0, 4) || [];
 
     const currentTestimonials = testimonials || {
         enabled: true,
@@ -131,7 +133,7 @@ export const PremiumBrandTemplate = (props: any) => {
             )}
 
             {/* Header */}
-            <header className="sticky top-0 z-50 shadow-sm transition-all duration-300" style={{ backgroundColor: navbarBgColor }}>
+            <header className={`sticky top-0 z-50 shadow-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: navbarBgColor }}>
                 <div className="px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-8">
                         <div className="cursor-pointer" onClick={() => handleNavigate('/tienda')}>

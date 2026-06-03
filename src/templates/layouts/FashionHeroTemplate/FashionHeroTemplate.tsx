@@ -6,6 +6,7 @@ import { useCart } from "@/contexts/CartContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
 import { HamburgerButton } from "@/components/ui/HamburgerButton";
 import { heroFontFamily } from "@/lib/heroFonts";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 
 export const FashionHeroTemplate = (props: any) => {
     const {
@@ -32,6 +33,7 @@ export const FashionHeroTemplate = (props: any) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const activeCategory = searchParams.get('category');
+    const hideNav = useHideOnScroll();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -147,7 +149,7 @@ export const FashionHeroTemplate = (props: any) => {
         <div className="min-h-screen font-sans text-black" style={{ backgroundColor: settings?.store_background_color || '#ffffff' }}>
 
             {/* ─── HEADER ─── */}
-            <header className="sticky top-0 z-50 border-b border-gray-100 transition-all duration-200" style={{ backgroundColor: settings?.navbar_bg_color || '#ffffff' }}>
+            <header className={`sticky top-0 z-50 border-b border-gray-100 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: settings?.navbar_bg_color || '#ffffff' }}>
                 {(() => {
                   // Indico: logo always centered. Grid with two equal flexible cols flanking
                   // an auto-width center keeps the logo on the geometric middle no matter
@@ -181,7 +183,7 @@ export const FashionHeroTemplate = (props: any) => {
                       {/* Visible desktop nav when there is room */}
                       {!isCatalog && showNavVisible && (
                           <nav className="hidden md:flex gap-7 text-sm font-medium text-gray-600 whitespace-nowrap">
-                              {categories?.filter((cat: any) => !cat.parent_id).map((cat: any) => (
+                              {categories?.filter((cat: any) => !cat.parent_id && cat.show_on_home !== false).map((cat: any) => (
                                   <button
                                       key={cat.id}
                                       onClick={() => handleNavigate('/catalogo', { category: cat.name.toLowerCase() })}
@@ -191,7 +193,6 @@ export const FashionHeroTemplate = (props: any) => {
                                       {cat.name}
                                   </button>
                               ))}
-                              <button onClick={() => handleNavigate('/catalogo')} className="hover:text-black transition-colors uppercase tracking-wider text-xs flex-shrink-0" style={navInline}>Todos</button>
                           </nav>
                       )}
                       {/* Off-screen measurer — same content/styles so we know the intrinsic width */}
@@ -202,10 +203,9 @@ export const FashionHeroTemplate = (props: any) => {
                           className="hidden md:flex gap-7 text-sm font-medium whitespace-nowrap absolute left-0 top-0 pointer-events-none invisible"
                           style={{ ...navInline, transform: 'translateY(-9999px)' }}
                         >
-                          {categories?.filter((cat: any) => !cat.parent_id).map((cat: any) => (
+                          {categories?.filter((cat: any) => !cat.parent_id && cat.show_on_home !== false).map((cat: any) => (
                             <span key={`m-${cat.id}`} className="uppercase tracking-wider text-xs flex-shrink-0">{cat.name}</span>
                           ))}
-                          <span className="uppercase tracking-wider text-xs flex-shrink-0">Todos</span>
                         </div>
                       )}
                     </div>
@@ -298,7 +298,7 @@ export const FashionHeroTemplate = (props: any) => {
                             </button>
                         </div>
                         <nav className="flex-1 p-6 space-y-6">
-                            {categories?.filter((cat: any) => !cat.parent_id).map((cat: any) => (
+                            {categories?.filter((cat: any) => !cat.parent_id && cat.show_on_home !== false).map((cat: any) => (
                                 <button
                                     key={cat.id}
                                     onClick={() => { handleNavigate('/catalogo', { category: cat.name.toLowerCase() }); setIsMenuOpen(false); }}
@@ -307,9 +307,6 @@ export const FashionHeroTemplate = (props: any) => {
                                     {cat.name}
                                 </button>
                             ))}
-                            <button onClick={() => { handleNavigate('/catalogo'); setIsMenuOpen(false); }} className="block w-full text-left font-medium uppercase tracking-widest text-sm hover:text-gray-500">
-                                Todos
-                            </button>
                         </nav>
                     </div>
                 </div>
@@ -317,9 +314,9 @@ export const FashionHeroTemplate = (props: any) => {
 
             {/* ─── HERO SECTION (Photo + Text split) — only on home, hidden in catalog ─── */}
             {!isCatalog && (
-            <section className="w-full flex flex-col-reverse lg:flex-row min-h-[70vh]">
+            <section className="w-full flex flex-col-reverse lg:flex-row min-h-[70vh] lg:min-h-0">
                 {/* Photo Side */}
-                <div className="relative w-full lg:w-3/5 aspect-[4/5] lg:aspect-auto overflow-hidden bg-gray-100">
+                <div className="relative w-full lg:w-3/5 aspect-[4/5] lg:aspect-auto lg:h-[78vh] overflow-hidden bg-gray-100">
                     {mainHeroImage ? (
                         <img
                             src={mainHeroImage}
@@ -419,7 +416,7 @@ export const FashionHeroTemplate = (props: any) => {
                 <div style={{ backgroundColor: props.sectionBg?.section1 || undefined }}>
                 <div className="container mx-auto px-6 py-8">
                     <div className="flex flex-wrap justify-center gap-4 mb-8">
-                        {categories?.filter((cat: any) => !cat.parent_id).map((cat: any) => {
+                        {categories?.filter((cat: any) => !cat.parent_id && cat.show_on_home !== false).map((cat: any) => {
                             const isActive = activeCategory === cat.name.toLowerCase();
                             return (
                                 <Button
@@ -465,7 +462,13 @@ export const FashionHeroTemplate = (props: any) => {
                 <>
                     {/* Ticker / USP Bar — animated marquee or static centered text */}
                     {(ticker?.enabled !== false) && (
-                        <div className="bg-black text-white py-3 overflow-hidden whitespace-nowrap">
+                        <div
+                            className="bg-black text-white py-3 overflow-hidden whitespace-nowrap"
+                            style={{
+                                ...(ticker?.bgColor ? { backgroundColor: ticker.bgColor } : {}),
+                                ...(ticker?.textColor ? { color: ticker.textColor } : {}),
+                            }}
+                        >
                             {ticker?.animated === false ? (
                                 <div
                                     className="flex justify-center font-bold uppercase tracking-widest"

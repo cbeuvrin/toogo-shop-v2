@@ -5,6 +5,7 @@ import { ShoppingCart, Heart, Search, Menu, X, ChevronLeft, ChevronRight, User }
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 
 export const TrendyFashionTemplate = (props: any) => {
     const {
@@ -28,6 +29,7 @@ export const TrendyFashionTemplate = (props: any) => {
     const [searchParams] = useSearchParams();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [heroIndex, setHeroIndex] = useState(0);
+    const hideNav = useHideOnScroll();
 
     const { items: cartItems, removeItem, updateQuantity, totalPrice: cartTotal } = useCart();
     const cartCount = cartItems.reduce((acc: number, item: any) => acc + item.quantity, 0);
@@ -61,7 +63,7 @@ export const TrendyFashionTemplate = (props: any) => {
     const heroMessage = props.welcomeMessage || settings?.welcome_message || 'Descubre nuestra colección diseñada para cada ocasión.';
 
     const heroBanner = banners?.[0];
-    const topCategories = categories?.filter((c: any) => !c.parent_id).slice(0, 6) || [];
+    const topCategories = categories?.filter((c: any) => !c.parent_id && c.show_on_home !== false).slice(0, 6) || [];
 
     const totalHeroSlides = Math.max(banners?.length || 1, 1);
 
@@ -154,7 +156,7 @@ export const TrendyFashionTemplate = (props: any) => {
             )}
 
             {/* Header */}
-            <header className="px-6 py-4 flex items-center justify-between relative z-50" style={{ backgroundColor: settings?.navbar_bg_color || 'transparent' }}>
+            <header className={`sticky top-0 z-50 px-6 py-4 flex items-center justify-between transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: settings?.navbar_bg_color || 'transparent' }}>
                 {/* Logo */}
                 <div className="cursor-pointer" onClick={() => handleNavigate('/tienda')}>
                     <LogoDisplay
@@ -321,12 +323,18 @@ export const TrendyFashionTemplate = (props: any) => {
 
             {/* Ticker */}
             {ticker?.enabled !== false && !isCatalog && (
-                <div className="border-y border-gray-300 bg-white py-3 overflow-hidden">
+                <div
+                    className="border-y border-gray-300 bg-white py-3 overflow-hidden"
+                    style={ticker?.bgColor ? { backgroundColor: ticker.bgColor } : undefined}
+                >
                     {ticker?.animated === false ? (
                         <div className="flex justify-center whitespace-nowrap">
                             <span
                                 className={`font-bold uppercase tracking-widest text-gray-500 ${ticker?.fontSize ? '' : 'text-xs'}`}
-                                style={ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : undefined}
+                                style={{
+                                    ...(ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : {}),
+                                    ...(ticker?.textColor ? { color: ticker.textColor } : {}),
+                                }}
                             >{ticker?.text || 'NEW COLLECTION • FREE SHIPPING • PREMIUM QUALITY • TRENDY STYLES'}</span>
                         </div>
                     ) : (
@@ -335,7 +343,10 @@ export const TrendyFashionTemplate = (props: any) => {
                                 <span
                                     key={i}
                                     className={`font-bold uppercase tracking-widest text-gray-500 shrink-0 ${ticker?.fontSize ? '' : 'text-xs'}`}
-                                    style={ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : undefined}
+                                    style={{
+                                        ...(ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : {}),
+                                        ...(ticker?.textColor ? { color: ticker.textColor } : {}),
+                                    }}
                                 >{text}</span>
                             ))}
                         </div>
@@ -467,7 +478,6 @@ export const TrendyFashionTemplate = (props: any) => {
                             {topCategories.map((cat: any) => (
                                 <button key={cat.id} onClick={() => { handleNavigate('/catalogo', { category: cat.name.toLowerCase() }); setIsMenuOpen(false); }} className="block py-2 text-gray-700 font-medium border-b border-gray-100 w-full text-left">{cat.name}</button>
                             ))}
-                            <button onClick={() => { handleNavigate('/catalogo'); setIsMenuOpen(false); }} className="block py-2 text-gray-700 font-medium border-b border-gray-100 w-full text-left">Todos los productos</button>
                         </nav>
                     </div>
                 </div>

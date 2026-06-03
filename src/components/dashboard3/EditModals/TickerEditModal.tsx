@@ -17,6 +17,8 @@ interface TickerData {
     enabled: boolean;
     fontSize?: number; // px applied as inline style on the ticker text
     animated?: boolean; // marquee scrolling effect — default true
+    bgColor?: string; // empty = use template default background
+    textColor?: string; // empty = use template default text color
 }
 
 interface TickerEditModalProps {
@@ -31,7 +33,9 @@ export const TickerEditModal = ({ isOpen, onClose, onSave, initialData }: Ticker
         text: "New Styles Added Weekly",
         enabled: true,
         fontSize: 12,
-        animated: true
+        animated: true,
+        bgColor: "",
+        textColor: ""
     });
 
     useEffect(() => {
@@ -116,6 +120,56 @@ export const TickerEditModal = ({ isOpen, onClose, onSave, initialData }: Ticker
                         <p className="text-xs text-muted-foreground">
                             La barra ajusta su altura automáticamente al tamaño del texto.
                         </p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="ticker-bg-color">Color de fondo</Label>
+                        <div className="flex items-center gap-2">
+                            <input
+                                id="ticker-bg-color"
+                                type="color"
+                                value={formData.bgColor || "#000000"}
+                                onChange={(e) => setFormData(prev => ({ ...prev, bgColor: e.target.value }))}
+                                className="h-9 w-12 rounded border cursor-pointer"
+                            />
+                            <Input
+                                value={formData.bgColor || ""}
+                                onChange={(e) => setFormData(prev => ({ ...prev, bgColor: e.target.value }))}
+                                placeholder="Por defecto"
+                                className="font-mono text-xs"
+                            />
+                            {formData.bgColor && (
+                                <Button variant="ghost" size="sm" className="text-xs" onClick={() => setFormData(prev => ({ ...prev, bgColor: "" }))}>
+                                    Quitar
+                                </Button>
+                            )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">Vacío = usar el color por defecto de la plantilla.</p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="ticker-text-color">Color del texto</Label>
+                        <div className="flex items-center gap-2">
+                            <input
+                                id="ticker-text-color"
+                                type="color"
+                                value={formData.textColor || "#ffffff"}
+                                onChange={(e) => setFormData(prev => ({ ...prev, textColor: e.target.value }))}
+                                className="h-9 w-12 rounded border cursor-pointer"
+                            />
+                            <Input
+                                value={formData.textColor || ""}
+                                onChange={(e) => setFormData(prev => ({ ...prev, textColor: e.target.value }))}
+                                placeholder="Por defecto"
+                                className="font-mono text-xs"
+                            />
+                            {formData.textColor && (
+                                <Button variant="ghost" size="sm" className="text-xs" onClick={() => setFormData(prev => ({ ...prev, textColor: "" }))}>
+                                    Quitar
+                                </Button>
+                            )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">Vacío = usar el color por defecto de la plantilla.</p>
                     </div>
                 </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Upload, X, Trash2, Loader2 } from "lucide-react";
+import { Upload, X, Trash2, Loader2, Crop } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,9 +13,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FocalPointPicker } from "@/components/ui/FocalPointPicker";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+
+// Cap the preview box height so tall portrait crops (e.g. Indico 3:4) don't fill
+// the whole modal. The box uses CSS aspect-ratio with maxHeight + maxWidth
+// (= ratio * maxHeight), so it shrinks proportionally and never crops the image.
+// Editor-only — does not affect how the photo renders in the live hero.
+const MAX_PREVIEW_HEIGHT = 340; // px
 
 /** Returns the correct crop aspect ratio per template and slot */
 function getBannerAspectRatio(templateId: string | undefined, index: number): number {
@@ -26,8 +31,12 @@ function getBannerAspectRatio(templateId: string | undefined, index: number): nu
     const ratios = [4 / 5, 1, 3 / 4];
     return ratios[index] ?? 4 / 5;
   }
-  if (t.includes("trendy") || t.includes("hero")) {
-    // TrendyFashion y FashionHero: imagen portrait en el héroe
+  if (t.includes("hero")) {
+    // FashionHero (Indico): el hero se muestra horizontal (≈ 3/5 de ancho × 78vh).
+    return 4 / 3;
+  }
+  if (t.includes("trendy")) {
+    // TrendyFashion: imagen portrait con forma orgánica en el héroe.
     return 3 / 4;
   }
   if (t.includes("minimal")) return 21 / 9;
@@ -110,7 +119,7 @@ function getBannerSlotInfo(templateId: string | undefined, index: number): { lab
 
   if (template.includes("hero")) {
     const labels = [
-      { label: "Foto Héroe – Lado Izquierdo", hint: "Foto principal grande al lado izquierdo (recomendado: 3:5)" },
+      { label: "Foto Héroe – Lado Izquierdo", hint: "Foto principal grande al lado izquierdo (recomendado: horizontal 4:3)" },
       { label: "Banner 2 (no usado)", hint: "" },
       { label: "Banner 3 (no usado)", hint: "" },
       { label: "Banner 4 (no usado)", hint: "" },
@@ -219,20 +228,6 @@ export const BannersEditModal = ({
     setBanners(newBanners);
   };
 
-  const updatePosition = (index: number, position: string) => {
-    const newBanners = [...banners];
-    if (newBanners[index]) {
-      newBanners[index] = { ...newBanners[index], position };
-    } else {
-      // ensure slot exists
-      while (newBanners.length <= index) {
-        newBanners.push({ id: `placeholder_${newBanners.length}`, imageUrl: "/placeholder.svg", sort: newBanners.length, position: "center center" });
-      }
-      newBanners[index] = { ...newBanners[index], position };
-    }
-    setBanners(newBanners);
-  };
-
   const validateFile = (file: File): string | null => {
     if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
       return "Solo se permiten archivos JPG, PNG y WebP";
@@ -274,6 +269,30 @@ export const BannersEditModal = ({
     }
 
     event.target.value = '';
+  };
+
+  // Re-open the cropper on an ALREADY-SAVED image so the user can move/zoom/recrop
+  // it again — same flow as a fresh upload. We fetch it to a data URL first so the
+  // crop canvas stays same-origin (no CORS taint on the remote Supabase URL).
+  const handleRecrop = async (bannerIndex: number) => {
+    const url = banners[bannerIndex]?.imageUrl;
+    if (!url || url === "/placeholder.svg") return;
+    try {
+      const resp = await fetch(url, { mode: "cors" });
+      const blob = await resp.blob();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      setImageToCrop(dataUrl);
+      setCurrentBannerIndex(bannerIndex);
+      setCropperOpen(true);
+    } catch (error) {
+      console.error("Error loading image for recrop:", error);
+      toast.error("No se pudo abrir la imagen para reencuadrar");
+    }
   };
 
   const handleCropComplete = async (croppedBlob: Blob) => {
@@ -452,8 +471,6 @@ export const BannersEditModal = ({
               const slotInfo = getBannerSlotInfo(templateId, index);
               const currentPosition = banner.position || "center center";
               const aspectRatio = getBannerAspectRatio(templateId, index);
-              // Convert ratio number to CSS paddingBottom for aspect-ratio box
-              const paddingBottom = `${(1 / aspectRatio) * 100}%`;
               const hasImage = banner.imageUrl !== "/placeholder.svg";
 
               return <React.Fragment key={banner.id}>
@@ -466,48 +483,60 @@ export const BannersEditModal = ({
                     )}
                   </div>
 
-                  {/* Image Preview — dynamic aspect ratio */}
+                  {/* Single preview = the real slot space (aspect-ratio of the slot,
+                      height-capped). Click the photo to re-open the cropper and
+                      move/zoom/recrop it, exactly like a fresh upload. */}
                   <div
-                    className="relative w-full bg-muted rounded-lg overflow-hidden cursor-pointer"
-                    style={{ paddingBottom, minHeight: 80 }}
-                    onClick={() => !uploadingStates[index] && handleUploadClick(index)}
+                    className="group relative w-full mx-auto bg-muted rounded-lg overflow-hidden cursor-pointer flex items-center justify-center"
+                    style={{
+                      aspectRatio: String(aspectRatio),
+                      minHeight: 80,
+                      maxHeight: MAX_PREVIEW_HEIGHT,
+                      maxWidth: Math.round(aspectRatio * MAX_PREVIEW_HEIGHT),
+                    }}
+                    onClick={() => {
+                      if (uploadingStates[index]) return;
+                      hasImage ? handleRecrop(index) : handleUploadClick(index);
+                    }}
                   >
-                    <div className="absolute inset-0">
-                      <img
-                        src={banner.imageUrl}
-                        alt={slotInfo.label}
-                        className="w-full h-full object-cover"
-                        style={{ objectPosition: currentPosition }}
-                      />
-
-                      {/* Delete button */}
-                      {index > 0 && hasImage && (
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          className="absolute top-2 right-2 h-7 w-7 p-0 rounded-full"
-                          onClick={(e) => { e.stopPropagation(); removeBanner(index); }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-
-                      {/* Empty state overlay */}
-                      {!hasImage && (
-                        <div className="absolute inset-0 bg-muted/80 flex items-center justify-center">
-                          <div className="text-center">
-                            <Upload className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
-                            <p className="text-xs text-muted-foreground font-medium">Haz clic para subir imagen</p>
+                    {hasImage ? (
+                      <>
+                        <img
+                          src={banner.imageUrl}
+                          alt={slotInfo.label}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          style={{ objectPosition: currentPosition }}
+                        />
+                        {/* Hover overlay: reframe/recrop affordance */}
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/45 transition-colors opacity-0 group-hover:opacity-100">
+                          <div className="text-center text-white">
+                            <Crop className="w-8 h-8 mx-auto mb-1" />
+                            <p className="text-xs font-medium">Mover y recortar</p>
                           </div>
                         </div>
-                      )}
-
-                      {uploadingStates[index] && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                          <Loader2 className="w-8 h-8 text-white animate-spin" />
-                        </div>
-                      )}
-                    </div>
+                        {/* Delete button */}
+                        {index > 0 && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-2 right-2 h-7 w-7 p-0 rounded-full z-10"
+                            onClick={(e) => { e.stopPropagation(); removeBanner(index); }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-center">
+                        <Upload className="w-10 h-10 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground font-medium">Haz clic para subir imagen</p>
+                      </div>
+                    )}
+                    {uploadingStates[index] && (
+                      <div className="absolute inset-0 z-10 bg-black/50 flex items-center justify-center">
+                        <Loader2 className="w-8 h-8 text-white animate-spin" />
+                      </div>
+                    )}
                   </div>
 
                   {/* Upload / Change button */}
@@ -521,15 +550,6 @@ export const BannersEditModal = ({
                     <Upload className="w-4 h-4" />
                     {hasImage ? "Cambiar Imagen" : "Subir Imagen"}
                   </Button>
-
-                  {/* Focal Point Picker — shown when image is loaded */}
-                  {hasImage && (
-                    <FocalPointPicker
-                      imageUrl={banner.imageUrl}
-                      value={currentPosition}
-                      onChange={(pos) => updatePosition(index, pos)}
-                    />
-                  )}
                 </div>
 
                 {/* Info tip after first slot */}

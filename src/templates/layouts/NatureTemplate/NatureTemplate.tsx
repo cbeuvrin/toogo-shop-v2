@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ShoppingCart, Search, Menu, X, User, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useCart } from "@/contexts/CartContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 
 export const NatureTemplate = (props: any) => {
     const {
@@ -27,6 +28,7 @@ export const NatureTemplate = (props: any) => {
     const [searchParams] = useSearchParams();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('WOMEN\'S');
+    const hideNav = useHideOnScroll();
 
     const { items: cartItems, removeItem, updateQuantity, totalPrice: cartTotal } = useCart();
     const cartCount = cartItems.reduce((acc: number, item: any) => acc + item.quantity, 0);
@@ -65,7 +67,7 @@ export const NatureTemplate = (props: any) => {
     const heroMessage = props.welcomeMessage || settings?.welcome_message || 'Una nueva paleta de colores diseñada para el cambio de temporada—fácil de combinar ahora, perfecta para cualquier ocasión.';
 
     const heroBanner = banners?.[0];
-    const topCategories = categories?.filter((c: any) => !c.parent_id).slice(0, 6) || [];
+    const topCategories = categories?.filter((c: any) => !c.parent_id && c.show_on_home !== false).slice(0, 6) || [];
 
     const tabs = topCategories.length > 0 ? topCategories.map(c => c.name.toUpperCase()) : ["MUJER", "HOMBRE", "ACCESORIOS"];
 
@@ -138,7 +140,7 @@ export const NatureTemplate = (props: any) => {
             )}
 
             {/* Header */}
-            <header className="px-6 py-4 flex items-center justify-between border-b border-gray-200" style={{ backgroundColor: settings?.navbar_bg_color || brandLightBg }}>
+            <header className={`sticky top-0 z-40 px-6 py-4 flex items-center justify-between border-b border-gray-200 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: settings?.navbar_bg_color || brandLightBg }}>
                 {/* Desktop Nav - Left */}
                 <div className="flex items-center gap-8 md:flex-1">
                     <div className="cursor-pointer" onClick={() => handleNavigate('/tienda')}>
