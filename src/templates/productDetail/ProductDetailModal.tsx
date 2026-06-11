@@ -145,13 +145,15 @@ export const ProductDetailModal = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 p-4 sm:p-6 lg:p-8">
           <div>
-            <div className={`${theme.galleryAspect} overflow-hidden ${theme.buttonRadius}`}>
-              <ProductImageGallery
-                images={images}
-                productName={product.title}
-                showOutOfStock={isService ? false : (isVariable ? !hasAnyVariantStock : currentStock === 0)}
-              />
-            </div>
+            {/* The theme's aspect goes straight to the gallery's main image so the
+                photo FILLS it (no empty gap below, e.g. square image inside
+                Indico's 3:4 box used to leave ~25% dead space at the bottom). */}
+            <ProductImageGallery
+              images={images}
+              productName={product.title}
+              showOutOfStock={isService ? false : (isVariable ? !hasAnyVariantStock : currentStock === 0)}
+              mainClassName={`${theme.galleryAspect} ${theme.buttonRadius}`}
+            />
           </div>
 
           <div className="space-y-3 sm:space-y-5">

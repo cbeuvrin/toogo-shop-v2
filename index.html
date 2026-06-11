@@ -147,39 +147,92 @@
         .initial-loader {
           position: fixed;
           inset: 0;
+          z-index: 9999;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          background-color: white;
-          z-index: 9999;
+          gap: 30px;
+          /* Subtle blue-tinted depth instead of flat white */
+          background: radial-gradient(120% 90% at 50% 16%, #f2f8ff 0%, #ffffff 58%);
+          font-family: 'Poppins', system-ui, -apple-system, sans-serif;
         }
-        .initial-loader-image {
-          width: 50px;
-          height: 50px;
-          margin-bottom: 20px;
-          animation: float 2s ease-in-out infinite;
+        /* Wordmark — keep its real 1920x700 aspect ratio (width set, height auto) */
+        .initial-loader__logo {
+          width: 168px;
+          height: auto;
+          display: block;
+          filter: drop-shadow(0 12px 26px rgba(26, 115, 232, 0.16));
+          animation: tg-float 3.2s ease-in-out infinite, tg-in 0.6s ease both;
         }
-        @keyframes float {
-          0% { transform: translateY(0px); }
-          50% { transform: translateY(-10px); }
-          100% { transform: translateY(0px); }
+        /* Indeterminate progress bar with a glowing brand-blue runner */
+        .initial-loader__bar {
+          position: relative;
+          width: 168px;
+          height: 4px;
+          border-radius: 999px;
+          background: #e8eef7;
+          overflow: hidden;
+          animation: tg-in 0.6s ease 0.1s both;
         }
-        .initial-loader-text {
-          font-family: system-ui, -apple-system, sans-serif;
-          font-size: 1.25rem;
-          font-weight: bold;
-          color: #374151;
-          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        .initial-loader__bar::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: -35%;
+          height: 100%;
+          width: 35%;
+          border-radius: 999px;
+          background: linear-gradient(90deg, rgba(26, 115, 232, 0), #1a73e8 45%, #5ea0ff 100%);
+          box-shadow: 0 0 12px rgba(26, 115, 232, 0.5);
+          animation: tg-bar 1.25s cubic-bezier(0.45, 0.05, 0.35, 1) infinite;
         }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: .5; }
+        .initial-loader__text {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          letter-spacing: 0.01em;
+          color: #5b6573;
+          animation: tg-in 0.6s ease 0.2s both;
+        }
+        .initial-loader__dots {
+          display: inline-flex;
+          gap: 4px;
+        }
+        .initial-loader__dots i {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #1a73e8;
+          display: block;
+          animation: tg-bounce 1.4s ease-in-out infinite;
+        }
+        .initial-loader__dots i:nth-child(2) { animation-delay: 0.18s; }
+        .initial-loader__dots i:nth-child(3) { animation-delay: 0.36s; }
+        @keyframes tg-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+        @keyframes tg-bar { 0% { left: -35%; } 100% { left: 100%; } }
+        @keyframes tg-bounce {
+          0%, 80%, 100% { transform: scale(0.4); opacity: 0.35; }
+          40% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes tg-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @media (prefers-reduced-motion: reduce) {
+          .initial-loader__logo,
+          .initial-loader__bar,
+          .initial-loader__bar::before,
+          .initial-loader__text,
+          .initial-loader__dots i { animation: none; }
         }
       </style>
       <div class="initial-loader">
-        <img src="/assets/toogo-logo.png" alt="TOOGO Logo" class="initial-loader-image" />
-        <div class="initial-loader-text">Cargando tu tienda...</div>
+        <img src="/assets/toogo-logo.png" alt="TOOGO" class="initial-loader__logo" />
+        <div class="initial-loader__bar"></div>
+        <div class="initial-loader__text">
+          Preparando tu tienda
+          <span class="initial-loader__dots"><i></i><i></i><i></i></span>
+        </div>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>

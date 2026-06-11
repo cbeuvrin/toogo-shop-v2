@@ -7,11 +7,18 @@ interface ProductImageGalleryProps {
   images: string[];
   productName: string;
   showOutOfStock?: boolean;
+  /**
+   * Sizing/aspect classes for the main image box. Defaults to the classic
+   * centered square. Themed modals pass their own aspect (e.g. Indico 3:4)
+   * so the photo fills the slot without leaving empty space below.
+   */
+  mainClassName?: string;
 }
 export const ProductImageGallery = ({
   images,
   productName,
-  showOutOfStock
+  showOutOfStock,
+  mainClassName = "max-w-[210px] sm:max-w-[350px] lg:max-w-[450px] mx-auto aspect-square"
 }: ProductImageGalleryProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   if (!images || images.length === 0) {
@@ -30,7 +37,7 @@ export const ProductImageGallery = ({
   };
   return <div className="space-y-4">
       {/* Main Image */}
-      <div className="relative w-full max-w-[210px] sm:max-w-[350px] lg:max-w-[450px] mx-auto aspect-square bg-gray-100 rounded-lg overflow-hidden">
+      <div className={`relative w-full bg-gray-100 rounded-lg overflow-hidden ${mainClassName}`}>
         <img src={images[currentImageIndex]} alt={`${productName} - imagen ${currentImageIndex + 1}`} className="w-full h-full object-cover" />
         
         {/* Out of Stock Badge - top left corner */}
