@@ -9,6 +9,8 @@ import { HamburgerButton } from "@/components/ui/HamburgerButton";
 import { ContactSection } from "@/components/ui/ContactSection";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { AutoCarousel } from "@/components/ui/AutoCarousel";
+import { CardStyleContext } from "@/contexts/CardStyleContext";
+import { pickFontSize, pickEnabled } from "@/hooks/useDeviceType";
 import {
   ShoppingCart,
   Heart,
@@ -21,12 +23,14 @@ import {
   ArrowLeft,
   ArrowRight,
   MessageCircle,
+  Zap,
   X
 } from "lucide-react";
 import { EditableElement } from "./EditableElement";
 import { EditorData } from "./DashboardVisualEditor";
 import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { heroFontFamily } from "@/lib/heroFonts";
+import { getHeroShapeRadius as sharedHeroShapeRadius } from "@/lib/heroShapes";
 
 // Hero font tokens resolve via the shared picker (see src/lib/heroFonts.ts)
 // so the editor preview and the live store always render the same family.
@@ -71,6 +75,7 @@ interface StorePreviewProps {
   welcomeTitle?: string;
   welcomeMessage?: string;
   featuredProducts?: string[];
+  featuredProducts2?: string[];
   testimonials?: any;
 }
 
@@ -95,9 +100,27 @@ export const StorePreview = ({
   welcomeTitle,
   welcomeMessage,
   featuredProducts,
+  featuredProducts2,
   testimonials
 }: StorePreviewProps) => {
   const { settings } = useTenantSettings();
+  // Resolve per-device visibility (enabled / enabledTablet / enabledMobile) against
+  // the editor's device tab, so every `styles[k].enabled !== false` check below
+  // reflects the simulated device. Font size is resolved inside each style helper.
+  {
+    const _rs = data.hero?.styles || {};
+    const _resolved: Record<string, any> = {};
+    for (const k in _rs) _resolved[k] = { ..._rs[k], enabled: pickEnabled(_rs[k], deviceMode) };
+    data = { ...data, hero: { ...(data.hero || {}), styles: _resolved } };
+  }
+  // Global card typography (font + size) + click-to-edit, applied to every inline
+  // product-card title in the preview so edits show live in the editor.
+  const _pcText = data.hero?.styles?.productCardText;
+  const _pcSize = pickFontSize(_pcText, deviceMode);
+  const cardNameStyle = (_pcText?.fontFamily || _pcSize)
+    ? { fontFamily: heroStyleFontFamily(_pcText?.fontFamily), fontSize: _pcSize ? `${_pcSize}px` : undefined }
+    : undefined;
+  const cardNameClick = isEditorMode ? (e: any) => { e.stopPropagation(); onEditElement('hero_element', 'productCardText'); } : undefined;
 
   // Valores base para header (100% = default)
   const BASE_INPUT_HEIGHT = 40;
@@ -333,12 +356,21 @@ export const StorePreview = ({
 
   // --- LAYOUTS ---
 
-  const DefaultLayoutPreview = () => (
+  const DefaultLayoutPreview = () => {
+    // Per-element style overrides (Indico-level editing for Atlántico/Default)
+    const dfStyle = (k: string) => ({
+      fontFamily: heroStyleFontFamily(data.hero?.styles?.[k]?.fontFamily),
+      fontSize: pickFontSize(data.hero?.styles?.[k], deviceMode) ? `${pickFontSize(data.hero?.styles?.[k], deviceMode)}px` : undefined,
+      color: data.hero?.styles?.[k]?.color || undefined,
+    });
+    const dfText = (k: string, fallback: string) => data.hero?.styles?.[k]?.text || fallback;
+    return (
     <div className="min-h-screen" style={{ backgroundColor: bgColor }}>
-      {/* Header */}
+      {/* Header — background editable via sectionBg.navbar */}
+      <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'navbar')}>
       <header
         className="sticky top-0 z-50 border-b border-gray-200"
-        style={{ backgroundColor: navColor }}
+        style={{ backgroundColor: data.hero?.sectionBg?.navbar || navColor }}
       >
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -347,10 +379,10 @@ export const StorePreview = ({
               isEditorMode={isEditorMode}
               onEdit={() => onEditElement('logo')}
             >
-              <LogoDisplay size="md" fallbackText="Mi Tienda" className="h-10 w-auto" />
+              <LogoDisplay size="md" logoSize={(settings as any)?.logo_size} logoSizeMobile={(settings as any)?.logo_size_mobile} logoSizeTablet={(settings as any)?.logo_size_tablet} forceDevice={deviceMode} fallbackText="Mi Tienda" className="h-10 w-auto" />
             </EditableElement>
 
-            <div className="hidden md:flex items-center flex-1 max-w-md mx-8">
+            <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'searchBar')} className="hidden md:flex items-center flex-1 max-w-md mx-8">
               <div className="relative w-full">
                 <Search
                   className="absolute left-3 top-1/2 transform -translate-y-1/2"
@@ -361,12 +393,13 @@ export const StorePreview = ({
                   }}
                 />
                 <Input
-                  placeholder="Buscar productos..."
+                  placeholder={dfText('searchBar', 'Buscar productos...')}
                   style={{
                     height: `${scaledInputHeight}px`,
-                    fontSize: `${scaledTextSize}px`,
+                    fontSize: data.hero?.styles?.searchBar?.fontSize ? `${data.hero.styles.searchBar.fontSize}px` : `${scaledTextSize}px`,
                     borderColor: headerIconColor,
-                    color: headerIconColor,
+                    color: data.hero?.styles?.searchBar?.color || headerIconColor,
+                    fontFamily: heroStyleFontFamily(data.hero?.styles?.searchBar?.fontFamily),
                     borderRadius: `${scaledBorderRadius}px`,
                     paddingLeft: `${scaledPaddingLeft}px`,
                     backgroundColor: 'transparent'
@@ -374,7 +407,7 @@ export const StorePreview = ({
                   className="border-2"
                 />
               </div>
-            </div>
+            </EditableElement>
 
             <div className="flex items-center space-x-3">
               <Button variant="ghost" size="icon">
@@ -386,19 +419,16 @@ export const StorePreview = ({
                   }}
                 />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsMobileMenuOpen(true)}
-              >
-                <Menu
-                  style={{
-                    color: headerIconColor,
-                    width: `${scaledIconSize}px`,
-                    height: `${scaledIconSize}px`
-                  }}
+              <EditableElement type="botón hamburguesa" isEditorMode={isEditorMode} onEdit={() => onEditElement('hamburger_style')}>
+                <HamburgerButton
+                  isOpen={isMobileMenuOpen}
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  count={data.hero?.hamburgerCount || 3}
+                  thickness={data.hero?.hamburgerThickness || 2}
+                  size={(data.hero?.hamburgerSize || 20) * (settings as any)?.header_icon_scale || scaledIconSize}
+                  color={headerIconColor}
                 />
-              </Button>
+              </EditableElement>
             </div>
           </div>
         </div>
@@ -434,6 +464,7 @@ export const StorePreview = ({
           </div>
         )}
       </header>
+      </EditableElement>
 
       {/* Banner Slider */}
       <EditableElement
@@ -460,14 +491,20 @@ export const StorePreview = ({
         </section>
       </EditableElement>
 
-      {/* Más Vendidos */}
+      {/* Products area — background editable via sectionBg.section1 */}
+      <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section1')}>
+      <div style={{ backgroundColor: data.hero?.sectionBg?.section1 || undefined }}>
+      {/* Más Vendidos — click to hand-pick which products show here */}
       <section id="bestsellers" className="relative -mt-20 z-10">
         <div className="w-full px-4">
           <div className="w-full pt-8 pb-4">
+            <EditableElement type="featured_products" isEditorMode={isEditorMode} onEdit={() => onEditElement('featured_products')}>
             <div className="mb-6">
               <AutoCarousel
                 title=""
-                products={bestSellers}
+                products={(featuredProducts && featuredProducts.length > 0)
+                  ? featuredProducts.map((id: string) => bestSellers.find((p: any) => p.id === id) || data.products?.find((p: any) => p.id === id)).filter(Boolean)
+                  : bestSellers}
                 isBestSellers={true}
                 onProductClick={openProductModal}
                 onToggleFavorite={toggleFavorite}
@@ -476,44 +513,55 @@ export const StorePreview = ({
                 cardBgColor={cardBgColor}
               />
             </div>
+            </EditableElement>
           </div>
         </div>
       </section>
 
-      {/* Categories */}
-      <section className="bg-white py-8">
+      {/* Categories — section titles & "Ver más" editable */}
+      <section className="py-8">
         <div className="container mx-auto px-4">
-          {categories.map((category, categoryIndex) => (
-            <div key={categoryIndex} className="mb-12">
+          {categories.map((category, categoryIndex) => {
+            const titleKey = `sectionTitle_${category.id}`;
+            return (
+            <EditableElement key={categoryIndex} type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', titleKey)} className="block mb-12">
               <AutoCarousel
-                title={category.name}
+                title={dfText(titleKey, category.name)}
                 products={category.products}
                 onProductClick={openProductModal}
+                onViewMore={() => onEditElement('hero_element', 'viewMore')}
                 onToggleFavorite={toggleFavorite}
                 favorites={favorites}
                 hoverColor={hoverColor}
                 cardBgColor={cardBgColor}
+                titleStyle={dfStyle(titleKey)}
+                viewMoreText={dfText('viewMore', 'Ver más')}
+                viewMoreStyle={dfStyle('viewMore')}
               />
-            </div>
-          ))}
+            </EditableElement>
+            );
+          })}
         </div>
       </section>
+      </div>
+      </EditableElement>
 
-      {/* Contact Section */}
+      {/* Contact Section — background editable via sectionBg.footer */}
       <EditableElement
-        type="contact"
+        type="fondo sección"
         isEditorMode={isEditorMode}
-        onEdit={() => onEditElement('contact')}
+        onEdit={() => onEditElement('section_bg', 'footer')}
       >
         <ContactSection
           contactData={data.contact}
-          backgroundColor={footColor}
+          backgroundColor={data.hero?.sectionBg?.footer || footColor}
           iconColor={footerIconColor}
           iconScale={footerIconScale}
         />
       </EditableElement>
     </div>
-  );
+    );
+  };
 
   const SimpleLiveLayoutPreview = () => {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -529,21 +577,32 @@ export const StorePreview = ({
     const newArrivals = data.products?.filter((p: any) => p.features?.includes("new_arrival")) || [];
     const productsToShow = newArrivals.length > 0 ? newArrivals : bestSellers;
 
+    // Per-element style overrides (Indico-level editing for Simple Live)
+    const slStyle = (k: string) => ({
+      fontFamily: heroStyleFontFamily(data.hero?.styles?.[k]?.fontFamily),
+      fontSize: pickFontSize(data.hero?.styles?.[k], deviceMode) ? `${pickFontSize(data.hero?.styles?.[k], deviceMode)}px` : undefined,
+      color: data.hero?.styles?.[k]?.color || undefined,
+      backgroundColor: data.hero?.styles?.[k]?.bgColor || undefined,
+    });
+    const slText = (k: string, fallback: string) => data.hero?.styles?.[k]?.text || fallback;
+
     return (
       <div className="min-h-screen font-sans text-black relative" style={{ backgroundColor: bgColor }}>
         {/* Top Bar */}
         {(data.announcement?.enabled !== false) && (
           <EditableElement type="announcement" isEditorMode={isEditorMode} onEdit={() => onEditElement('announcement')}>
-            <div className={`bg-gray-100 py-2 text-center text-[10px] font-semibold tracking-wide ${isEditorMode ? 'cursor-pointer hover:bg-gray-200' : ''}`}>
-              {data.announcement?.text || "Refer A Friend To Earn $10 Off Your Next Purchase Of $50+ 👯‍♀️"}
+            <div className={`bg-gray-100 py-2 text-center text-[10px] font-semibold tracking-wide ${isEditorMode ? 'cursor-pointer hover:bg-gray-200' : ''}`} style={{ ...(data.announcement?.bgColor ? { backgroundColor: data.announcement.bgColor } : {}), ...(data.announcement?.textColor ? { color: data.announcement.textColor } : {}) }}>
+              {data.announcement?.text || "¡Nuevos estilos cada semana! Visita el catálogo y encuentra tu look 👯‍♀️"}
             </div>
           </EditableElement>
         )}
 
-        {/* Header */}
-        <header className="sticky top-0 z-50 border-b border-transparent h-16 flex items-center justify-between px-4" style={{ backgroundColor: navColor }}>
-          <nav className="hidden md:flex gap-4 text-xs font-semibold text-gray-700">
-            {categories.filter(c => !c.parent_id).map((cat: any) => (
+        {/* Header — background editable via sectionBg.navbar */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'navbar')}>
+        <header className="sticky top-0 z-50 border-b border-transparent h-16 flex items-center justify-between px-4" style={{ backgroundColor: data.hero?.sectionBg?.navbar || data.allColors?.navbarColor || navColor }}>
+          <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'navMenu')} className="hidden md:block">
+          <nav className="flex gap-4 text-xs font-semibold text-gray-700" style={slStyle('navMenu')}>
+            {categories.filter(c => !c.parent_id && c.show_on_home !== false).map((cat: any) => (
               <span key={cat.id || cat.name} className="uppercase cursor-pointer hover:text-black">{cat.name}</span>
             ))}
             {categories.filter(c => !c.parent_id).length === 0 && (
@@ -553,6 +612,7 @@ export const StorePreview = ({
               </>
             )}
           </nav>
+          </EditableElement>
 
           <Button variant="ghost" size="icon" className="md:hidden">
             <Menu className="w-5 h-5" style={{ color: headerIconColor }} />
@@ -560,7 +620,7 @@ export const StorePreview = ({
 
           <div className="absolute left-1/2 -translate-x-1/2">
             <EditableElement type="logo" isEditorMode={isEditorMode} onEdit={() => onEditElement('logo')}>
-              <LogoDisplay size="sm" fallbackText="GYMSTORE" className="text-xl font-extrabold uppercase" />
+              <LogoDisplay size="sm" logoSize={(settings as any)?.logo_size} logoSizeMobile={(settings as any)?.logo_size_mobile} logoSizeTablet={(settings as any)?.logo_size_tablet} forceDevice={deviceMode} fallbackText={settings?.store_name || "Mi Tienda"} className="text-xl font-extrabold uppercase" />
             </EditableElement>
           </div>
 
@@ -569,30 +629,41 @@ export const StorePreview = ({
             <ShoppingCart style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
           </div>
         </header>
+        </EditableElement>
 
-        {/* Hero */}
-        <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
-          <div className="relative w-full aspect-[4/3] md:aspect-[21/9] bg-gray-200 overflow-hidden">
+        {/* Hero — photo opens banners editor; title/message/button each editable */}
+        <div className="relative w-full aspect-[4/3] md:aspect-[21/9] bg-gray-200 overflow-hidden">
+          <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className="absolute inset-0">
             {banners.length > 0 ? (
               <img src={banners[0].image} className="w-full h-full object-cover" style={{ objectPosition: banners[0].position || 'center center' }} />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-300">Banner</div>
             )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-8">
-              <h1 className="text-white text-3xl font-extrabold uppercase mb-2">
-                {welcomeTitle || "Atletas Híbridos"}
-              </h1>
-              <p className="text-white/90 text-xs mb-4 max-w-sm font-medium">
-                {welcomeMessage || "Descubre la nueva colección."}
-              </p>
-              <div className="flex gap-2">
-                <Button className="bg-white text-black text-xs px-8 py-4 rounded-full font-bold border-2 border-white uppercase tracking-wider">
-                  TIENDA
-                </Button>
-              </div>
+          </EditableElement>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-8 pointer-events-none">
+            <div className="pointer-events-auto flex flex-col items-start gap-2">
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'title')}>
+                <h1 className="text-white text-3xl font-extrabold uppercase" style={slStyle('title')}>
+                  {data.hero?.title || "Para Nuestros Atletas Híbridos"}
+                </h1>
+              </EditableElement>
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'message')}>
+                <p className="text-white/90 text-xs max-w-sm font-medium" style={slStyle('message')}>
+                  {data.hero?.message || "Cuando lo das todo, tu equipo también debería hacerlo."}
+                </p>
+              </EditableElement>
+              <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta1')}>
+                {data.hero?.styles?.cta1?.enabled === false ? (
+                  <div className="px-4 py-2 border border-dashed border-white/60 text-white/80 text-[11px] italic uppercase cursor-pointer">Botón oculto — click para activar</div>
+                ) : (
+                  <Button className="bg-white text-black text-xs px-8 py-4 rounded-full font-bold border-2 border-white uppercase tracking-wider" style={slStyle('cta1')}>
+                    {data.hero?.cta1Label || 'TIENDA'}
+                  </Button>
+                )}
+              </EditableElement>
             </div>
           </div>
-        </EditableElement>
+        </div>
 
         {/* Product Ticker — keeps a placeholder in editor mode so users can re-enable a hidden bar */}
         {((data.ticker?.enabled !== false) || isEditorMode) && (
@@ -620,12 +691,17 @@ export const StorePreview = ({
           </EditableElement>
         )}
 
-        {/* Products */}
-        <div className="px-4 py-8">
+        {/* Products — section background + heading/link editable */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section1')}>
+        <div className="px-4 py-8" style={{ backgroundColor: data.hero?.sectionBg?.section1 || undefined }}>
           <div className="flex items-end justify-between mb-4">
             <div>
-              <h2 className="text-xl font-extrabold uppercase mb-2">Recién Llegados</h2>
-              <a href="#" className="text-xs font-semibold underline underline-offset-4 hover:text-gray-600">Ver todo</a>
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle1')}>
+                <h2 className="text-xl font-extrabold uppercase mb-2" style={slStyle('sectionTitle1')}>{slText('sectionTitle1', 'Recién Llegados')}</h2>
+              </EditableElement>
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionLink1')}>
+                <span className="text-xs font-semibold underline underline-offset-4 hover:text-gray-600 cursor-pointer" style={slStyle('sectionLink1')}>{slText('sectionLink1', 'Ver todo')}</span>
+              </EditableElement>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="icon" onClick={() => scroll('left')} className="rounded-full border-gray-300 hover:bg-gray-100 h-8 w-8">
@@ -642,7 +718,9 @@ export const StorePreview = ({
                 <div className="aspect-[3/4] rounded-sm overflow-hidden mb-2 relative group transition-colors duration-300" style={{ backgroundColor: cardBgColor }}>
                   <div className="absolute inset-0 transition-colors duration-300 opacity-0 group-hover:opacity-100" style={{ backgroundColor: hoverColor }} />
                   <img src={product.image} className="w-full h-full object-cover relative z-10 mix-blend-multiply" alt={product.name} />
-                  <div className="absolute top-2 left-2 bg-white px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider z-20">New</div>
+                  {product.features?.includes("new_arrival") && (
+                    <div className="absolute top-2 left-2 bg-white px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider z-20">Nuevo</div>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -655,20 +733,20 @@ export const StorePreview = ({
                     <Heart className={`w-3 h-3 ${favorites.includes(product.id) ? 'fill-black' : ''}`} />
                   </Button>
                 </div>
-                <h3 className="font-bold text-xs leading-tight mb-1 text-gray-900">{product.name}</h3>
+                <h3 className="font-bold text-xs leading-tight mb-1 text-gray-900" style={cardNameStyle} onClick={cardNameClick}>{product.name}</h3>
                 <span className="text-xs font-bold text-gray-700">${product.price}</span>
               </div>
             ))}
           </div>
         </div>
+        </EditableElement>
 
-        {/* Mid Banner */}
         {/* Mid Banner */}
         {(data.textBanner?.isActive !== false) && (
           <EditableElement type="text_banner" isEditorMode={isEditorMode} onEdit={() => onEditElement('text_banner')}>
             <div className={`py-4 ${isEditorMode ? 'cursor-pointer hover:bg-gray-50' : ''}`}>
               <div
-                className="w-full h-64 bg-gray-900 relative flex items-center justify-center overflow-hidden"
+                className="w-full h-64 bg-gray-900 relative flex flex-col items-center justify-center overflow-hidden gap-4"
               >
                 {data.textBanner?.imageUrl ? (
                   <>
@@ -684,15 +762,28 @@ export const StorePreview = ({
                 <span className="text-white font-black text-4xl uppercase italic z-10 relative text-center px-4">
                   {data.textBanner?.text || "Sin Límites"}
                 </span>
+                <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'midBannerCta')} className="z-10 relative">
+                  {data.hero?.styles?.midBannerCta?.enabled === false ? (
+                    <div className="px-4 py-2 border border-dashed border-white/60 text-white/80 text-[11px] italic cursor-pointer">Botón oculto — click para activar</div>
+                  ) : (
+                    <Button className="bg-white text-black px-8 py-5 rounded-full font-bold" style={slStyle('midBannerCta')}>
+                      {slText('midBannerCta', 'Ver Colección')}
+                    </Button>
+                  )}
+                </EditableElement>
               </div>
             </div>
           </EditableElement>
         )}
 
-        {/* Popular Grid */}
-        <EditableElement type="featured_products" isEditorMode={isEditorMode} onEdit={() => onEditElement('featured_products')}>
-          <div className={`px-4 py-8 md:py-12 ${isEditorMode ? 'hover:bg-gray-50 cursor-pointer' : ''}`}>
-            <h2 className="text-xl md:text-2xl font-extrabold uppercase mb-6">Popular en este momento</h2>
+        {/* Popular Grid — background + title editable; grid opens the product picker */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section2')}>
+        <div className="px-4 py-8 md:py-12" style={{ backgroundColor: data.hero?.sectionBg?.section2 || undefined }}>
+          <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle2')}>
+            <h2 className="text-xl md:text-2xl font-extrabold uppercase mb-6" style={slStyle('sectionTitle2')}>{slText('sectionTitle2', 'Popular en este momento')}</h2>
+          </EditableElement>
+          <EditableElement type="featured_products" isEditorMode={isEditorMode} onEdit={() => onEditElement('featured_products')}>
+          <div className={`${isEditorMode ? 'hover:bg-gray-50 cursor-pointer' : ''}`}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
               {/* Dynamic Featured Products */}
@@ -733,18 +824,22 @@ export const StorePreview = ({
 
             </div>
           </div>
+          </EditableElement>
+        </div>
         </EditableElement>
 
-        {/* Footer */}
-        {/* Footer */}
-        <footer className="text-white pt-16 pb-8" style={{ backgroundColor: footColor }}>
+        {/* Footer — background + headings editable */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'footer')}>
+        <footer className="text-white pt-16 pb-8" style={{ backgroundColor: data.hero?.sectionBg?.footer || footColor }}>
           <div className="px-4 container mx-auto">
             <EditableElement type="contact" isEditorMode={isEditorMode} onEdit={() => onEditElement('contact')}>
               <div className={`grid grid-cols-1 md:grid-cols-3 gap-12 mb-16 ${isEditorMode ? 'cursor-pointer hover:bg-zinc-900 p-4 -m-4 rounded-lg transition-colors' : ''}`}>
 
                 {/* Contact Column */}
                 <div>
-                  <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500">Contacto</h4>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading1')}>
+                    <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500" style={slStyle('footerHeading1')}>{slText('footerHeading1', 'Contacto')}</h4>
+                  </EditableElement>
                   <ul className="space-y-4 text-sm font-medium">
                     {data.contact?.whatsapp && (
                       <li className="flex items-center gap-3">
@@ -764,7 +859,9 @@ export const StorePreview = ({
 
                 {/* Location Column */}
                 <div>
-                  <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500">Ubicación</h4>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading2')}>
+                    <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500" style={slStyle('footerHeading2')}>{slText('footerHeading2', 'Ubicación')}</h4>
+                  </EditableElement>
                   <p className="text-sm font-medium leading-relaxed max-w-xs text-gray-300">
                     {data.contact?.address || <span className="text-zinc-600 italic">Configura tu dirección</span>}
                   </p>
@@ -772,7 +869,9 @@ export const StorePreview = ({
 
                 {/* Socials Column */}
                 <div>
-                  <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500">Síguenos</h4>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading3')}>
+                    <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500" style={slStyle('footerHeading3')}>{slText('footerHeading3', 'Síguenos')}</h4>
+                  </EditableElement>
                   <div className="flex flex-col gap-3 text-sm">
                     {data.contact?.instagram && (
                       <a href={data.contact.instagram} className="hover:text-zinc-300 transition-colors" style={{ color: footerIconColor, fontSize: `${14 * footerIconScale}px` }}>Instagram</a>
@@ -795,20 +894,35 @@ export const StorePreview = ({
             </div>
           </div>
         </footer>
+        </EditableElement>
       </div>
     );
   };
 
-  const MinimalLayoutPreview = () => (
+  const MinimalLayoutPreview = () => {
+    // Per-element style overrides (Indico-level editing for Mediterráneo)
+    const mStyle = (k: string) => ({
+      fontFamily: heroStyleFontFamily(data.hero?.styles?.[k]?.fontFamily),
+      fontSize: pickFontSize(data.hero?.styles?.[k], deviceMode) ? `${pickFontSize(data.hero?.styles?.[k], deviceMode)}px` : undefined,
+      color: data.hero?.styles?.[k]?.color || undefined,
+      backgroundColor: data.hero?.styles?.[k]?.bgColor || undefined,
+    });
+    const mText = (k: string, fallback: string) => data.hero?.styles?.[k]?.text || fallback;
+    const visibleCategories = categories.filter((c: any) => !c.parent_id && c.show_on_home !== false);
+    const productsToShow = data.products?.length > 0 ? data.products : bestSellers;
 
+    return (
     <div className="min-h-screen font-sans selection:bg-gray-200" style={{ backgroundColor: bgColor }}>
-      {/* Header */}
-      <header className="px-6 py-6 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md md:static text-center" style={{ backgroundColor: navColor }}>
-        {/* Desktop Navigation Links (Left) */}
-        <nav className="hidden md:flex md:flex-1 md:justify-start gap-8 text-sm uppercase tracking-widest text-gray-500 font-medium">
+      {/* Header — background editable via sectionBg.navbar */}
+      <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'navbar')}>
+      <header className="px-6 py-6 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md md:static text-center" style={{ backgroundColor: data.hero?.sectionBg?.navbar || data.allColors?.navbarColor || navColor }}>
+        {/* Desktop Navigation Links (Left) — font/size/color editable */}
+        <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'navMenu')} className="hidden md:block md:flex-1">
+        <nav className="flex justify-start gap-8 text-sm uppercase tracking-widest text-gray-500 font-medium" style={mStyle('navMenu')}>
           <button className="hover:text-black transition-colors">Catálogo</button>
           <button className="hover:text-black transition-colors">Contacto</button>
         </nav>
+        </EditableElement>
 
         {/* Mobile Menu Trigger */}
         <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileMenuOpen(true)}>
@@ -821,6 +935,10 @@ export const StorePreview = ({
             <div onClick={(e) => isEditorMode || e.preventDefault()} className="cursor-pointer">
               <LogoDisplay
                 logoUrl={data.logo?.url}
+                logoSize={(settings as any)?.logo_size}
+                logoSizeMobile={(settings as any)?.logo_size_mobile}
+                logoSizeTablet={(settings as any)?.logo_size_tablet}
+                forceDevice={deviceMode}
                 size="md"
                 fallbackText="M I N I M A L"
                 className="text-2xl md:text-3xl font-serif font-bold tracking-tighter"
@@ -838,118 +956,264 @@ export const StorePreview = ({
           </div>
         </div>
       </header>
+      </EditableElement>
 
-      {/* Hero */}
-      <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
-        {banners.length > 0 ? (
-          <section className="mb-12 md:mb-20 px-4 md:px-6">
-            <div className="relative aspect-[16/9] md:aspect-[21/9] overflow-hidden bg-gray-100">
+      {/* Hero — photo opens banners editor; title/message/button each editable */}
+      <section className="mb-12 px-4 md:px-6">
+        <div className="relative aspect-[16/9] md:aspect-[21/9] overflow-hidden bg-gray-100">
+          <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className="absolute inset-0">
+            {banners[0]?.image ? (
               <img src={banners[0].image} className="w-full h-full object-cover" style={{ objectPosition: banners[0].position || 'center center' }} alt="Banner" />
-              <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
-                <div className="text-center text-white px-4">
-                  <h2 className="text-3xl md:text-6xl font-serif mb-4 drop-shadow-md">Nueva Colección</h2>
-                  <Button className="bg-white text-black hover:bg-white/90 rounded-none px-6 py-4 md:px-8 md:py-6 text-xs uppercase tracking-[0.2em]">Explorar</Button>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-300">
+                <span className="text-5xl font-serif italic opacity-30">Nueva Colección</span>
+              </div>
+            )}
+          </EditableElement>
+          <div className="absolute inset-0 bg-black/10 flex items-center justify-center pointer-events-none">
+            <div className="text-center text-white px-4 pointer-events-auto flex flex-col items-center gap-3">
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'title')}>
+                <h2 className="text-3xl md:text-6xl font-serif drop-shadow-md" style={mStyle('title')}>{data.hero?.title || 'Esenciales de Temporada'}</h2>
+              </EditableElement>
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'message')}>
+                <p className="text-base md:text-lg font-light tracking-wide drop-shadow-md" style={mStyle('message')}>{data.hero?.message || 'Descubre la nueva colección minimalista.'}</p>
+              </EditableElement>
+              <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta1')}>
+                {data.hero?.styles?.cta1?.enabled === false ? (
+                  <div className="px-4 py-2 border border-dashed border-white/60 text-white/80 text-[11px] italic uppercase cursor-pointer">Botón oculto — click para activar</div>
+                ) : (
+                  <Button className="bg-white text-black hover:bg-white/90 rounded-none px-6 py-4 md:px-8 md:py-6 text-xs uppercase tracking-[0.2em]" style={mStyle('cta1')}>
+                    {data.hero?.cta1Label || 'Ver colección'}
+                  </Button>
+                )}
+              </EditableElement>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Categories filter bar — mirrors the live store */}
+      <div className="container mx-auto px-4 md:px-6 mb-12 overflow-x-auto">
+        <ul className="flex flex-nowrap md:flex-wrap items-center justify-start md:justify-center gap-8 text-sm uppercase tracking-widest text-gray-500 font-medium min-w-max md:min-w-0">
+          <li><span className="text-black border-b border-black cursor-pointer">Todo</span></li>
+          {visibleCategories.map((cat: any) => (
+            <li key={cat.id}><span className="hover:text-black transition-colors cursor-pointer">{cat.name}</span></li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Products — single grid, mirrors the live store; background editable */}
+      <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section1')}>
+      <main className="px-4 md:px-6 pb-16" style={{ backgroundColor: data.hero?.sectionBg?.section1 || undefined }}>
+        <div className="container mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-8 md:gap-y-16">
+          {productsToShow.slice(0, 8).map((product: any) => (
+            <div key={product.id} className="group cursor-pointer" onClick={() => openProductModal(product)}>
+              <div className="relative aspect-[3/4] bg-gray-50 overflow-hidden mb-4">
+                <img src={product.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt={product.name} />
+              </div>
+              <div className="text-center">
+                <h3 className="text-sm text-gray-900 font-medium mb-1 line-clamp-1" style={cardNameStyle} onClick={cardNameClick}>{product.name}</h3>
+                <span className="text-gray-500 font-light">${product.price}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        </div>
+      </main>
+      </EditableElement>
+
+      {/* Editorial banner (banners[1]) — placeholder visible in editor mode */}
+      {(banners[1]?.image || isEditorMode) && (
+        <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
+          <section className="mb-16 px-4 md:px-6">
+            <div className="relative aspect-[16/9] md:aspect-[21/9] overflow-hidden bg-gray-100">
+              {banners[1]?.image ? (
+                <img src={banners[1].image} className="w-full h-full object-cover" style={{ objectPosition: banners[1].position || 'center center' }} alt="Banner editorial" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm italic">
+                  Banner editorial — sube la "Foto 2" en Imágenes de la Plantilla
                 </div>
+              )}
+              <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'midBannerTitle')}>
+                  <h2 className="text-3xl md:text-5xl font-serif text-white drop-shadow-md text-center px-4" style={mStyle('midBannerTitle')}>
+                    {mText('midBannerTitle', 'Hecho para durar')}
+                  </h2>
+                </EditableElement>
               </div>
             </div>
           </section>
-        ) : (
-          <div className="h-64 bg-gray-100 flex items-center justify-center mb-10 text-gray-300 font-serif italic text-4xl">Banner Area</div>
-        )}
-      </EditableElement>
+        </EditableElement>
+      )}
 
-      {/* Products */}
-      <main className="container mx-auto px-4 md:px-6 mb-20">
-        {categories.map((cat, idx) => (
-          <div key={idx} className="mb-16">
-            <div className="text-center mb-10">
-              <h2 className="text-2xl font-serif mb-2">{cat.name}</h2>
-              <div className="w-10 h-0.5 bg-black mx-auto"></div>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-8 md:gap-y-16">
-              {cat.products.map((product: any) => (
-                <div key={product.id} className="group cursor-pointer" onClick={() => openProductModal(product)}>
+      {/* Destacados — hand-picked featured products */}
+      <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section2')}>
+      <section className="px-4 md:px-6 pb-20" style={{ backgroundColor: data.hero?.sectionBg?.section2 || undefined }}>
+        <div className="container mx-auto">
+          <div className="text-center mb-10 pt-4">
+            <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle2')}>
+              <h2 className="text-3xl font-serif mb-2" style={mStyle('sectionTitle2')}>{mText('sectionTitle2', 'Destacados')}</h2>
+            </EditableElement>
+            <div className="w-12 h-0.5 bg-black mx-auto"></div>
+          </div>
+          <EditableElement type="featured_products" isEditorMode={isEditorMode} onEdit={() => onEditElement('featured_products')}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-8">
+              {((featuredProducts && featuredProducts.length > 0)
+                ? featuredProducts.map((id: string) => data.products?.find((p: any) => p.id === id)).filter(Boolean)
+                : productsToShow.slice(0, 4)
+              ).map((product: any) => (
+                <div key={product.id} className="group cursor-pointer">
                   <div className="relative aspect-[3/4] bg-gray-50 overflow-hidden mb-4">
-                    <img src={product.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt={product.name} />
-                    <div className="absolute bottom-0 inset-x-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/50 to-transparent flex justify-center">
-                      <Button className="bg-white text-black hover:bg-gray-100 border-none rounded-none uppercase text-xs tracking-widest w-full">Ver Detalles</Button>
-                    </div>
+                    <img src={product.image || (typeof product.images?.[0] === 'object' ? product.images[0]?.url : product.images?.[0]) || '/placeholder.svg'} className="w-full h-full object-cover" alt={product.name} />
                   </div>
                   <div className="text-center">
-                    <h3 className="text-sm text-gray-900 font-medium mb-1 line-clamp-1">{product.name}</h3>
+                    <h3 className="text-sm text-gray-900 font-medium mb-1 line-clamp-1" style={cardNameStyle} onClick={cardNameClick}>{product.name}</h3>
                     <span className="text-gray-500 font-light">${product.price}</span>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        ))}
-      </main>
+          </EditableElement>
+        </div>
+      </section>
+      </EditableElement>
 
-      {/* Simple Footer */}
-      <footer className="border-t border-gray-100 py-12 text-center text-xs text-gray-400" style={{ backgroundColor: footColor }}>
-        <p>&copy; {new Date().getFullYear()} Minimal Store. Powered by Toogo.</p>
-        <EditableElement type="contact" isEditorMode={isEditorMode} onEdit={() => onEditElement('contact')}>
-          <div className="mt-4 flex justify-center gap-4">
-            {data.contact?.instagram && <span style={{ color: footerIconColor, fontSize: `${12 * footerIconScale}px` }}>Instagram</span>}
-            {data.contact?.email && <span style={{ color: footerIconColor, fontSize: `${12 * footerIconScale}px` }}>Email</span>}
+      {/* Footer — 3 columns, mirrors the live store; background + headings editable */}
+      <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'footer')}>
+      <footer className="border-t border-gray-100 py-16 px-6" style={{ backgroundColor: data.hero?.sectionBg?.footer || footColor }}>
+        <div className="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-10 text-center md:text-left">
+          <div>
+            <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading1')}>
+              <h3 className="uppercase text-xs tracking-widest font-bold mb-4" style={mStyle('footerHeading1')}>{mText('footerHeading1', 'Nosotros')}</h3>
+            </EditableElement>
+            <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerAbout')}>
+              <p className="text-sm text-gray-500 font-light leading-relaxed max-w-xs mx-auto md:mx-0" style={mStyle('footerAbout')}>
+                {mText('footerAbout', 'Una selección curada de esenciales minimalistas para el estilo de vida moderno.')}
+              </p>
+            </EditableElement>
           </div>
-        </EditableElement>
+          <div>
+            <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading2')}>
+              <h3 className="uppercase text-xs tracking-widest font-bold mb-4" style={mStyle('footerHeading2')}>{mText('footerHeading2', 'Contacto')}</h3>
+            </EditableElement>
+            <EditableElement type="contact" isEditorMode={isEditorMode} onEdit={() => onEditElement('contact')}>
+              <div>
+                {data.contact?.email && <p className="text-sm text-gray-500 font-light mb-1">{data.contact.email}</p>}
+                {(data.contact?.phone || data.contact?.whatsapp) && <p className="text-sm text-gray-500 font-light">{data.contact?.phone || data.contact?.whatsapp}</p>}
+                {!data.contact?.email && !data.contact?.phone && !data.contact?.whatsapp && <p className="text-sm text-gray-400 font-light italic cursor-pointer">Agrega tus datos de contacto</p>}
+              </div>
+            </EditableElement>
+          </div>
+          <div>
+            <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading3')}>
+              <h3 className="uppercase text-xs tracking-widest font-bold mb-4" style={mStyle('footerHeading3')}>{mText('footerHeading3', 'Síguenos')}</h3>
+            </EditableElement>
+            <EditableElement type="contact" isEditorMode={isEditorMode} onEdit={() => onEditElement('contact')}>
+              <div className="flex justify-center md:justify-start gap-4">
+                {data.contact?.instagram && <span className="text-sm" style={{ color: footerIconColor }}>Instagram</span>}
+                {data.contact?.facebook && <span className="text-sm" style={{ color: footerIconColor }}>Facebook</span>}
+                {!data.contact?.instagram && !data.contact?.facebook && <span className="text-sm text-gray-400 font-light italic cursor-pointer">Agrega tus redes sociales</span>}
+              </div>
+            </EditableElement>
+          </div>
+        </div>
+        <div className="mt-12 text-center text-xs text-gray-300">
+          &copy; {new Date().getFullYear()} {data.logo?.alt || 'Tu Tienda'}. Todos los derechos reservados. Powered by TOOGO.
+        </div>
       </footer>
+      </EditableElement>
     </div>
-  );
+    );
+  };
 
   const TrendyFashionLayoutPreview = () => {
     const productsToShow = data.products?.length > 0 ? data.products.slice(0, 8) : bestSellers;
-
-    const getHeroShapeRadius = (shape?: string) => {
-      switch (shape) {
-        case 'square': return '0';
-        case 'rounded': return '2rem';
-        case 'circle': return '50%';
-        case 'organic':
-        default: return '60% 40% 40% 60% / 55% 55% 45% 45%';
-      }
-    };
-
+    const getHeroShapeRadius = sharedHeroShapeRadius;
     const heroShape = data.hero?.shape || settings?.hero_image_shape || 'organic';
+    // Functional hero carousel in the preview, mirroring the live template.
+    const [heroIdx, setHeroIdx] = useState(0);
+    const heroSlides = Math.max(banners.length || 1, 1);
+    const heroBanner = banners[heroIdx % heroSlides] || banners[0];
+
+    // Per-element style overrides (Indico-level editing for Trendy)
+    const tfStyle = (k: string) => ({
+      fontFamily: heroStyleFontFamily(data.hero?.styles?.[k]?.fontFamily),
+      fontSize: pickFontSize(data.hero?.styles?.[k], deviceMode) ? `${pickFontSize(data.hero?.styles?.[k], deviceMode)}px` : undefined,
+      color: data.hero?.styles?.[k]?.color || undefined,
+      backgroundColor: data.hero?.styles?.[k]?.bgColor || undefined,
+    });
+    const tfText = (k: string, fallback: string) => data.hero?.styles?.[k]?.text || fallback;
 
     return (
       <div className="min-h-screen font-sans text-gray-900" style={{ backgroundColor: bgColor || '#e8f0ef' }}>
-        {/* Header */}
-        <header className="px-6 py-4 flex items-center justify-between relative z-50" style={{ backgroundColor: 'transparent' }}>
-          <EditableElement type="logo" isEditorMode={isEditorMode} onEdit={() => onEditElement('logo')}>
-            <LogoDisplay size="md" fallbackText="Fashion" className="text-2xl font-serif font-bold tracking-tight text-gray-900" />
+        {/* Announcement bar — editable */}
+        {data.announcement?.enabled !== false && (
+          <EditableElement type="announcement" isEditorMode={isEditorMode} onEdit={() => onEditElement('announcement')}>
+            <div className="bg-gray-800 text-white text-center py-2 text-xs font-medium tracking-wide" style={{ ...(data.announcement?.bgColor ? { backgroundColor: data.announcement.bgColor } : {}), ...(data.announcement?.textColor ? { color: data.announcement.textColor } : {}) }}>
+              {data.announcement?.text || "¡Envío gratis en tu primera compra! 🎉"}
+            </div>
           </EditableElement>
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-700">
-            {categories.filter(c => !c.parent_id).slice(0, 5).map((cat: any) => (
+        )}
+
+        {/* Header — background editable via sectionBg.navbar (falls back to global navbar color) */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'navbar')}>
+        <header className="px-6 py-4 flex items-center justify-between relative z-50" style={{ backgroundColor: data.hero?.sectionBg?.navbar || data.allColors?.navbarColor || settings?.navbar_bg_color || 'transparent' }}>
+          <EditableElement type="logo" isEditorMode={isEditorMode} onEdit={() => onEditElement('logo')}>
+            <LogoDisplay size="md" logoSize={(settings as any)?.logo_size} logoSizeMobile={(settings as any)?.logo_size_mobile} logoSizeTablet={(settings as any)?.logo_size_tablet} forceDevice={deviceMode} fallbackText="Fashion" className="text-2xl font-serif font-bold tracking-tight text-gray-900" />
+          </EditableElement>
+          <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'navMenu')} className="hidden md:block">
+          <nav className="flex items-center gap-6 text-sm font-medium text-gray-700" style={tfStyle('navMenu')}>
+            {categories.filter(c => !c.parent_id && c.show_on_home !== false).slice(0, 5).map((cat: any) => (
               <span key={cat.id} className="hover:text-gray-900 cursor-pointer">{cat.name}</span>
             ))}
             {categories.length === 0 && (<><span>Belleza</span><span>Hombre</span><span>Mujer</span><span>Niños</span><span>Nosotros</span></>)}
           </nav>
+          </EditableElement>
           <div className="flex items-center gap-3">
             <ShoppingCart style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
             <Heart style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
             <button className="hidden md:flex items-center gap-2 bg-gray-900 text-white text-xs font-semibold px-4 py-2 rounded-full">Contacto</button>
           </div>
         </header>
+        </EditableElement>
 
-        {/* Hero */}
-        <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
-          <section className="relative w-full min-h-[75vh] flex flex-col lg:flex-row items-center px-6 lg:px-16 py-8">
+        {/* Hero — background + each text element editable separately */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'hero')}>
+          <section className={`relative w-full min-h-[75vh] flex items-center px-6 lg:px-16 py-8 ${deviceMode === 'mobile' ? 'flex-col' : 'flex-col lg:flex-row'}`} style={{ backgroundColor: data.hero?.sectionBg?.hero || undefined }}>
             {/* Left text */}
-            <div className="w-full lg:w-1/2 flex flex-col justify-center py-10 z-10 order-2 lg:order-1">
-              <h1 className="text-4xl lg:text-5xl font-serif font-bold leading-tight mb-8 text-gray-900 whitespace-pre-line">
-                {data.hero?.title || 'Los Mejores Productos\npara Tu Estilo\nPersonal'}
-              </h1>
-              <div className="flex gap-4 mb-6">
-                <button className="bg-gray-900 text-white px-7 py-2.5 text-xs font-semibold">Ver Ahora</button>
-                <button className="border border-gray-900 text-gray-900 px-7 py-2.5 text-xs font-semibold">Nueva Colección</button>
+            <div className={`w-full flex flex-col justify-center py-10 z-10 gap-4 ${deviceMode === 'mobile' ? 'order-1' : 'lg:w-1/2 order-2 lg:order-1'}`}>
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'title')}>
+                <h1 className="text-4xl lg:text-5xl font-serif font-bold leading-tight text-gray-900 whitespace-pre-line" style={tfStyle('title')}>
+                  {data.hero?.title || 'Los Mejores Productos\npara Tu Estilo\nPersonal'}
+                </h1>
+              </EditableElement>
+              <div className="flex gap-4 flex-wrap">
+                <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta1')}>
+                  {data.hero?.styles?.cta1?.enabled === false ? (
+                    <div className="px-4 py-2 border border-dashed border-gray-300 text-gray-400 text-[11px] italic cursor-pointer hover:bg-gray-50">Botón principal oculto — click para activar</div>
+                  ) : (
+                    <button className="bg-gray-900 text-white px-7 py-2.5 text-xs font-semibold" style={tfStyle('cta1')}>{data.hero?.cta1Label || 'Ver Ahora'}</button>
+                  )}
+                </EditableElement>
+                <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta2')}>
+                  {data.hero?.styles?.cta2?.enabled === false ? (
+                    <div className="px-4 py-2 border border-dashed border-gray-300 text-gray-400 text-[11px] italic cursor-pointer hover:bg-gray-50">Botón secundario oculto — click para activar</div>
+                  ) : (
+                    <button className="border border-gray-900 text-gray-900 px-7 py-2.5 text-xs font-semibold" style={tfStyle('cta2')}>{data.hero?.cta2Label || 'Nueva Colección'}</button>
+                  )}
+                </EditableElement>
               </div>
-              <p className="text-sm text-gray-600">¡Ahorra <span className="text-xl font-bold text-gray-900">20% Ahora!</span></p>
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'promoText')}>
+                <p className="text-sm text-gray-600" style={tfStyle('promoText')}>
+                  {data.hero?.styles?.promoText?.text
+                    ? data.hero.styles.promoText.text
+                    : (<>¡Ahorra <span className="text-xl font-bold text-gray-900">20% Ahora!</span></>)}
+                </p>
+              </EditableElement>
             </div>
             {/* Right image */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center relative order-1 lg:order-2">
+            <div className={`w-full flex items-center justify-center relative ${deviceMode === 'mobile' ? 'order-2' : 'lg:w-1/2 order-1 lg:order-2'}`}>
               {/* Rotating badge */}
               <div className="absolute top-6 right-6 z-20 w-20 h-20">
                 <svg viewBox="0 0 100 100" className="w-full h-full" style={{ animation: 'rotate-text 10s linear infinite' }}>
@@ -961,9 +1225,10 @@ export const StorePreview = ({
                   <circle cx="50" cy="50" r="8" fill="#f5e6d3" />
                 </svg>
               </div>
-              {/* Organic shaped image */}
+              {/* Organic shaped image — click opens the 3-photo carousel editor;
+                  the shape/size modal gets its own button below. */}
               <div className="relative w-64 h-80 lg:w-72 lg:h-96 flex items-center justify-center">
-                <EditableElement type="hero_shape" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_shape')} className="w-full h-full">
+                <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className="w-full h-full">
                   <div
                     className="w-full h-full overflow-hidden shadow-xl transition-transform duration-300"
                     style={{
@@ -972,62 +1237,112 @@ export const StorePreview = ({
                       transform: `scale(${(data.hero?.scale || 100) / 100})`
                     }}
                   >
-                    {banners[0]?.image ? (
-                      <img src={banners[0].image} alt="Hero" className="w-full h-full object-cover" style={{ objectPosition: banners[0].position || 'center center' }} />
+                    {heroBanner?.image ? (
+                      <img key={heroIdx} src={heroBanner.image} alt="Hero" className="w-full h-full object-cover animate-in fade-in" style={{ objectPosition: heroBanner.position || 'center center' }} />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">Foto Hero</div>
+                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-sm">Fotos del carrusel</div>
                     )}
                   </div>
                 </EditableElement>
+                {isEditorMode && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onEditElement('hero_shape'); }}
+                    className="absolute -bottom-9 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-white border border-gray-300 shadow-sm text-gray-700 text-[11px] font-semibold px-3 py-1.5 rounded-full hover:bg-gray-50"
+                    title="Cambiar la forma y el tamaño del marco"
+                  >
+                    ✨ Forma y tamaño
+                  </button>
+                )}
               </div>
               {/* Slide counter */}
               <div className="absolute bottom-2 right-0 text-right">
-                <p className="text-sm font-semibold text-gray-600">01/ {String(banners.length || 1).padStart(2, '0')}</p>
+                <p className="text-sm font-semibold text-gray-600">0{(heroIdx % heroSlides) + 1}/ {String(heroSlides).padStart(2, '0')}</p>
               </div>
-              <div className="absolute bottom-2 right-16 flex gap-1.5">
-                <button className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs"><ChevronLeft className="w-3 h-3" /></button>
-                <button className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs"><ChevronRight className="w-3 h-3" /></button>
-              </div>
+              {heroSlides > 1 && (
+                <div className="absolute bottom-2 right-16 flex gap-1.5">
+                  <button onClick={(e) => { e.stopPropagation(); setHeroIdx(prev => (prev - 1 + heroSlides) % heroSlides); }} className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs"><ChevronLeft className="w-3 h-3" /></button>
+                  <button onClick={(e) => { e.stopPropagation(); setHeroIdx(prev => (prev + 1) % heroSlides); }} className="w-8 h-8 rounded-full bg-gray-900 text-white flex items-center justify-center text-xs"><ChevronRight className="w-3 h-3" /></button>
+                </div>
+              )}
             </div>
           </section>
         </EditableElement>
 
-        {/* Products */}
-        <section className="container mx-auto px-6 py-12">
+        {/* Ticker — editable */}
+        {data.ticker?.enabled !== false && (
+          <EditableElement type="ticker" isEditorMode={isEditorMode} onEdit={() => onEditElement('ticker')}>
+            <div className="border-y border-gray-300 bg-white py-3 overflow-hidden" style={data.ticker?.bgColor ? { backgroundColor: data.ticker.bgColor } : undefined}>
+              <div className="flex justify-center whitespace-nowrap">
+                <span className={`font-bold uppercase tracking-widest text-gray-500 ${data.ticker?.fontSize ? '' : 'text-xs'}`} style={{ ...(data.ticker?.fontSize ? { fontSize: `${data.ticker.fontSize}px` } : {}), ...(data.ticker?.textColor ? { color: data.ticker.textColor } : {}) }}>
+                  {data.ticker?.text || 'NUEVA COLECCIÓN • ENVÍO GRATIS • CALIDAD PREMIUM'}
+                </span>
+              </div>
+            </div>
+          </EditableElement>
+        )}
+
+        {/* Products — section background + heading/link editable */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section1')}>
+        <section style={{ backgroundColor: data.hero?.sectionBg?.section1 || undefined }}>
+        <div className="container mx-auto px-6 py-12">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-serif font-bold">Nueva Colección</h2>
-            <span className="text-sm font-semibold underline underline-offset-4 text-gray-600 cursor-pointer">Ver todo</span>
+            <div>
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle1')}>
+                <h2 className="text-3xl font-serif font-bold" style={tfStyle('sectionTitle1')}>{tfText('sectionTitle1', 'Nueva Colección')}</h2>
+              </EditableElement>
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionSubtitle1')}>
+                <p className="text-gray-500 text-sm mt-1" style={tfStyle('sectionSubtitle1')}>{tfText('sectionSubtitle1', 'Los mejores estilos de temporada')}</p>
+              </EditableElement>
+            </div>
+            <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionLink1')}>
+              <span className="text-sm font-semibold underline underline-offset-4 text-gray-600 cursor-pointer" style={tfStyle('sectionLink1')}>{tfText('sectionLink1', 'Ver todo')}</span>
+            </EditableElement>
           </div>
+          {/* Click the grid to hand-pick which products show here */}
+          <EditableElement type="featured_products" isEditorMode={isEditorMode} onEdit={() => onEditElement('featured_products')}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {productsToShow.slice(0, 4).map((product: any) => (
-              <div key={product.id} className="group cursor-pointer" onClick={() => openProductModal(product)}>
+            {((featuredProducts && featuredProducts.length > 0)
+              ? featuredProducts.map((id: string) => data.products?.find((p: any) => p.id === id)).filter(Boolean)
+              : productsToShow.slice(0, 4)
+            ).map((product: any) => (
+              <div key={product.id} className="group cursor-pointer">
                 <div className="relative aspect-[3/4] overflow-hidden rounded-2xl mb-3" style={{ backgroundColor: cardBgColor }}>
-                  <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <img src={product.image || (typeof product.images?.[0] === 'object' ? product.images[0]?.url : product.images?.[0]) || '/placeholder.svg'} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 </div>
-                <h3 className="font-medium text-sm text-gray-900">{product.name}</h3>
+                <h3 className="font-medium text-sm text-gray-900" style={cardNameStyle} onClick={cardNameClick}>{product.name}</h3>
                 <span className="font-bold text-sm">${product.price}</span>
               </div>
             ))}
           </div>
+          </EditableElement>
+        </div>
         </section>
+        </EditableElement>
 
-        {/* Footer */}
-        <footer className="text-white pt-12 pb-8" style={{ backgroundColor: footColor }}>
+        {/* Footer — background + headings editable */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'footer')}>
+        <footer className="text-white pt-12 pb-8" style={{ backgroundColor: data.hero?.sectionBg?.footer || footColor }}>
           <div className="container mx-auto px-6">
             <EditableElement type="contact" isEditorMode={isEditorMode} onEdit={() => onEditElement('contact')}>
               <div className={`grid grid-cols-1 md:grid-cols-3 gap-10 mb-12 ${isEditorMode ? 'cursor-pointer hover:bg-white/5 p-4 rounded-lg transition-colors' : ''}`}>
                 <div>
-                  <h4 className="font-bold uppercase mb-4 text-xs tracking-widest text-zinc-500">Contacto</h4>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading1')}>
+                    <h4 className="font-bold uppercase mb-4 text-xs tracking-widest text-zinc-500" style={tfStyle('footerHeading1')}>{tfText('footerHeading1', 'Contacto')}</h4>
+                  </EditableElement>
                   {data.contact?.whatsapp && <p className="text-sm text-gray-300">{data.contact.whatsapp}</p>}
                   {data.contact?.email && <p className="text-sm text-gray-300">{data.contact.email}</p>}
                   {!data.contact?.whatsapp && !data.contact?.email && <p className="text-zinc-600 italic text-sm">Agrega tus datos de contacto</p>}
                 </div>
                 <div>
-                  <h4 className="font-bold uppercase mb-4 text-xs tracking-widest text-zinc-500">Ubicación</h4>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading2')}>
+                    <h4 className="font-bold uppercase mb-4 text-xs tracking-widest text-zinc-500" style={tfStyle('footerHeading2')}>{tfText('footerHeading2', 'Ubicación')}</h4>
+                  </EditableElement>
                   <p className="text-sm text-gray-300">{data.contact?.address || <span className="text-zinc-600 italic">Configura tu dirección</span>}</p>
                 </div>
                 <div>
-                  <h4 className="font-bold uppercase mb-4 text-xs tracking-widest text-zinc-500">Síguenos</h4>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading3')}>
+                    <h4 className="font-bold uppercase mb-4 text-xs tracking-widest text-zinc-500" style={tfStyle('footerHeading3')}>{tfText('footerHeading3', 'Síguenos')}</h4>
+                  </EditableElement>
                   <div className="flex flex-col gap-2 text-sm">
                     {data.contact?.instagram && <a href={data.contact.instagram} style={{ color: footerIconColor, fontSize: `${14 * footerIconScale}px` }}>Instagram</a>}
                     {data.contact?.facebook && <a href={data.contact.facebook} style={{ color: footerIconColor, fontSize: `${14 * footerIconScale}px` }}>Facebook</a>}
@@ -1042,6 +1357,7 @@ export const StorePreview = ({
             </div>
           </div>
         </footer>
+        </EditableElement>
       </div>
     );
   };
@@ -1050,17 +1366,32 @@ export const StorePreview = ({
     // Collect all products for Just Dropped section
     const productsToShow = data.products?.length > 0 ? data.products : bestSellers;
 
+    // Per-element style overrides (Indico-level editing for Adriático)
+    const fStyle = (k: string) => ({
+      fontFamily: heroStyleFontFamily(data.hero?.styles?.[k]?.fontFamily),
+      fontSize: pickFontSize(data.hero?.styles?.[k], deviceMode) ? `${pickFontSize(data.hero?.styles?.[k], deviceMode)}px` : undefined,
+      color: data.hero?.styles?.[k]?.color || undefined,
+      backgroundColor: data.hero?.styles?.[k]?.bgColor || undefined,
+    });
+    const fText = (k: string, fallback: string) => data.hero?.styles?.[k]?.text || fallback;
+
     return (
       <div className="min-h-screen font-sans bg-white text-black">
-        {/* Header */}
-        <header className="px-6 py-4 flex flex-col gap-4 border-b border-gray-200 sticky top-0 z-50 bg-white md:static">
+        {/* Header — background editable via sectionBg.navbar */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'navbar')}>
+        <header className="px-6 py-4 flex flex-col gap-4 border-b border-gray-200 sticky top-0 z-50 bg-white md:static" style={{ backgroundColor: data.hero?.sectionBg?.navbar || data.allColors?.navbarColor || settings?.navbar_bg_color || '#ffffff' }}>
           <div className="flex items-center justify-between">
-            {/* Left */}
+            {/* Left: social + announcement (mirrors the live store) */}
             <div className="hidden md:flex items-center gap-4 text-xs font-semibold tracking-wider text-gray-500">
-              <a href={data.contact?.facebook || "#"} className="hover:text-black transition-colors" style={{ color: headerIconColor }}>f</a>
-              <a href={data.contact?.instagram || "#"} className="hover:text-black transition-colors" style={{ color: headerIconColor }}>in</a>
-              <a href="#" className="hover:text-black transition-colors" style={{ color: headerIconColor }}>yt</a>
-              <span className="ml-4 text-[10px] text-black">¡MEJORES OFERTAS! ¡40% DE DESCUENTO!</span>
+              {data.contact?.facebook && <span style={{ color: headerIconColor }}>f</span>}
+              {data.contact?.instagram && <span style={{ color: headerIconColor }}>in</span>}
+              <EditableElement type="anuncio" isEditorMode={isEditorMode} onEdit={() => onEditElement('announcement')}>
+                <span className="ml-4 text-[10px] text-black cursor-pointer" style={data.announcement?.textColor ? { color: data.announcement.textColor } : undefined}>
+                  {data.announcement?.enabled && data.announcement?.text
+                    ? data.announcement.text
+                    : <span className="italic text-gray-400">Anuncio oculto — click para configurarlo</span>}
+                </span>
+              </EditableElement>
             </div>
 
             <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setIsMobileMenuOpen(true)}>
@@ -1073,6 +1404,10 @@ export const StorePreview = ({
                 <div onClick={(e) => isEditorMode || e.preventDefault()} className="cursor-pointer">
                   <LogoDisplay
                     logoUrl={data.logo?.url}
+                    logoSize={(settings as any)?.logo_size}
+                    logoSizeMobile={(settings as any)?.logo_size_mobile}
+                    logoSizeTablet={(settings as any)?.logo_size_tablet}
+                    forceDevice={deviceMode}
                     size="md"
                     fallbackText="FASHION"
                     className="text-3xl font-black uppercase tracking-tighter"
@@ -1081,9 +1416,8 @@ export const StorePreview = ({
               </EditableElement>
             </div>
 
-            {/* Right: Icons & Language */}
+            {/* Right: Icons */}
             <div className="flex items-center gap-4 md:gap-6">
-              <span className="hidden md:block text-xs font-semibold text-gray-500 uppercase cursor-pointer hover:text-black">Español ▾</span>
               <User className="h-5 w-5 stroke-1 hidden md:block" style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
               <Search className="h-5 w-5 stroke-1" style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
               <Heart className="h-5 w-5 stroke-1 hidden md:block" style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
@@ -1094,59 +1428,83 @@ export const StorePreview = ({
             </div>
           </div>
 
-          {/* Bottom Nav */}
-          <nav className="hidden md:flex justify-center gap-8 text-xs font-bold uppercase tracking-widest text-black">
-            {categories.slice(0, 5).map((cat: any) => (
+          {/* Bottom Nav — same filtering as the live store, font/size/color editable */}
+          <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'navMenu')} className="hidden md:block">
+          <nav className="flex justify-center gap-8 text-xs font-bold uppercase tracking-widest text-black" style={fStyle('navMenu')}>
+            {categories.filter((c: any) => !c.parent_id && c.show_on_home !== false).slice(0, 5).map((cat: any) => (
               <span key={cat.id} className="cursor-pointer hover:text-gray-500">{cat.name}</span>
             ))}
             {categories.length === 0 && (
               <>
-                <span className="cursor-pointer hover:text-gray-500">Inicio ▾</span>
-                <span className="cursor-pointer hover:text-gray-500">Tienda ▾</span>
-                <span className="cursor-pointer hover:text-gray-500">Blog ▾</span>
-                <span className="cursor-pointer hover:text-gray-500">Páginas ▾</span>
+                <span className="cursor-pointer hover:text-gray-500">Inicio</span>
+                <span className="cursor-pointer hover:text-gray-500">Tienda</span>
+                <span className="cursor-pointer hover:text-gray-500">Blog</span>
                 <span className="cursor-pointer hover:text-gray-500">Contacto</span>
               </>
             )}
           </nav>
+          </EditableElement>
         </header>
+        </EditableElement>
 
-        {/* Hero */}
-        <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
-          <div className="flex flex-col lg:flex-row w-full bg-white relative">
-            <div className="w-full lg:w-1/2 md:aspect-[4/5] lg:aspect-auto lg:h-[80vh] bg-gray-100">
+        {/* Hero — photos open the banners editor; each text element opens its own modal */}
+        <div className={`flex w-full bg-white relative ${deviceMode === 'mobile' ? 'flex-col' : 'flex-col lg:flex-row'}`}>
+          <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className={`w-full ${deviceMode === 'mobile' ? 'order-2' : 'lg:w-1/2'}`}>
+            <div className="w-full h-full md:aspect-[4/5] lg:aspect-auto lg:h-[80vh] bg-gray-100">
               <img src={banners[0]?.image || "/placeholder.svg"} className="w-full h-full object-cover" style={{ objectPosition: banners[0]?.position || 'center center' }} alt="Hero Main" />
             </div>
+          </EditableElement>
 
-            <div className="w-full lg:w-1/2 bg-white flex flex-col justify-center px-8 lg:px-20 py-16 relative">
-              <div className="hidden lg:block absolute top-12 right-20 w-32 h-32 bg-gray-100 z-10">
+          <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'hero')} className={`w-full ${deviceMode === 'mobile' ? 'order-1' : 'lg:w-1/2'}`}>
+          <div className="bg-white flex flex-col justify-center px-8 lg:px-20 py-16 relative h-full" style={{ backgroundColor: data.hero?.sectionBg?.hero || undefined }}>
+            <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className="hidden lg:block absolute top-12 right-20 z-10">
+              <div className="w-32 h-32 bg-gray-100">
                 <img src={banners[1]?.image || "/placeholder.svg"} className="w-full h-full object-cover" style={{ objectPosition: banners[1]?.position || 'center center' }} alt="Hero Small Top" />
               </div>
+            </EditableElement>
 
-              <div className="max-w-xl relative z-20">
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter leading-[0.9] mb-6 whitespace-pre-wrap">
-                  {welcomeTitle || "Nueva Colección\nde Verano"}
+            <div className="max-w-xl relative z-20 flex flex-col gap-4">
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'title')}>
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter leading-[0.9] whitespace-pre-wrap" style={fStyle('title')}>
+                  {data.hero?.title || "Nueva Colección\nde Verano"}
                 </h1>
-                <p className="text-gray-500 text-sm mb-10 max-w-md font-medium leading-relaxed">
-                  {welcomeMessage || "Descubre la nueva colección de verano, con colores vibrantes, estampados originales y piezas cómodas y elegantes para cada ocasión."}
+              </EditableElement>
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'message')}>
+                <p className="text-gray-500 text-sm max-w-md font-medium leading-relaxed" style={fStyle('message')}>
+                  {data.hero?.message || "Descubre la nueva colección de moda con colores vibrantes, estampados únicos y piezas cómodas perfectas para cualquier ocasión."}
                 </p>
+              </EditableElement>
 
-                <div className="flex gap-4">
-                  <Button className="bg-black text-white hover:bg-black/90 rounded-none px-8 py-6 text-xs font-bold uppercase tracking-widest">
-                    Para Mujeres
-                  </Button>
-                  <Button variant="outline" className="border-black text-black hover:bg-gray-50 rounded-none px-8 py-6 text-xs font-bold uppercase tracking-widest">
-                    Para Hombres
-                  </Button>
-                </div>
-              </div>
-
-              <div className="hidden lg:block absolute bottom-0 right-12 w-48 h-64 bg-gray-100 z-10">
-                <img src={banners[2]?.image || "/placeholder.svg"} className="w-full h-full object-cover" style={{ objectPosition: banners[2]?.position || 'center center' }} alt="Hero Small Bottom" />
+              <div className="flex gap-4 flex-wrap">
+                <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta1')}>
+                  {data.hero?.styles?.cta1?.enabled === false ? (
+                    <div className="px-4 py-2 border border-dashed border-gray-300 text-gray-400 text-[11px] italic uppercase cursor-pointer hover:bg-gray-50">Botón principal oculto — click para activar</div>
+                  ) : (
+                    <Button className="bg-black text-white hover:bg-black/90 rounded-none px-8 py-6 text-xs font-bold uppercase tracking-widest" style={fStyle('cta1')}>
+                      {data.hero?.cta1Label || "Ver Colección"}
+                    </Button>
+                  )}
+                </EditableElement>
+                <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta2')}>
+                  {data.hero?.styles?.cta2?.enabled === false ? (
+                    <div className="px-4 py-2 border border-dashed border-gray-300 text-gray-400 text-[11px] italic uppercase cursor-pointer hover:bg-gray-50">Botón secundario oculto — click para activar</div>
+                  ) : (
+                    <Button variant="outline" className="border-black text-black hover:bg-gray-50 rounded-none px-8 py-6 text-xs font-bold uppercase tracking-widest" style={fStyle('cta2')}>
+                      {data.hero?.cta2Label || "Novedades"}
+                    </Button>
+                  )}
+                </EditableElement>
               </div>
             </div>
+
+            <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className="hidden lg:block absolute bottom-0 right-12 z-10">
+              <div className="w-48 h-64 bg-gray-100">
+                <img src={banners[2]?.image || "/placeholder.svg"} className="w-full h-full object-cover" style={{ objectPosition: banners[2]?.position || 'center center' }} alt="Hero Small Bottom" />
+              </div>
+            </EditableElement>
           </div>
-        </EditableElement>
+          </EditableElement>
+        </div>
 
         {/* Ticker — keeps a placeholder in editor mode so users can re-enable a hidden bar */}
         {((data.ticker?.enabled !== false) || isEditorMode) && (
@@ -1167,7 +1525,7 @@ export const StorePreview = ({
                     ...(data.ticker?.textColor ? { color: data.ticker.textColor } : {}),
                   }}
                 >
-                  {Array(6).fill(data.ticker?.text || "24/7 SUPPORT • HIGH QUALITY COTTON • FREE DELIVERY • MONEY BACK GUARANTEE").map((text, i) => (
+                  {Array(6).fill(data.ticker?.text || "SOPORTE 24/7 • CALIDAD PREMIUM • ENVÍO GRATIS • GARANTÍA TOTAL").map((text, i) => (
                     <span key={i}>{text}</span>
                   ))}
                 </div>
@@ -1176,22 +1534,25 @@ export const StorePreview = ({
           </EditableElement>
         )}
 
-        {/* Just Dropped Section */}
-        <section className="py-20 bg-white">
+        {/* Just Dropped Section — title + background editable */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section1')}>
+        <section className="py-20 bg-white" style={{ backgroundColor: data.hero?.sectionBg?.section1 || undefined }}>
           <div className="container mx-auto px-4 text-center mb-12">
-            <h2 className="text-5xl md:text-8xl font-black uppercase tracking-tighter mb-8">
-              RECIÉN LLEGADOS
-            </h2>
+            <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle1')}>
+              <h2 className="text-5xl md:text-8xl font-black uppercase tracking-tighter mb-8" style={fStyle('sectionTitle1')}>
+                {fText('sectionTitle1', 'RECIÉN LLEGADOS')}
+              </h2>
+            </EditableElement>
 
             <div className="flex flex-wrap justify-center gap-6 md:gap-12 text-sm font-bold uppercase tracking-widest text-gray-400">
-              {categories.slice(0, 4).map((cat, idx) => (
-                <span key={cat.id} className={`cursor-pointer ${idx === 0 ? 'text-black border-b-2 border-black pb-1' : 'hover:text-black'}`}>
+              {categories.filter((c: any) => !c.parent_id && c.show_on_home !== false).slice(0, 4).map((cat) => (
+                <span key={cat.id} className="cursor-pointer hover:text-black hover:border-b-2 hover:border-black pb-1">
                   {cat.name}
                 </span>
               ))}
               {categories.length === 0 && (
                 <>
-                  <span className="text-black border-b-2 border-black pb-1 cursor-pointer">Mujeres</span>
+                  <span className="cursor-pointer hover:text-black">Mujeres</span>
                   <span className="cursor-pointer hover:text-black">Hombres</span>
                   <span className="cursor-pointer hover:text-black">Niños</span>
                   <span className="cursor-pointer hover:text-black">Accesorios</span>
@@ -1215,13 +1576,8 @@ export const StorePreview = ({
                 </div>
 
                 <div className="bg-transparent p-6 pb-8">
-                  <div className="flex gap-1.5 mb-2 mt-1">
-                    <span className="w-3 h-3 rounded-full bg-black"></span>
-                    <span className="w-3 h-3 rounded-full bg-blue-800"></span>
-                    <span className="w-3 h-3 rounded-full bg-orange-700"></span>
-                  </div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">{data.logo?.alt || "Brand"}</p>
-                  <h3 className="text-sm font-medium text-black mb-3 line-clamp-2 md:line-clamp-1">{product.name}</h3>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1 mt-1">{data.logo?.alt || "Brand"}</p>
+                  <h3 className="text-sm font-medium text-black mb-3 line-clamp-2 md:line-clamp-1" style={cardNameStyle} onClick={cardNameClick}>{product.name}</h3>
                   <div className="flex gap-3 items-center">
                     <span className="text-sm font-bold text-gray-600">${product.price}</span>
                     {product.originalPrice && <span className="text-xs text-gray-300 line-through">${product.originalPrice}</span>}
@@ -1231,24 +1587,108 @@ export const StorePreview = ({
             ))}
           </div>
         </section>
+        </EditableElement>
 
-        {/* Basic Footer */}
-        <footer className="border-t-2 border-gray-100 py-16 px-6 bg-white flex flex-col md:flex-row justify-between items-center text-xs font-bold uppercase tracking-widest gap-8 text-gray-400">
+        {/* Editorial banner (banners[3]) — placeholder visible in editor mode so it's discoverable */}
+        {(banners[3]?.image || isEditorMode) && (
+          <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
+            <section className="relative w-full h-[40vh] overflow-hidden bg-gray-100">
+              {banners[3]?.image ? (
+                <img src={banners[3].image} alt="Banner editorial" className="w-full h-full object-cover" style={{ objectPosition: banners[3]?.position || 'center center' }} />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm italic">
+                  Banner editorial — sube la "Foto 4" en Imágenes de la Plantilla
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/25 flex items-center justify-center px-6">
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'midBannerTitle')}>
+                  <h2 className="text-white text-4xl md:text-5xl font-black uppercase tracking-tighter text-center drop-shadow-md" style={fStyle('midBannerTitle')}>
+                    {fText('midBannerTitle', 'Estilo Sin Límites')}
+                  </h2>
+                </EditableElement>
+              </div>
+            </section>
+          </EditableElement>
+        )}
+
+        {/* Populares — more products below the banner */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section2')}>
+        <section className="py-16" style={{ backgroundColor: data.hero?.sectionBg?.section2 || undefined }}>
+          <div className="container mx-auto px-6">
+            <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle2')}>
+              <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-10 text-center" style={fStyle('sectionTitle2')}>
+                {fText('sectionTitle2', 'POPULARES')}
+              </h2>
+            </EditableElement>
+            {/* Click the grid to hand-pick which products show here (featured grid) */}
+            <EditableElement type="featured_products" isEditorMode={isEditorMode} onEdit={() => onEditElement('featured_products')}>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-8">
+                {((featuredProducts && featuredProducts.length > 0)
+                  ? featuredProducts.map((id: string) => data.products?.find((p: any) => p.id === id)).filter(Boolean)
+                  : productsToShow.slice(4, 8)
+                ).map((product: any) => (
+                  <div key={product.id} className="group cursor-pointer">
+                    <div className="relative aspect-[3/4] overflow-hidden mb-3 bg-gray-50">
+                      <img src={product.image || (typeof product.images?.[0] === 'object' ? product.images[0]?.url : product.images?.[0]) || '/placeholder.svg'} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-sm font-medium mb-1 line-clamp-1" style={cardNameStyle} onClick={cardNameClick}>{product.name}</h3>
+                      <span className="text-gray-500 font-light text-sm">${product.price}</span>
+                    </div>
+                  </div>
+                ))}
+                {(!featuredProducts || featuredProducts.length === 0) && productsToShow.length <= 4 && (
+                  <div className="col-span-2 md:col-span-4 text-center text-gray-400 italic text-sm py-8 border border-dashed border-gray-300 cursor-pointer hover:bg-gray-50">
+                    Click aquí para elegir qué productos aparecen en "Populares"
+                  </div>
+                )}
+              </div>
+            </EditableElement>
+          </div>
+        </section>
+        </EditableElement>
+
+        {/* Promo banner (textBanner) — uploadable image via text_banner modal */}
+        {(data.textBanner?.isActive !== false) && (
+          <EditableElement type="banner" isEditorMode={isEditorMode} onEdit={() => onEditElement('text_banner')}>
+            <section className="py-10">
+              <div className="w-full h-64 md:h-80 bg-gray-900 relative overflow-hidden flex flex-col items-center justify-center gap-4">
+                {data.textBanner?.imageUrl ? (
+                  <>
+                    <img src={data.textBanner.imageUrl} className="w-full h-full object-cover absolute inset-0" style={{ objectPosition: (data.textBanner as any).imagePosition || 'center center' }} alt="Banner" />
+                    <div className="absolute inset-0 bg-black/40" />
+                  </>
+                ) : null}
+                <span className="text-white font-black text-4xl md:text-6xl uppercase italic tracking-tighter z-10 relative text-center px-4 drop-shadow-md">
+                  {data.textBanner?.text || 'Sin Límites'}
+                </span>
+                {(data.textBanner?.buttonEnabled !== false) && (
+                  <span className="z-10 relative bg-white text-black px-8 py-4 rounded-full font-bold text-sm">{data.textBanner?.buttonLabel || 'Ver Colección'}</span>
+                )}
+              </div>
+            </section>
+          </EditableElement>
+        )}
+
+        {/* Footer — mirrors the live store: configurable background + real legal links */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'footer')}>
+        <footer className="border-t-2 border-gray-100 py-16 px-6 flex flex-col md:flex-row justify-between items-center text-xs font-bold uppercase tracking-widest gap-8 text-gray-400" style={{ backgroundColor: data.hero?.sectionBg?.footer || footColor }}>
           <EditableElement type="contact" isEditorMode={isEditorMode} onEdit={() => onEditElement('contact')}>
             <div className="flex gap-6">
-              {data.contact?.facebook && <a href={data.contact.facebook} className="hover:text-black transition-colors" style={{ color: footerIconColor }}>Facebook</a>}
-              {data.contact?.instagram && <a href={data.contact.instagram} className="hover:text-black transition-colors" style={{ color: footerIconColor }}>Instagram</a>}
-              <a href="#" className="hover:text-black transition-colors" style={{ color: footerIconColor }}>Twitter</a>
+              {data.contact?.facebook && <span className="hover:text-black transition-colors cursor-pointer" style={{ color: footerIconColor }}>Facebook</span>}
+              {data.contact?.instagram && <span className="hover:text-black transition-colors cursor-pointer" style={{ color: footerIconColor }}>Instagram</span>}
+              {!data.contact?.facebook && !data.contact?.instagram && <span className="italic text-gray-300 cursor-pointer normal-case">Agrega tus redes sociales</span>}
             </div>
           </EditableElement>
           <div className="text-black text-center">
             © {new Date().getFullYear()} {data.logo?.alt || "FASHION STORE"}
           </div>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-black transition-colors">Política de Privacidad</a>
-            <a href="#" className="hover:text-black transition-colors">Términos y Condiciones</a>
+            <span className="hover:text-black transition-colors cursor-pointer">Política de Privacidad</span>
+            <span className="hover:text-black transition-colors cursor-pointer">Términos y Condiciones</span>
           </div>
         </footer>
+        </EditableElement>
       </div>
     );
   };
@@ -1301,7 +1741,8 @@ export const StorePreview = ({
           };
           const showNavVisible = !navOverflows;
           return (
-        <header className="sticky top-0 z-50 border-b border-gray-100" style={{ backgroundColor: navColor }}>
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'navbar')}>
+        <header className="sticky top-0 z-50 border-b border-gray-100" style={{ backgroundColor: data.hero?.sectionBg?.navbar || navColor }}>
           <div className="w-full px-6 min-h-16 py-3 grid items-center gap-4" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
             {/* LEFT col — hamburger when needed + nav (or measurer) */}
             <div ref={navColRef} className="flex items-center gap-3 min-w-0 justify-start relative">
@@ -1312,7 +1753,7 @@ export const StorePreview = ({
                   count={data.hero?.hamburgerCount || 3}
                   thickness={data.hero?.hamburgerThickness || 2}
                   color={headerIconColor}
-                  size={data.hero?.hamburgerSize || 22}
+                  size={data.hero?.hamburgerSize || 24}
                   className={`${showNavVisible ? 'md:hidden' : 'md:flex'}`}
                 />
               </EditableElement>
@@ -1399,6 +1840,7 @@ export const StorePreview = ({
             </div>
           )}
         </header>
+        </EditableElement>
           );
         })()}
 
@@ -1430,8 +1872,10 @@ export const StorePreview = ({
             </EditableElement>
           </div>
 
-          {/* Text Side — each child is its own EditableElement */}
-          <div className={`flex flex-col justify-center px-6 md:px-12 py-10 bg-white min-w-0 gap-4 ${deviceMode === 'desktop' ? 'w-2/5' : 'w-full'}`}>
+          {/* Text Side — each child is its own EditableElement; the background
+              itself is editable too (sectionBg.hero), like the other sections */}
+          <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'hero')} className={deviceMode === 'desktop' ? 'w-2/5' : 'w-full'}>
+          <div className="flex flex-col justify-center px-6 md:px-12 py-10 bg-white min-w-0 gap-4 h-full" style={{ backgroundColor: data.hero?.sectionBg?.hero || undefined }}>
             <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'eyebrow')}>
               <p
                 className="text-[10px] font-bold uppercase tracking-[0.25em] text-gray-400 break-words [overflow-wrap:anywhere]"
@@ -1521,6 +1965,7 @@ export const StorePreview = ({
               })()}
             </div>
           </div>
+          </EditableElement>
         </section>
 
         {/* Ticker — keeps a placeholder in editor mode so users can re-enable a hidden bar */}
@@ -1632,7 +2077,7 @@ export const StorePreview = ({
                     </div>
                   )}
                 </div>
-                <h3 className="font-semibold text-xs leading-tight mb-1 text-gray-900">{product.name}</h3>
+                <h3 className="font-semibold text-xs leading-tight mb-1 text-gray-900" style={cardNameStyle} onClick={cardNameClick}>{product.name}</h3>
                 <span className="text-xs font-bold text-gray-700">${product.price}</span>
               </div>
             ))}
@@ -1725,8 +2170,9 @@ export const StorePreview = ({
         </div>
         </EditableElement>
 
-        {/* Footer */}
-        <footer className="text-white pt-16 pb-8" style={{ backgroundColor: footColor }}>
+        {/* Footer — background editable via sectionBg.footer (falls back to global footer color) */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'footer')}>
+        <footer className="text-white pt-16 pb-8" style={{ backgroundColor: data.hero?.sectionBg?.footer || footColor }}>
           <div className="px-4 container mx-auto">
             <EditableElement type="contact" isEditorMode={isEditorMode} onEdit={() => onEditElement('contact')}>
               <div className={`grid grid-cols-1 md:grid-cols-3 gap-12 mb-16 ${isEditorMode ? 'cursor-pointer hover:bg-zinc-900 p-4 -m-4 rounded-lg transition-colors' : ''}`}>
@@ -1793,6 +2239,7 @@ export const StorePreview = ({
             </div>
           </div>
         </footer>
+        </EditableElement>
       </div>
     );
   };
@@ -1812,46 +2259,58 @@ export const StorePreview = ({
     const footerIconScale = (settings?.footer_icon_scale || 100) / 100;
     const iconSize = `${20 * headerIconScale}px`;
 
+    // Per-element style overrides (Indico-level editing for Nature)
+    const nStyle = (k: string) => ({
+      fontFamily: heroStyleFontFamily(data.hero?.styles?.[k]?.fontFamily),
+      fontSize: pickFontSize(data.hero?.styles?.[k], deviceMode) ? `${pickFontSize(data.hero?.styles?.[k], deviceMode)}px` : undefined,
+      color: data.hero?.styles?.[k]?.color || undefined,
+      backgroundColor: data.hero?.styles?.[k]?.bgColor || undefined,
+    });
+    const nText = (k: string, fallback: string) => data.hero?.styles?.[k]?.text || fallback;
+    const natureCategories = categories.filter((c: any) => !c.parent_id && c.show_on_home !== false);
+
     return (
       <div className="min-h-screen font-sans text-gray-900" style={{ backgroundColor: bg }}>
         {/* Top Bar */}
         <EditableElement type="announcement" isEditorMode={isEditorMode} onEdit={() => onEditElement('announcement')}>
           {data.announcement?.enabled !== false && (
-            <div className="text-white text-center py-2 text-[10px] md:text-xs font-medium tracking-widest uppercase flex justify-center items-center px-4 relative" style={{ backgroundColor: '#4f6354' }}>
-              <span>{data.announcement?.text || "EVERY ITEM PLANTS 10 TREES"}</span>
-              <div className="absolute flex right-4 md:right-8 items-center gap-2 text-[10px] opacity-80 cursor-pointer hover:opacity-100 hidden sm:flex">
-                <span>🇺🇸 United States, EN [$USD] </span>
-                <ArrowRight className="w-3 h-3 rotate-90" />
-              </div>
+            <div className="text-white text-center py-2 text-[10px] md:text-xs font-medium tracking-widest uppercase flex justify-center items-center px-4" style={{ backgroundColor: data.announcement?.bgColor || '#4f6354', ...(data.announcement?.textColor ? { color: data.announcement.textColor } : {}) }}>
+              <span>{data.announcement?.text || "Envío gratis en compras mayores a $999"}</span>
             </div>
           )}
         </EditableElement>
 
-        {/* Header */}
-        <EditableElement type="header" isEditorMode={isEditorMode} onEdit={() => onEditElement('header')}>
-          <header className="px-6 py-4 flex items-center justify-between border-b border-gray-200" style={{ backgroundColor: navbarBgColor }}>
+        {/* Header — background editable via sectionBg.navbar */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'navbar')}>
+          <header className="px-6 py-4 flex items-center justify-between border-b border-gray-200" style={{ backgroundColor: data.hero?.sectionBg?.navbar || navbarBgColor }}>
             <div className="flex items-center gap-8 md:flex-1">
-              <div className="cursor-pointer">
-                <LogoDisplay
-                  logoUrl={data.logo?.url}
-                  fallbackText={data.logo?.alt || '10'}
-                  className="text-2xl font-serif font-bold tracking-tight text-gray-900"
-                />
-              </div>
-              <nav className="hidden md:flex items-center gap-6 text-xs font-semibold tracking-wider text-gray-700">
-                {categories.slice(0, 5).map((cat: any) => (
+              <EditableElement type="logo" isEditorMode={isEditorMode} onEdit={() => onEditElement('logo')}>
+                <div className="cursor-pointer">
+                  <LogoDisplay
+                    logoUrl={data.logo?.url}
+                    logoSize={(settings as any)?.logo_size}
+                    logoSizeMobile={(settings as any)?.logo_size_mobile}
+                    logoSizeTablet={(settings as any)?.logo_size_tablet}
+                    forceDevice={deviceMode}
+                    fallbackText={data.logo?.alt || 'LOGO'}
+                    className="text-2xl font-serif font-bold tracking-tight text-gray-900"
+                  />
+                </div>
+              </EditableElement>
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'navMenu')} className="hidden md:block">
+              <nav className="flex items-center gap-6 text-xs font-semibold tracking-wider text-gray-700" style={nStyle('navMenu')}>
+                {natureCategories.slice(0, 5).map((cat: any) => (
                   <button key={cat.id} className="hover:text-black uppercase transition-colors">{cat.name}</button>
                 ))}
-                {categories.length === 0 && (
+                {natureCategories.length === 0 && (
                   <>
-                    <button className="hover:text-black transition-colors uppercase">Womens</button>
-                    <button className="hover:text-black transition-colors uppercase">Mens</button>
-                    <button className="hover:text-black transition-colors uppercase">Accessories</button>
-                    <button className="hover:text-black transition-colors uppercase">Climate+</button>
-                    <button className="hover:text-black transition-colors uppercase">Impact</button>
+                    <button className="hover:text-black transition-colors uppercase">Mujer</button>
+                    <button className="hover:text-black transition-colors uppercase">Hombre</button>
+                    <button className="hover:text-black transition-colors uppercase">Accesorios</button>
                   </>
                 )}
               </nav>
+              </EditableElement>
             </div>
 
             <div className="flex items-center gap-4 justify-end md:flex-1">
@@ -1868,67 +2327,85 @@ export const StorePreview = ({
           </header>
         </EditableElement>
 
-        {/* Hero Section */}
-        <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
-          <section className="relative w-full h-[300px] md:h-[500px] flex items-end md:items-center bg-gray-200 overflow-hidden">
+        {/* Hero Section — photo opens banners; texts/buttons each editable */}
+        <section className="relative w-full h-[300px] md:h-[500px] flex items-end md:items-center bg-gray-200 overflow-hidden">
+          <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className="absolute inset-0">
             {banners?.[0] ? (
-              <img src={banners[0].image} alt="Hero" className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: banners[0].position || 'center center' }} />
-            ) : (<div className="absolute inset-0 w-full h-full bg-[#8c9485]"></div>
-            )}
-            <div className="absolute inset-0 bg-black/10"></div>
-            <div className="relative z-10 w-full px-6 md:px-16 pb-12 md:pb-0 md:pt-0 max-w-xl text-left">
-              <h1 className="text-3xl md:text-5xl font-serif font-bold leading-[1.1] mb-4 text-white drop-shadow-md whitespace-pre-line">{heroTitle}</h1>
-              <p className="text-xs md:text-sm text-white/90 mb-8 max-w-sm drop-shadow">{heroMessage}</p>
+              <img src={banners[0].image} alt="Hero" className="w-full h-full object-cover" style={{ objectPosition: banners[0].position || 'center center' }} />
+            ) : (<div className="w-full h-full bg-[#8c9485]"></div>)}
+          </EditableElement>
+          <div className="absolute inset-0 bg-black/10 pointer-events-none"></div>
+          <div className="relative z-10 w-full px-6 md:px-16 pb-12 md:pb-0 md:pt-0 max-w-xl text-left pointer-events-none">
+            <div className="pointer-events-auto flex flex-col items-start gap-3">
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'title')}>
+                <h1 className="text-3xl md:text-5xl font-serif font-bold leading-[1.1] text-white drop-shadow-md whitespace-pre-line" style={nStyle('title')}>{heroTitle}</h1>
+              </EditableElement>
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'message')}>
+                <p className="text-xs md:text-sm text-white/90 max-w-sm drop-shadow" style={nStyle('message')}>{heroMessage}</p>
+              </EditableElement>
               <div className="flex flex-col sm:flex-row gap-4">
-                <button className="bg-[#f4f4f0] text-gray-900 px-8 py-3.5 text-[10px] md:text-xs font-bold tracking-widest uppercase hover:bg-white transition-colors">SHOP WOMENS</button>
-                <button className="bg-[#f4f4f0] text-gray-900 px-8 py-3.5 text-[10px] md:text-xs font-bold tracking-widest uppercase hover:bg-white transition-colors">SHOP MENS</button>
+                <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta1')}>
+                  {data.hero?.styles?.cta1?.enabled === false ? (
+                    <div className="px-4 py-2 border border-dashed border-white/60 text-white/80 text-[11px] italic uppercase cursor-pointer">Botón oculto — click para activar</div>
+                  ) : (
+                    <button className="bg-[#f4f4f0] text-gray-900 px-8 py-3.5 text-[10px] md:text-xs font-bold tracking-widest uppercase hover:bg-white transition-colors" style={nStyle('cta1')}>
+                      {data.hero?.cta1Label || 'VER CATÁLOGO'}
+                    </button>
+                  )}
+                </EditableElement>
+                <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta2')}>
+                  {data.hero?.styles?.cta2?.enabled === false ? (
+                    <div className="px-4 py-2 border border-dashed border-white/60 text-white/80 text-[11px] italic uppercase cursor-pointer">Botón oculto — click para activar</div>
+                  ) : (
+                    <button className="bg-[#f4f4f0] text-gray-900 px-8 py-3.5 text-[10px] md:text-xs font-bold tracking-widest uppercase hover:bg-white transition-colors" style={nStyle('cta2')}>
+                      {data.hero?.cta2Label || 'NOVEDADES'}
+                    </button>
+                  )}
+                </EditableElement>
               </div>
             </div>
-          </section>
-        </EditableElement>
+          </div>
+        </section>
 
-        {/* Products Section */}
-        <EditableElement type="products" isEditorMode={isEditorMode} onEdit={() => onEditElement('products')}>
-          <section className="container mx-auto px-6 py-12 md:py-16">
+        {/* Products Section — background + title editable; tabs from real categories */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section1')}>
+          <section className="py-12 md:py-16" style={{ backgroundColor: data.hero?.sectionBg?.section1 || undefined }}>
+          <div className="container mx-auto px-6">
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-4 border-b border-gray-300">
               <div className="flex-1">
-                <h2 className="text-3xl md:text-4xl font-serif font-bold text-[#142642] mb-6">New Arrivals</h2>
-                <div className="flex gap-6 overflow-x-auto hide-scrollbar">
-                  <button className="text-xs font-bold tracking-widest uppercase pb-1 border-b-2 border-gray-500 text-gray-900 whitespace-nowrap">WOMEN'S</button>
-                  <button className="text-xs font-bold tracking-widest uppercase pb-1 border-b-2 border-transparent text-gray-500 hover:text-gray-900 whitespace-nowrap">MEN'S</button>
-                  <button className="text-xs font-bold tracking-widest uppercase pb-1 border-b-2 border-transparent text-gray-500 hover:text-gray-900 whitespace-nowrap">ACCESSORIES</button>
-                </div>
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle1')}>
+                  <h2 className="text-3xl md:text-4xl font-serif font-bold text-[#142642] mb-6" style={nStyle('sectionTitle1')}>{nText('sectionTitle1', 'Novedades')}</h2>
+                </EditableElement>
+                {natureCategories.length > 0 && (
+                  <div className="flex gap-6 overflow-x-auto hide-scrollbar">
+                    <button className="text-xs font-bold tracking-widest uppercase pb-1 border-b-2 border-gray-500 text-gray-900 whitespace-nowrap">TODO</button>
+                    {natureCategories.slice(0, 4).map((cat: any) => (
+                      <button key={cat.id} className="text-xs font-bold tracking-widest uppercase pb-1 border-b-2 border-transparent text-gray-500 hover:text-gray-900 whitespace-nowrap">{cat.name.toUpperCase()}</button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
             {bestSellers.length > 0 ? (
+              <EditableElement type="featured_products" isEditorMode={isEditorMode} onEdit={() => onEditElement('featured_products')}>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10">
-                {bestSellers.slice(0, 4).map((product: any) => (
+                {((featuredProducts && featuredProducts.length > 0)
+                  ? featuredProducts.map((id: string) => bestSellers.find((p: any) => p.id === id) || data.products?.find((p: any) => p.id === id)).filter(Boolean)
+                  : bestSellers.slice(0, 4)
+                ).map((product: any) => (
                   <div key={product.id} className="group cursor-pointer flex flex-col">
                     <div className="relative aspect-[3/4] overflow-hidden mb-3" style={{ backgroundColor: prodBgColor }}>
                       <img src={product.image || '/placeholder.svg'} alt={product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                     </div>
                     <div className="flex flex-col flex-grow">
-                      <div className="flex gap-1.5 mb-2">
-                        {['#e5e0d8', '#3a4047', '#f4ecd8', '#87a2ba'].map((color, i) => (
-                          <div key={i} className="w-4 h-4 rounded-full border border-gray-300" style={{ backgroundColor: color }}></div>
-                        ))}
-                      </div>
-                      <h3 className="font-serif text-sm font-semibold text-gray-900 leading-snug mb-1">{product.name}</h3>
-                      <div className="flex items-center gap-2 text-sm">
-                        {product.originalPrice ? (
-                          <>
-                            <span className="text-gray-500 line-through">${Number(product.originalPrice).toFixed(2)}</span>
-                            <span className="text-[#9b3b3b]">${Number(product.price).toFixed(2)}</span>
-                          </>
-                        ) : (
-                          <span className="text-gray-900">${Number(product.price).toFixed(2)}</span>
-                        )}
-                      </div>
+                      <h3 className="font-serif text-sm font-semibold text-gray-900 leading-snug mb-1" style={cardNameStyle} onClick={cardNameClick}>{product.name}</h3>
+                      <span className="text-sm text-gray-900">${Number(product.price).toFixed(2)}</span>
                     </div>
                   </div>
                 ))}
               </div>
+              </EditableElement>
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10">
                 {[1, 2, 3, 4].map(i => (
@@ -1936,67 +2413,101 @@ export const StorePreview = ({
                     <div className="relative aspect-[3/4] overflow-hidden mb-3 bg-gray-200">
                       <img src="/placeholder.svg" className="w-full h-full object-cover" />
                     </div>
-                    <h3 className="font-serif text-sm font-semibold mb-1">Product {i}</h3>
+                    <h3 className="font-serif text-sm font-semibold mb-1">Producto {i}</h3>
                     <span className="text-sm font-medium">${(49.99 * i).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
             )}
+          </div>
           </section>
         </EditableElement>
 
-        {/* Feature Split Section */}
-        <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
-          <section className="container mx-auto px-6 py-12">
-            <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-24">
-              <div className="lg:w-1/2 flex flex-col justify-center order-2 lg:order-1">
-                <h2 className="text-3xl md:text-5xl font-serif font-bold text-[#142642] leading-tight mb-4">Every Item Plants 10 Trees</h2>
-                <h3 className="text-xl md:text-2xl text-gray-800 mb-6">Join Us in Protecting the World We Play In</h3>
-                <p className="text-sm md:text-base text-gray-600 leading-relaxed max-w-lg mb-8">
-                  We're on a mission to restore the planet by planting trees and creating Earth-First, sustainably made apparel.
-                </p>
+        {/* Feature Split Section — texts/buttons editable; photos open the banners editor */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section2')}>
+          <section className="py-12" style={{ backgroundColor: data.hero?.sectionBg?.section2 || undefined }}>
+          <div className="container mx-auto px-6">
+            <div className={`flex items-center gap-12 lg:gap-24 ${deviceMode === 'mobile' ? 'flex-col' : 'flex-col lg:flex-row'}`}>
+              <div className={`flex flex-col justify-center gap-4 ${deviceMode === 'mobile' ? 'order-1' : 'lg:w-1/2 order-2 lg:order-1'}`}>
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'featureTitle')}>
+                  <h2 className="text-3xl md:text-5xl font-serif font-bold text-[#142642] leading-tight" style={nStyle('featureTitle')}>{nText('featureTitle', 'Nuestra Historia')}</h2>
+                </EditableElement>
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'featureSubtitle')}>
+                  <h3 className="text-xl md:text-2xl text-gray-800" style={nStyle('featureSubtitle')}>{nText('featureSubtitle', 'Comprometidos con el planeta')}</h3>
+                </EditableElement>
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'featureDescription')}>
+                  <p className="text-sm md:text-base text-gray-600 leading-relaxed max-w-lg" style={nStyle('featureDescription')}>
+                    {nText('featureDescription', 'Tenemos la misión de crear productos de calidad con responsabilidad ambiental. Cada compra contribuye a un mundo mejor para las generaciones futuras.')}
+                  </p>
+                </EditableElement>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <button className="bg-[#4f6354] text-white px-8 py-3.5 text-[11px] font-bold tracking-widest uppercase">OUR IMPACT</button>
-                  <button className="bg-[#4f6354] text-white px-8 py-3.5 text-[11px] font-bold tracking-widest uppercase">ABOUT US</button>
+                  <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'featureCta1')}>
+                    {data.hero?.styles?.featureCta1?.enabled === false ? (
+                      <div className="px-4 py-2 border border-dashed border-gray-300 text-gray-400 text-[11px] italic uppercase cursor-pointer">Botón oculto — click para activar</div>
+                    ) : (
+                      <button className="bg-[#4f6354] text-white px-8 py-3.5 text-[11px] font-bold tracking-widest uppercase" style={nStyle('featureCta1')}>{nText('featureCta1', 'VER CATÁLOGO')}</button>
+                    )}
+                  </EditableElement>
+                  <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'featureCta2')}>
+                    {data.hero?.styles?.featureCta2?.enabled === false ? (
+                      <div className="px-4 py-2 border border-dashed border-gray-300 text-gray-400 text-[11px] italic uppercase cursor-pointer">Botón oculto — click para activar</div>
+                    ) : (
+                      <button className="bg-[#4f6354] text-white px-8 py-3.5 text-[11px] font-bold tracking-widest uppercase" style={nStyle('featureCta2')}>{nText('featureCta2', 'NOVEDADES')}</button>
+                    )}
+                  </EditableElement>
                 </div>
               </div>
-              <div className="lg:w-1/2 relative order-1 lg:order-2 h-[300px] md:h-[500px] w-full">
-                <div className="absolute top-0 right-10 w-[70%] h-[60%] z-10 shadow-lg" style={{ backgroundImage: `url('${banners?.[1]?.image || 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop'}')`, backgroundSize: 'cover', backgroundPosition: banners?.[1]?.position || 'center' }}></div>
-                <div className="absolute bottom-10 right-0 w-[55%] h-[80%] z-20 shadow-lg" style={{ backgroundImage: `url('${banners?.[2]?.image || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&auto=format&fit=crop'}')`, backgroundSize: 'cover', backgroundPosition: banners?.[2]?.position || 'center' }}></div>
-                <div className="absolute bottom-0 left-10 w-[60%] h-[50%] z-30 shadow-lg" style={{ backgroundImage: `url('${banners?.[3]?.image || 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800&auto=format&fit=crop'}')`, backgroundSize: 'cover', backgroundPosition: banners?.[3]?.position || 'center' }}></div>
-              </div>
+              <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className={`relative h-[300px] md:h-[500px] w-full ${deviceMode === 'mobile' ? 'order-2' : 'lg:w-1/2 order-1 lg:order-2'}`}>
+                <div className="relative h-full w-full">
+                  {[
+                    { img: banners?.[1], cls: 'absolute top-0 right-10 w-[70%] h-[60%] z-10 shadow-lg' },
+                    { img: banners?.[2], cls: 'absolute bottom-10 right-0 w-[55%] h-[80%] z-20 shadow-lg' },
+                    { img: banners?.[3], cls: 'absolute bottom-0 left-10 w-[60%] h-[50%] z-30 shadow-lg' },
+                  ].map(({ img, cls }, i) => (
+                    <div
+                      key={i}
+                      className={`${cls} ${img?.image ? '' : 'bg-[#dfe3da] flex items-center justify-center'}`}
+                      style={img?.image ? { backgroundImage: `url('${img.image}')`, backgroundSize: 'cover', backgroundPosition: img.position || 'center' } : undefined}
+                    >
+                      {!img?.image && <span className="text-[#9aa392] text-[10px] font-medium px-2 text-center">Foto {i + 2}</span>}
+                    </div>
+                  ))}
+                </div>
+              </EditableElement>
             </div>
+          </div>
           </section>
         </EditableElement>
 
-        {/* Footer */}
-        <EditableElement type="contact" isEditorMode={isEditorMode} onEdit={() => onEditElement('contact')}>
-          <footer className="pt-16 pb-8 border-t border-gray-200 mt-12" style={{ backgroundColor: footColor }}>
+        {/* Footer — background + headings editable, real categories, no dead links */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'footer')}>
+          <footer className="pt-16 pb-8 border-t border-gray-200 mt-12" style={{ backgroundColor: data.hero?.sectionBg?.footer || footColor }}>
             <div className="container mx-auto px-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
                 <div className="md:col-span-1">
-                  <LogoDisplay logoUrl={data.logo?.url} fallbackText={data.logo?.alt || '10'} className="text-4xl font-serif font-bold tracking-tight text-gray-900 mb-4" />
-                  <p className="text-sm text-gray-600 mb-6 max-w-xs">{data.contact?.address || "Street Address, City"}</p>
+                  <LogoDisplay logoUrl={data.logo?.url} fallbackText={data.logo?.alt || 'LOGO'} className="text-4xl font-serif font-bold tracking-tight text-gray-900 mb-4" />
+                  <p className="text-sm text-gray-600 mb-6 max-w-xs">{data.contact?.address || <span className="text-gray-400 italic">Agrega tu dirección</span>}</p>
                 </div>
                 <div>
-                  <h4 className="font-bold uppercase mb-6 text-xs tracking-widest text-[#142642]">Shop</h4>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading1')}>
+                    <h4 className="font-bold uppercase mb-6 text-xs tracking-widest text-[#142642]" style={nStyle('footerHeading1')}>{nText('footerHeading1', 'Tienda')}</h4>
+                  </EditableElement>
                   <ul className="space-y-4 text-sm font-medium text-gray-600">
-                    <li>Women's</li><li>Men's</li><li>Accessories</li>
+                    {natureCategories.slice(0, 4).map((cat: any) => (<li key={cat.id}>{cat.name}</li>))}
+                    <li>Ver todo</li>
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-bold uppercase mb-6 text-xs tracking-widest text-[#142642]">About</h4>
-                  <ul className="space-y-4 text-sm font-medium text-gray-600">
-                    <li>Our Story</li><li>Impact</li><li>Careers</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-bold uppercase mb-6 text-xs tracking-widest text-[#142642]">Support</h4>
-                  <ul className="space-y-4 text-sm font-medium text-gray-600">
-                    {data.contact?.whatsapp && <li>WhatsApp: {data.contact.whatsapp}</li>}
-                    {data.contact?.email && <li>Email: {data.contact.email}</li>}
-                    <li>FAQ</li><li>Returns</li>
-                  </ul>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading2')}>
+                    <h4 className="font-bold uppercase mb-6 text-xs tracking-widest text-[#142642]" style={nStyle('footerHeading2')}>{nText('footerHeading2', 'Soporte')}</h4>
+                  </EditableElement>
+                  <EditableElement type="contact" isEditorMode={isEditorMode} onEdit={() => onEditElement('contact')}>
+                    <ul className="space-y-4 text-sm font-medium text-gray-600">
+                      {data.contact?.whatsapp && <li>WhatsApp: {data.contact.whatsapp}</li>}
+                      {data.contact?.email && <li>Email: {data.contact.email}</li>}
+                      {!data.contact?.whatsapp && !data.contact?.email && <li className="text-gray-400 italic cursor-pointer">Agrega tus datos de contacto</li>}
+                    </ul>
+                  </EditableElement>
                 </div>
               </div>
               <div className="border-t border-gray-300 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-500 text-[10px] uppercase tracking-widest">
@@ -2021,31 +2532,24 @@ export const StorePreview = ({
     const rawHeaderIconScale = (settings as any)?.header_icon_scale ?? 100;
     const headerIconScale = rawHeaderIconScale / 100 * 1.0;
 
-    const currentTestimonials = testimonials || {
-      enabled: true,
-      position: 'beneath_hero',
-      title: "Recomendaciones de Personas",
-      list: [
-        {
-          id: '1',
-          text: "¡Este producto es increíble! Muy recomendado.",
-          author: "Cliente Feliz",
-          role: "Usuario",
-          company: "",
-          logo: "/placeholder.svg"
-        }
-      ]
-    };
-
-    const testimonialsPos = currentTestimonials.position || 'beneath_hero';
+    // Only the owner's real testimonials — never invented reviews.
+    const currentTestimonials = testimonials;
+    const testimonialsPos = currentTestimonials?.position || 'beneath_hero';
+    const pbStyle = (k: string) => ({
+      fontFamily: heroStyleFontFamily(data.hero?.styles?.[k]?.fontFamily),
+      fontSize: pickFontSize(data.hero?.styles?.[k], deviceMode) ? `${pickFontSize(data.hero?.styles?.[k], deviceMode)}px` : undefined,
+      color: data.hero?.styles?.[k]?.color || undefined,
+      backgroundColor: data.hero?.styles?.[k]?.bgColor || undefined,
+    });
+    const pbText = (k: string, fallback: string) => data.hero?.styles?.[k]?.text || fallback;
 
     const renderTestimonials = () => {
-      if (!currentTestimonials.enabled) {
+      if (!currentTestimonials?.enabled || !(currentTestimonials.list?.length > 0)) {
         if (!isEditorMode) return null;
         return (
           <EditableElement type="testimonials" isEditorMode={isEditorMode} onEdit={() => onEditElement('testimonials')}>
             <div className="py-8 bg-gray-100 border-2 border-dashed border-gray-300 text-center text-gray-500 rounded-lg mx-6 my-4 cursor-pointer hover:bg-gray-200 transition-colors">
-              Sección de Testimonios (Oculta) - Clic para configurar
+              Testimonios — click para configurar los tuyos (sin configurar, no se muestran en la tienda)
             </div>
           </EditableElement>
         );
@@ -2101,25 +2605,32 @@ export const StorePreview = ({
         {/* Announcement Bar */}
         <EditableElement type="announcement" isEditorMode={isEditorMode} onEdit={() => onEditElement('announcement')}>
           {data.announcement?.enabled !== false && data.announcement?.text && (
-            <div className="bg-[#023f66] text-white text-center py-2.5 text-xs font-medium tracking-wide">
+            <div className="bg-[#023f66] text-white text-center py-2.5 text-xs font-medium tracking-wide" style={{ ...(data.announcement?.bgColor ? { backgroundColor: data.announcement.bgColor } : {}), ...(data.announcement?.textColor ? { color: data.announcement.textColor } : {}) }}>
               {data.announcement.text}
             </div>
           )}
         </EditableElement>
 
-        {/* Header */}
-        <EditableElement type="header" isEditorMode={isEditorMode} onEdit={() => onEditElement('header')}>
-          <header className="sticky top-0 z-50 shadow-sm transition-all duration-300" style={{ backgroundColor: navbarBgColor }}>
+        {/* Header — background editable via sectionBg.navbar */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'navbar')}>
+          <header className="sticky top-0 z-50 shadow-sm transition-all duration-300" style={{ backgroundColor: data.hero?.sectionBg?.navbar || navbarBgColor }}>
             <div className="px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-8">
-                <div className="cursor-pointer">
-                  <LogoDisplay
-                    logoUrl={data.logo?.url}
-                    fallbackText={data.logo?.alt || 'LOGO'}
-                    className="text-2xl font-bold tracking-tight text-gray-900"
-                  />
-                </div>
-                <nav className="hidden md:flex items-center gap-6 text-xs font-bold uppercase tracking-wider text-gray-600">
+                <EditableElement type="logo" isEditorMode={isEditorMode} onEdit={() => onEditElement('logo')}>
+                  <div className="cursor-pointer">
+                    <LogoDisplay
+                      logoUrl={data.logo?.url}
+                      logoSize={(settings as any)?.logo_size}
+                      logoSizeMobile={(settings as any)?.logo_size_mobile}
+                      logoSizeTablet={(settings as any)?.logo_size_tablet}
+                      forceDevice={deviceMode}
+                      fallbackText={data.logo?.alt || 'LOGO'}
+                      className="text-2xl font-bold tracking-tight text-gray-900"
+                    />
+                  </div>
+                </EditableElement>
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'navMenu')} className="hidden md:block">
+                <nav className="flex items-center gap-6 text-xs font-bold uppercase tracking-wider text-gray-600" style={pbStyle('navMenu')}>
                   {topCategories.map((cat: any) => (
                     <button key={cat.id} className="hover:text-gray-900 transition-colors">
                       {cat.name}
@@ -2132,13 +2643,10 @@ export const StorePreview = ({
                     </>
                   )}
                 </nav>
+                </EditableElement>
               </div>
 
               <div className="flex items-center gap-5">
-                <button className="hidden md:flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-600 hover:text-gray-900">
-                  <User style={{ color: headerIconColor, width: `${18 * headerIconScale}px`, height: `${18 * headerIconScale}px` }} />
-                  Iniciar Sesión
-                </button>
                 <Search className="hidden md:block cursor-pointer hover:scale-110 transition-transform" style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
                 <div className="relative cursor-pointer hover:scale-110 transition-transform">
                   <ShoppingCart style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
@@ -2146,9 +2654,15 @@ export const StorePreview = ({
                 <button className="md:hidden">
                   <Menu style={{ color: headerIconColor, width: `${24 * headerIconScale}px`, height: `${24 * headerIconScale}px` }} />
                 </button>
-                <button className="hidden lg:block border-2 border-[#023f66] text-[#023f66] text-xs font-bold uppercase px-5 py-2 rounded-full hover:bg-[#023f66] hover:text-white transition-colors">
-                  VER TODO
-                </button>
+                <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'headerCta')} className="hidden lg:block">
+                  {data.hero?.styles?.headerCta?.enabled === false ? (
+                    <div className="px-4 py-2 border border-dashed border-gray-300 text-gray-400 text-[11px] italic uppercase cursor-pointer">Botón oculto — click para activar</div>
+                  ) : (
+                    <button className="border-2 border-[#023f66] text-[#023f66] text-xs font-bold uppercase px-5 py-2 rounded-full hover:bg-[#023f66] hover:text-white transition-colors" style={pbStyle('headerCta')}>
+                      {pbText('headerCta', 'VER TODO')}
+                    </button>
+                  )}
+                </EditableElement>
               </div>
             </div>
           </header>
@@ -2164,20 +2678,36 @@ export const StorePreview = ({
             )}
             <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent"></div>
             <div className="container mx-auto px-6 relative z-10 text-white">
-              <div className="max-w-xl">
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 whitespace-pre-line leading-tight">
-                  {heroTitle}
-                </h1>
-                <p className="text-lg md:text-xl text-white/90 mb-8 max-w-sm">
-                  {heroMessage}
-                </p>
+              <div className="max-w-xl flex flex-col items-start gap-3">
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'title')}>
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold whitespace-pre-line leading-tight" style={pbStyle('title')}>
+                    {data.hero?.title || heroTitle}
+                  </h1>
+                </EditableElement>
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'message')}>
+                  <p className="text-lg md:text-xl text-white/90 max-w-sm" style={pbStyle('message')}>
+                    {data.hero?.message || heroMessage}
+                  </p>
+                </EditableElement>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <button className="bg-[#e98063] text-white px-8 py-3.5 rounded-full font-bold shadow-lg hover:bg-[#d46a4f] transition-colors text-center">
-                    Comprar Ahora
-                  </button>
-                  <button className="bg-transparent border-2 border-white text-white px-8 py-3.5 rounded-full font-bold hover:bg-white hover:text-gray-900 transition-colors text-center">
-                    Cómo Funciona
-                  </button>
+                  <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta1')}>
+                    {data.hero?.styles?.cta1?.enabled === false ? (
+                      <div className="px-4 py-2 border border-dashed border-white/60 text-white/80 text-[11px] italic cursor-pointer">Botón oculto — click para activar</div>
+                    ) : (
+                      <button className="bg-[#e98063] text-white px-8 py-3.5 rounded-full font-bold shadow-lg hover:bg-[#d46a4f] transition-colors text-center" style={pbStyle('cta1')}>
+                        {data.hero?.cta1Label || 'Comprar Ahora'}
+                      </button>
+                    )}
+                  </EditableElement>
+                  <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta2')}>
+                    {data.hero?.styles?.cta2?.enabled === false ? (
+                      <div className="px-4 py-2 border border-dashed border-white/60 text-white/80 text-[11px] italic cursor-pointer">Botón oculto — click para activar</div>
+                    ) : (
+                      <button className="bg-transparent border-2 border-white text-white px-8 py-3.5 rounded-full font-bold hover:bg-white hover:text-gray-900 transition-colors text-center" style={pbStyle('cta2')}>
+                        {data.hero?.cta2Label || 'Ver Catálogo'}
+                      </button>
+                    )}
+                  </EditableElement>
                 </div>
               </div>
             </div>
@@ -2186,20 +2716,27 @@ export const StorePreview = ({
 
         {testimonialsPos === 'beneath_hero' && renderTestimonials()}
 
-        {/* Categories Section */}
+        {/* Categories Section — cards use each category's first product photo */}
         {topCategories.length > 0 && (
-          <EditableElement type="products" isEditorMode={isEditorMode} onEdit={() => onEditElement('products')}>
-            <section className="py-20 text-center">
-              <h2 className="text-3xl md:text-4xl font-bold text-[#023f66] mb-12">¿Qué estás buscando?</h2>
+          <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section1')}>
+            <section className="py-20 text-center" style={{ backgroundColor: data.hero?.sectionBg?.section1 || undefined }}>
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle1')}>
+                <h2 className="text-3xl md:text-4xl font-bold text-[#023f66] mb-12" style={pbStyle('sectionTitle1')}>{pbText('sectionTitle1', '¿Qué estás buscando?')}</h2>
+              </EditableElement>
               <div className="container mx-auto px-6 flex flex-wrap justify-center gap-8">
-                {topCategories.map((c: any) => (
-                  <div key={c.id} className="group cursor-pointer flex flex-col items-center">
-                    <div className="w-56 h-40 rounded-3xl overflow-hidden mb-6 bg-gray-100 shadow-md group-hover:shadow-xl transition-all duration-300">
-                      <img src="/placeholder.svg" alt={c.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                {topCategories.map((c: any) => {
+                  const prod = data.products?.find((p: any) => p.categories?.some((pc: any) => pc.id === c.id) || p.category_id === c.id);
+                  const photo = prod?.image || (typeof prod?.images?.[0] === 'object' ? prod.images[0]?.url : prod?.images?.[0]);
+                  if (!photo) return null;
+                  return (
+                    <div key={c.id} className="group cursor-pointer flex flex-col items-center">
+                      <div className="w-56 h-40 rounded-3xl overflow-hidden mb-6 bg-gray-100 shadow-md group-hover:shadow-xl transition-all duration-300">
+                        <img src={photo} alt={c.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                      </div>
+                      <h3 className="text-[#023f66] font-bold text-xl">{c.name}</h3>
                     </div>
-                    <h3 className="text-[#023f66] font-bold text-xl">{c.name}</h3>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           </EditableElement>
@@ -2207,9 +2744,11 @@ export const StorePreview = ({
 
         {/* Best Sellers Section */}
         <EditableElement type="featured_products" isEditorMode={isEditorMode} onEdit={() => onEditElement('featured_products')}>
-          <section className="py-20 bg-gray-50 border-y border-gray-200">
+          <section className="py-20 bg-gray-50 border-y border-gray-200" style={{ backgroundColor: data.hero?.sectionBg?.section2 || undefined }}>
             <div className="container mx-auto px-6">
-              <h2 className="text-3xl md:text-4xl font-bold text-[#023f66] text-center mb-16">Productos más vendidos</h2>
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle2')}>
+                <h2 className="text-3xl md:text-4xl font-bold text-[#023f66] text-center mb-16" style={pbStyle('sectionTitle2')}>{pbText('sectionTitle2', 'Productos más vendidos')}</h2>
+              </EditableElement>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {(featuredProducts && featuredProducts.length > 0) ? (
                   featuredProducts.map((productId: string) => {
@@ -2240,7 +2779,7 @@ export const StorePreview = ({
                         </button>
                       </div>
                       <div className="p-6 text-center">
-                        <h3 className="font-bold text-[#023f66] text-lg mb-2 line-clamp-2">{product.name}</h3>
+                        <h3 className="font-bold text-[#023f66] text-lg mb-2 line-clamp-2" style={cardNameStyle} onClick={cardNameClick}>{product.name}</h3>
                         <span className="font-bold text-[#e98063] text-xl">${product.price}</span>
                       </div>
                     </div>
@@ -2251,13 +2790,16 @@ export const StorePreview = ({
           </section>
         </EditableElement>
 
-        {/* Products Grid */}
-        <EditableElement type="products" isEditorMode={isEditorMode} onEdit={() => onEditElement('products')}>
-          <section className="container mx-auto px-6 py-16">
-            <h2 className="text-3xl font-bold text-[#023f66] mb-10 border-b border-gray-200 pb-4">Productos</h2>
+        {/* Products Grid — background + title editable */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section3')}>
+          <section className="py-16" style={{ backgroundColor: data.hero?.sectionBg?.section3 || undefined }}>
+            <div className="container mx-auto px-6">
+            <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle3')}>
+              <h2 className="text-3xl font-bold text-[#023f66] mb-10 border-b border-gray-200 pb-4" style={pbStyle('sectionTitle3')}>{pbText('sectionTitle3', 'Productos')}</h2>
+            </EditableElement>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
               {bestSellers.map((product: any) => (
-                <div key={product.id} className="group cursor-pointer bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300">
+                <div key={product.id} className="group cursor-pointer bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300" onClick={() => openProductModal(product)}>
                   <div className="relative aspect-square bg-[#f8f8f8] p-6 flex items-center justify-center">
                     <img src={product.image || '/placeholder.svg'} alt={product.name} className="max-w-full max-h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500" />
                     <button className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white shadow flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-gray-50">
@@ -2265,21 +2807,22 @@ export const StorePreview = ({
                     </button>
                   </div>
                   <div className="p-6 text-center">
-                    <h3 className="font-bold text-[#023f66] text-lg mb-2 line-clamp-2">{product.name}</h3>
-                    <p className="text-[#023f66] opacity-60 text-sm mb-4 line-clamp-2">{product.description || "La mejor experiencia de calidad."}</p>
+                    <h3 className="font-bold text-[#023f66] text-lg mb-2 line-clamp-2" style={cardNameStyle} onClick={cardNameClick}>{product.name}</h3>
+                    {product.description && <p className="text-[#023f66] opacity-60 text-sm mb-4 line-clamp-2">{product.description}</p>}
                     <span className="font-bold text-[#e98063] text-xl">${product.price}</span>
                   </div>
                 </div>
               ))}
+            </div>
             </div>
           </section>
         </EditableElement>
 
         {testimonialsPos === 'above_footer' && renderTestimonials()}
 
-        {/* Footer */}
-        <EditableElement type="contact" isEditorMode={isEditorMode} onEdit={() => onEditElement('contact')}>
-          <footer className="relative pt-24 pb-10 overflow-hidden" style={{ backgroundColor: footColor, color: '#fff' }}>
+        {/* Footer — background + headings editable */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'footer')}>
+          <footer className="relative pt-24 pb-10 overflow-hidden" style={{ backgroundColor: data.hero?.sectionBg?.footer || footColor, color: '#fff' }}>
             {/* Olas Arriba de Footer (Wave Top) */}
             <div className="absolute top-0 left-0 w-full overflow-hidden leading-none z-0">
               <svg className="relative block w-full h-[30px] md:h-[40px]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
@@ -2291,10 +2834,12 @@ export const StorePreview = ({
               <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
                 <div className="md:col-span-1">
                   <LogoDisplay logoUrl={data.logo?.url} fallbackText={data.logo?.alt || 'LOGO'} className="text-3xl font-bold tracking-tight text-white mb-6" />
-                  <p className="text-sm text-white/70 max-w-xs leading-relaxed">{data.contact?.address || "Transforma tu rutina diaria con nuestra colección premium."}</p>
+                  <p className="text-sm text-white/70 max-w-xs leading-relaxed">{data.contact?.address || <span className="italic text-white/40">Agrega tu dirección</span>}</p>
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm mb-6 uppercase tracking-widest text-[#e98063]">Tienda</h4>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading1')}>
+                    <h4 className="font-bold text-sm mb-6 uppercase tracking-widest text-[#e98063]" style={pbStyle('footerHeading1')}>{pbText('footerHeading1', 'Tienda')}</h4>
+                  </EditableElement>
                   <ul className="space-y-4 text-sm text-white/80">
                     {topCategories.map((c: any) => (
                       <li key={c.id}><button className="hover:text-white transition-colors">{c.name}</button></li>
@@ -2303,16 +2848,19 @@ export const StorePreview = ({
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm mb-6 uppercase tracking-widest text-[#e98063]">Soporte</h4>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading2')}>
+                    <h4 className="font-bold text-sm mb-6 uppercase tracking-widest text-[#e98063]" style={pbStyle('footerHeading2')}>{pbText('footerHeading2', 'Soporte')}</h4>
+                  </EditableElement>
                   <ul className="space-y-4 text-sm text-white/80">
                     {data.contact?.whatsapp && <li>WhatsApp: {data.contact.whatsapp}</li>}
                     {data.contact?.email && <li>Email: {data.contact.email}</li>}
-                    <li>Preguntas Frecuentes</li>
-                    <li>Envíos y Devoluciones</li>
+                    {!data.contact?.whatsapp && !data.contact?.email && <li className="italic text-white/40">Agrega tus datos de contacto</li>}
                   </ul>
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm mb-6 uppercase tracking-widest text-[#e98063]">Síguenos</h4>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading3')}>
+                    <h4 className="font-bold text-sm mb-6 uppercase tracking-widest text-[#e98063]" style={pbStyle('footerHeading3')}>{pbText('footerHeading3', 'Síguenos')}</h4>
+                  </EditableElement>
                   <div className="flex gap-4">
                     {data.contact?.instagram && <a href={data.contact.instagram} className="hover:text-white transition-colors opacity-80 hover:opacity-100">Instagram</a>}
                     {data.contact?.facebook && <a href={data.contact.facebook} className="hover:text-white transition-colors opacity-80 hover:opacity-100">Facebook</a>}
@@ -2336,9 +2884,480 @@ export const StorePreview = ({
   // --- MAIN RENDER ---
   const templateId = propTemplateId || settings?.template_id || 'default';
 
+  const BauhausLayoutPreview = () => {
+    // Only include set keys so merging with a base style never wipes it with undefined.
+    const bhStyle = (k: string) => {
+      const e = data.hero?.styles?.[k] || {};
+      const st: any = {};
+      if (e.fontFamily) st.fontFamily = heroStyleFontFamily(e.fontFamily);
+      { const _fs = pickFontSize(e, deviceMode); if (_fs) st.fontSize = `${_fs}px`; }
+      if (e.color) st.color = e.color;
+      if (e.bgColor) st.backgroundColor = e.bgColor;
+      return st;
+    };
+    const bhText = (k: string, fallback: string) => data.hero?.styles?.[k]?.text || fallback;
+    const red = settings?.primary_color || '#E63946';
+    const yellow = settings?.secondary_color || '#FFD60A';
+    const blue = '#003049';
+    const black = '#0A0A0A';
+    const bhBg = bgColor || '#FAF6EE';
+    const cats = categories.filter((c: any) => !c.parent_id && c.show_on_home !== false);
+    const gridProducts = ((featuredProducts && featuredProducts.length > 0)
+      ? featuredProducts.map((id: string) => bestSellers.find((p: any) => p.id === id) || data.products?.find((p: any) => p.id === id)).filter(Boolean)
+      : bestSellers.slice(0, 6));
+    const accents = [red, yellow, blue];
+
+    return (
+      <div className="min-h-screen font-sans" style={{ backgroundColor: bhBg, color: black }}>
+        {/* Announcement */}
+        <EditableElement type="announcement" isEditorMode={isEditorMode} onEdit={() => onEditElement('announcement')}>
+          {data.announcement?.enabled !== false && (
+            <div className="text-center py-2 text-xs font-bold tracking-[0.3em] uppercase" style={{ backgroundColor: data.announcement?.bgColor || black, color: data.announcement?.textColor || yellow }}>
+              {data.announcement?.text || "ENVÍO GRATIS EN PEDIDOS MAYORES A $999"}
+            </div>
+          )}
+        </EditableElement>
+
+        {/* Header — background editable */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'navbar')}>
+          <header className="border-b-[3px] px-6 py-5 flex items-center justify-between" style={{ borderColor: black, backgroundColor: data.hero?.sectionBg?.navbar || navColor || 'transparent' }}>
+            <EditableElement type="logo" isEditorMode={isEditorMode} onEdit={() => onEditElement('logo')}>
+              <div className="cursor-pointer">
+                <LogoDisplay logoUrl={data.logo?.url} logoSize={(settings as any)?.logo_size} logoSizeMobile={(settings as any)?.logo_size_mobile} logoSizeTablet={(settings as any)?.logo_size_tablet} forceDevice={deviceMode} fallbackText={data.logo?.alt || 'BAUHAUS'} className="text-2xl md:text-3xl font-black tracking-tighter uppercase" />
+              </div>
+            </EditableElement>
+            <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'navMenu')} className="hidden md:block">
+              <nav className="flex items-center gap-8 text-sm font-bold tracking-wide uppercase" style={bhStyle('navMenu')}>
+                {(cats.length > 0 ? cats : [{ name: 'Tienda' }, { name: 'Colección' }, { name: 'Diario' }]).map((cat: any, i: number) => (
+                  <span key={i} className="cursor-pointer hover:opacity-60">{cat.name}</span>
+                ))}
+              </nav>
+            </EditableElement>
+            <div className="flex items-center gap-4">
+              <Search className="w-5 h-5" />
+              <ShoppingCart className="w-5 h-5" />
+            </div>
+          </header>
+        </EditableElement>
+
+        {/* Hero — asymmetric grid; background + texts editable */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'hero')}>
+          <section style={{ backgroundColor: data.hero?.sectionBg?.hero || undefined }}>
+          <div className="container mx-auto px-6 py-12 md:py-16">
+            <div className={deviceMode === 'mobile' ? 'flex flex-col gap-6' : 'grid grid-cols-12 gap-4 md:gap-6'}>
+              {data.hero?.styles?.heroNumber?.enabled !== false && (
+                <div className={`col-span-12 md:col-span-2 flex items-start ${deviceMode === 'mobile' ? 'order-3' : ''}`}>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'heroNumber')}>
+                    <div className="text-[80px] md:text-[120px] font-black leading-none" style={{ color: red, ...bhStyle('heroNumber') }}>{bhText('heroNumber', '01')}</div>
+                  </EditableElement>
+                </div>
+              )}
+              <div className={`col-span-12 md:col-span-6 flex flex-col justify-center ${deviceMode === 'mobile' ? 'order-1' : ''}`}>
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'title')}>
+                  <h1 className="text-4xl sm:text-5xl md:text-7xl font-black leading-[0.85] tracking-tighter uppercase whitespace-pre-line break-words mb-6" style={bhStyle('title')}>
+                    {data.hero?.title || 'FORMA\nSIGUE\nFUNCIÓN'}
+                  </h1>
+                </EditableElement>
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'message')}>
+                  <p className="text-base md:text-lg max-w-md mb-8 leading-relaxed" style={bhStyle('message')}>{data.hero?.message || 'Una colección curada de piezas esenciales. Geometría, color, propósito.'}</p>
+                </EditableElement>
+                <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta1')}>
+                  {data.hero?.styles?.cta1?.enabled === false ? (
+                    <div className="self-start px-4 py-2 border border-dashed border-gray-400 text-gray-500 text-[11px] italic uppercase cursor-pointer">Botón oculto — click para activar</div>
+                  ) : (
+                    <button className="self-start px-8 py-4 text-sm font-bold tracking-widest uppercase" style={{ backgroundColor: black, color: yellow, ...bhStyle('cta1') }}>
+                      {data.hero?.cta1Label || 'Explorar colección →'}
+                    </button>
+                  )}
+                </EditableElement>
+              </div>
+              <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className={`col-span-12 md:col-span-4 relative ${deviceMode === 'mobile' ? 'order-2' : ''}`}>
+                <div className="absolute inset-0 translate-x-3 translate-y-3" style={{ backgroundColor: yellow }} />
+                <div className="relative aspect-[3/4] overflow-hidden">
+                  {banners?.[0]?.image ? (
+                    <img src={banners[0].image} alt="Hero" className="w-full h-full object-cover" style={{ objectPosition: banners[0].position || 'center' }} />
+                  ) : (<div className="w-full h-full" style={{ backgroundColor: blue }} />)}
+                </div>
+              </EditableElement>
+            </div>
+          </div>
+          </section>
+        </EditableElement>
+
+        {/* Products — background + title editable; grid opens product picker */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section1')}>
+          <section style={{ backgroundColor: data.hero?.sectionBg?.section1 || undefined }}>
+          <div className="container mx-auto px-6 py-12 md:py-16">
+            <div className="flex items-end justify-between mb-10">
+              <div>
+                <div className="text-sm font-bold tracking-widest uppercase mb-2" style={{ color: red }}>02 — Catálogo</div>
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle1')}>
+                  <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter" style={bhStyle('sectionTitle1')}>{bhText('sectionTitle1', 'Selección')}</h2>
+                </EditableElement>
+              </div>
+            </div>
+            <EditableElement type="featured_products" isEditorMode={isEditorMode} onEdit={() => onEditElement('featured_products')}>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:gap-10">
+                {gridProducts.map((product: any, i: number) => (
+                  <div key={product.id} className="group cursor-pointer">
+                    <div className="relative mb-4">
+                      <div className="absolute inset-0 translate-x-2 translate-y-2" style={{ backgroundColor: accents[i % 3] }} />
+                      <div className="relative aspect-square overflow-hidden bg-gray-100">
+                        <img src={product.image || (typeof product.images?.[0] === 'object' ? product.images[0]?.url : product.images?.[0]) || '/placeholder.svg'} alt={product.name} className="w-full h-full object-cover" />
+                      </div>
+                    </div>
+                    <div className="flex items-baseline justify-between">
+                      <h3 className="text-lg font-bold uppercase tracking-tight line-clamp-1" style={cardNameStyle} onClick={cardNameClick}>{product.name}</h3>
+                      <span className="text-base font-black" style={{ color: accents[i % 3] }}>${product.price}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </EditableElement>
+          </div>
+          </section>
+        </EditableElement>
+
+        {/* Manifesto — background + headings editable; photos open banners editor */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section2')}>
+          <section style={{ backgroundColor: data.hero?.sectionBg?.section2 || undefined }}>
+          <div className="container mx-auto px-6 py-12 md:py-16">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+              {[{ bg: blue, num: '03 — Manifiesto', key: 'manifesto1', def: 'Menos pero mejor', bannerIdx: 1 }, { bg: red, num: '04 — Filosofía', key: 'manifesto2', def: 'Diseño honesto', bannerIdx: 2 }].map((m) => (
+                <EditableElement key={m.key} type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className="aspect-[4/5] relative overflow-hidden">
+                  <div className="w-full h-full" style={{ backgroundColor: m.bg }}>
+                    {banners?.[m.bannerIdx]?.image && <img src={banners[m.bannerIdx].image} alt="Banner" className="w-full h-full object-cover" />}
+                  </div>
+                  <div className="absolute inset-0 bg-black/20" />
+                  <div className="absolute bottom-8 left-8 right-8 text-white">
+                    <div className="text-xs font-bold tracking-widest uppercase mb-2" style={{ color: yellow }}>{m.num}</div>
+                    <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', m.key)}>
+                      <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tighter leading-none" style={bhStyle(m.key)}>{bhText(m.key, m.def)}</h3>
+                    </EditableElement>
+                  </div>
+                </EditableElement>
+              ))}
+            </div>
+          </div>
+          </section>
+        </EditableElement>
+
+        {/* Footer — background + headings editable */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'footer')}>
+          <footer className="border-t-[3px] mt-12" style={{ borderColor: black, backgroundColor: data.hero?.sectionBg?.footer || footColor || bhBg }}>
+            <div className="container mx-auto px-6 py-12">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div>
+                  <LogoDisplay logoUrl={data.logo?.url} fallbackText={data.logo?.alt || 'BAUHAUS'} className="text-3xl font-black uppercase tracking-tighter mb-4" />
+                  <p className="text-sm leading-relaxed">{data.contact?.address || <span className="italic opacity-50">Agrega tu dirección</span>}</p>
+                </div>
+                <div>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading1')}>
+                    <h4 className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: red, ...bhStyle('footerHeading1') }}>{bhText('footerHeading1', 'Tienda')}</h4>
+                  </EditableElement>
+                  <ul className="space-y-2 text-sm"><li>Catálogo</li><li>Ofertas</li><li>Novedades</li></ul>
+                </div>
+                <div>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading2')}>
+                    <h4 className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: red, ...bhStyle('footerHeading2') }}>{bhText('footerHeading2', 'Contacto')}</h4>
+                  </EditableElement>
+                  <EditableElement type="contact" isEditorMode={isEditorMode} onEdit={() => onEditElement('contact')}>
+                    <ul className="space-y-2 text-sm">
+                      {data.contact?.whatsapp && <li>WhatsApp</li>}
+                      {data.contact?.email && <li>{data.contact.email}</li>}
+                      {!data.contact?.whatsapp && !data.contact?.email && <li className="italic opacity-50">Agrega tus datos</li>}
+                    </ul>
+                  </EditableElement>
+                </div>
+                <div>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading3')}>
+                    <h4 className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: red, ...bhStyle('footerHeading3') }}>{bhText('footerHeading3', 'Legal')}</h4>
+                  </EditableElement>
+                  <ul className="space-y-2 text-sm"><li>Términos</li><li>Privacidad</li></ul>
+                </div>
+              </div>
+              <div className="border-t-2 pt-4 flex flex-col md:flex-row justify-between items-center gap-2 text-xs font-bold tracking-widest uppercase" style={{ borderColor: black }}>
+                <span>© {new Date().getFullYear()} {data.logo?.alt || 'Tu Tienda'}</span>
+                <span>Powered by Toogo</span>
+              </div>
+            </div>
+          </footer>
+        </EditableElement>
+      </div>
+    );
+  };
+
+  const CyberLayoutPreview = () => {
+    const cy = (k: string) => {
+      const e = data.hero?.styles?.[k] || {};
+      const st: any = {};
+      if (e.fontFamily) st.fontFamily = heroStyleFontFamily(e.fontFamily);
+      { const _fs = pickFontSize(e, deviceMode); if (_fs) st.fontSize = `${_fs}px`; }
+      if (e.color) st.color = e.color;
+      if (e.bgColor) st.backgroundColor = e.bgColor;
+      return st;
+    };
+    const cyText = (k: string, fallback: string) => data.hero?.styles?.[k]?.text || fallback;
+    const cBg = bgColor || '#0A0A14';
+    const surface = '#13131E';
+    const border = '#2A2A3E';
+    const neon = settings?.primary_color || '#00F5FF';
+    const magenta = settings?.secondary_color || '#FF00E5';
+    const text = '#E8E8F0';
+    const muted = '#8888A0';
+    const cats = categories.filter((c: any) => !c.parent_id && c.show_on_home !== false);
+    const grid = ((featuredProducts && featuredProducts.length > 0)
+      ? featuredProducts.map((id: string) => bestSellers.find((p: any) => p.id === id) || data.products?.find((p: any) => p.id === id)).filter(Boolean)
+      : bestSellers.slice(0, 8));
+    const gridIds = new Set(grid.map((p: any) => p?.id));
+    const otherGrid = (featuredProducts2 && featuredProducts2.length > 0)
+      ? featuredProducts2.map((id: string) => data.products?.find((p: any) => p.id === id)).filter(Boolean)
+      : (data.products || []).filter((p: any) => !gridIds.has(p.id)).slice(0, 8);
+
+    return (
+      <div className="min-h-screen font-sans" style={{ backgroundColor: cBg, color: text, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
+        {/* Ticker */}
+        <EditableElement type="ticker" isEditorMode={isEditorMode} onEdit={() => onEditElement('ticker')}>
+          {data.announcement?.enabled !== false && (
+            <div className="overflow-hidden border-b py-2 text-center" style={{ borderColor: border, backgroundColor: data.ticker?.bgColor || surface }}>
+              <span className="font-bold tracking-[0.2em] text-xs" style={{ color: data.ticker?.textColor || neon }}>{data.ticker?.text || data.announcement?.text || '◢ NUEVA TEMPORADA  ◢ ENVÍO INMEDIATO'}</span>
+            </div>
+          )}
+        </EditableElement>
+
+        {/* Header */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'navbar')}>
+          <header className="backdrop-blur-xl border-b" style={{ backgroundColor: data.hero?.sectionBg?.navbar || navColor || `${cBg}cc`, borderColor: border }}>
+            <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <EditableElement type="logo" isEditorMode={isEditorMode} onEdit={() => onEditElement('logo')}>
+                  <LogoDisplay logoUrl={data.logo?.url} logoSize={(settings as any)?.logo_size} forceDevice={deviceMode} fallbackText={data.logo?.alt || 'CYBER'} className="text-xl md:text-2xl font-black tracking-[0.15em] uppercase" />
+                </EditableElement>
+              </div>
+              <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'navMenu')} className="hidden md:block">
+                <nav className="flex items-center gap-8 text-xs font-bold tracking-[0.15em] uppercase" style={cy('navMenu')}>
+                  {(cats.length > 0 ? cats : [{ name: 'Catálogo' }, { name: 'Drops' }, { name: 'Tech' }]).map((c: any, i: number) => (
+                    <span key={i} className="cursor-pointer" style={{ color: text }}>{c.name}</span>
+                  ))}
+                </nav>
+              </EditableElement>
+              <div className="flex items-center gap-4">
+                <Search className="w-5 h-5" style={{ color: text }} />
+                <ShoppingCart className="w-5 h-5" style={{ color: text }} />
+              </div>
+            </div>
+          </header>
+        </EditableElement>
+
+        {/* Hero */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'hero')}>
+          <section className="relative overflow-hidden" style={{ backgroundColor: data.hero?.sectionBg?.hero || undefined }}>
+            <div className="absolute inset-0 opacity-[0.07]" style={{ backgroundImage: `linear-gradient(${text} 1px, transparent 1px), linear-gradient(90deg, ${text} 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
+            <div className="absolute top-1/4 -left-32 w-96 h-96 rounded-full blur-3xl opacity-20" style={{ backgroundColor: neon }} />
+            <div className="relative container mx-auto px-6 py-16 md:py-24">
+              <div className={`grid gap-12 items-center ${deviceMode === 'mobile' ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
+                <div>
+                  {data.hero?.styles?.heroBadge?.enabled !== false && (
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'heroBadge')}>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border mb-6 text-xs tracking-[0.3em] uppercase" style={{ borderColor: neon, color: neon, ...cy('heroBadge') }}>{cyText('heroBadge', 'SYSTEM ONLINE')}</div>
+                  </EditableElement>
+                  )}
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'title')}>
+                    <h1 className="text-5xl md:text-7xl font-black leading-[0.95] tracking-tight uppercase whitespace-pre-line mb-6" style={data.hero?.styles?.title?.color ? cy('title') : { background: `linear-gradient(135deg, ${text} 0%, ${neon} 50%, ${magenta} 100%)`, WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', ...cy('title') }}>
+                      {data.hero?.title || 'FUTURO\nDIGITAL.\nDISEÑADO\nHOY.'}
+                    </h1>
+                  </EditableElement>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'message')}>
+                    <p className="text-base md:text-lg mb-8 max-w-md leading-relaxed" style={{ color: muted, ...cy('message') }}>{data.hero?.message || 'Productos del mañana. Tecnología que se adelanta.'}</p>
+                  </EditableElement>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta1')}>
+                      <button className="px-8 py-4 text-sm font-bold tracking-widest uppercase" style={{ background: data.hero?.styles?.cta1?.bgColor || `linear-gradient(135deg, ${neon} 0%, ${magenta} 100%)`, color: cBg, ...cy('cta1') }}>{data.hero?.cta1Label || 'Explorar drops'}</button>
+                    </EditableElement>
+                    <EditableElement type="botón" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'cta2')}>
+                      <button className="px-8 py-4 text-sm font-bold tracking-widest uppercase border" style={{ borderColor: border, color: text, ...cy('cta2') }}>{data.hero?.cta2Label || 'Ver catálogo'}</button>
+                    </EditableElement>
+                  </div>
+                  {data.hero?.styles?.stat1?.enabled !== false && (
+                    <div className="grid grid-cols-3 gap-4 mt-12 pt-8 border-t" style={{ borderColor: border }}>
+                      {[{ v: 'stat1', l: 'statLabel1', dv: '24/7', dl: 'Soporte', c: neon }, { v: 'stat2', l: 'statLabel2', dv: '100%', dl: 'Garantía', c: magenta }, { v: 'stat3', l: 'statLabel3', dv: 'FAST', dl: 'Envíos', c: neon }].map((st) => (
+                        <EditableElement key={st.v} type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', st.v)}>
+                          <div>
+                            <div className="text-2xl font-black" style={{ color: st.c, ...cy(st.v) }}>{cyText(st.v, st.dv)}</div>
+                            <div className="text-[10px] tracking-widest uppercase" style={{ color: muted, ...cy(st.l) }}>{cyText(st.l, st.dl)}</div>
+                          </div>
+                        </EditableElement>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className="relative">
+                  <div className="absolute inset-0 rounded-2xl blur-2xl opacity-40" style={{ background: `linear-gradient(135deg, ${neon} 0%, ${magenta} 100%)` }} />
+                  <div className="relative aspect-video rounded-2xl overflow-hidden border-2" style={{ borderColor: border, backgroundColor: surface }}>
+                    {banners?.[0]?.image ? (
+                      <img src={banners[0].image} alt="Hero" className="w-full h-full object-cover" style={{ objectPosition: banners[0].position || 'center' }} />
+                    ) : (<div className="w-full h-full flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${cBg} 0%, ${surface} 100%)` }}><p className="text-xs tracking-widest uppercase" style={{ color: muted }}>Hero Banner</p></div>)}
+                  </div>
+                </EditableElement>
+              </div>
+            </div>
+          </section>
+        </EditableElement>
+
+        {/* Products */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section1')}>
+          <section style={{ backgroundColor: data.hero?.sectionBg?.section1 || undefined }}>
+          <div className="container mx-auto px-6 py-16">
+            <div className="flex items-end justify-between mb-10">
+              <div>
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionEyebrow1')}>
+                  <div className="text-xs tracking-[0.3em] uppercase mb-2" style={{ color: neon, ...cy('sectionEyebrow1') }}>{cyText('sectionEyebrow1', 'PRODUCTS')}</div>
+                </EditableElement>
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle1')}>
+                  <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight" style={cy('sectionTitle1')}>{cyText('sectionTitle1', 'Drops activos')}</h2>
+                </EditableElement>
+              </div>
+            </div>
+            <EditableElement type="featured_products" isEditorMode={isEditorMode} onEdit={() => onEditElement('featured_products')}>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {grid.map((product: any) => (
+                  <div key={product.id} className="rounded-xl overflow-hidden border" style={{ borderColor: border, backgroundColor: surface }}>
+                    <div className="relative aspect-square overflow-hidden">
+                      <img src={product.image || (typeof product.images?.[0] === 'object' ? product.images[0]?.url : product.images?.[0]) || '/placeholder.svg'} alt={product.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-sm font-bold uppercase tracking-tight line-clamp-1 mb-1" style={cardNameStyle} onClick={cardNameClick}>{product.name}</h3>
+                      <span className="text-base font-black" style={{ color: neon }}>${product.price}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </EditableElement>
+          </div>
+          </section>
+        </EditableElement>
+
+        {/* Newsletter banner — uploadable background image via text_banner */}
+        {data.hero?.styles?.newsletter?.enabled !== false && (
+          <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section2')}>
+            <section style={{ backgroundColor: data.hero?.sectionBg?.section2 || undefined }}>
+            <div className="container mx-auto px-6 py-16">
+              <EditableElement type="banner" isEditorMode={isEditorMode} onEdit={() => onEditElement('text_banner')}>
+              <div
+                className="relative overflow-hidden rounded-2xl p-8 md:p-16 border text-center bg-cover bg-center"
+                style={{
+                  borderColor: border,
+                  backgroundColor: surface,
+                  backgroundImage: data.textBanner?.imageUrl ? `url(${data.textBanner.imageUrl})` : undefined,
+                  backgroundPosition: data.textBanner?.imagePosition || '50% 50%',
+                }}
+              >
+                {data.textBanner?.imageUrl && <div className="absolute inset-0" style={{ backgroundColor: `${cBg}99` }} />}
+                <div className="relative">
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'newsletterTitle')}>
+                  <h3 className="text-3xl md:text-5xl font-black uppercase tracking-tight mb-4" style={cy('newsletterTitle')}>{cyText('newsletterTitle', 'Sé el primero en saber.')}</h3>
+                </EditableElement>
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'newsletterText')}>
+                  <p style={{ color: muted, ...cy('newsletterText') }}>{cyText('newsletterText', 'Drops exclusivos. Ofertas anticipadas. Cero spam.')}</p>
+                </EditableElement>
+                </div>
+              </div>
+              </EditableElement>
+            </div>
+            </section>
+          </EditableElement>
+        )}
+
+        {/* Otros productos — second grid below the banner */}
+        {otherGrid.length > 0 && (
+          <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'section3')}>
+            <section style={{ backgroundColor: data.hero?.sectionBg?.section3 || undefined }}>
+            <div className="container mx-auto px-6 pb-16">
+              <div className="mb-12">
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionEyebrow3')}>
+                  <div className="text-xs tracking-[0.3em] uppercase mb-2" style={{ color: neon, ...cy('sectionEyebrow3') }}>{cyText('sectionEyebrow3', 'MÁS')}</div>
+                </EditableElement>
+                <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'sectionTitle3')}>
+                  <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight" style={cy('sectionTitle3')}>{cyText('sectionTitle3', 'También te puede interesar')}</h2>
+                </EditableElement>
+              </div>
+              <EditableElement type="featured_products" isEditorMode={isEditorMode} onEdit={() => onEditElement('featured_products', 'featured_grid_2')}>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {otherGrid.map((product: any) => (
+                  <div key={product.id} className="rounded-xl overflow-hidden border" style={{ borderColor: border, backgroundColor: surface }}>
+                    <div className="relative aspect-square overflow-hidden">
+                      <img src={product.image || (typeof product.images?.[0] === 'object' ? product.images[0]?.url : product.images?.[0]) || '/placeholder.svg'} alt={product.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-sm font-bold uppercase tracking-tight line-clamp-1 mb-1" style={cardNameStyle} onClick={cardNameClick}>{product.name}</h3>
+                      <span className="text-base font-black" style={{ color: neon }}>${product.price}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              </EditableElement>
+            </div>
+            </section>
+          </EditableElement>
+        )}
+
+        {/* Footer */}
+        <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'footer')}>
+          <footer className="border-t mt-12" style={{ borderColor: border, backgroundColor: data.hero?.sectionBg?.footer || footColor || surface }}>
+            <div className="container mx-auto px-6 py-12">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <LogoDisplay logoUrl={data.logo?.url} fallbackText={data.logo?.alt || 'CYBER'} className="text-xl font-black tracking-[0.15em] uppercase" />
+                  </div>
+                  <p className="text-sm" style={{ color: muted }}>{data.contact?.address || <span className="italic opacity-60">Agrega tu dirección</span>}</p>
+                </div>
+                <div>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading1')}>
+                    <h4 className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: neon, ...cy('footerHeading1') }}>{cyText('footerHeading1', '// Tienda')}</h4>
+                  </EditableElement>
+                  <ul className="space-y-2 text-sm" style={{ color: muted }}><li>Catálogo</li><li>Drops</li><li>Tech</li></ul>
+                </div>
+                <div>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading2')}>
+                    <h4 className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: neon, ...cy('footerHeading2') }}>{cyText('footerHeading2', '// Contacto')}</h4>
+                  </EditableElement>
+                  <EditableElement type="contact" isEditorMode={isEditorMode} onEdit={() => onEditElement('contact')}>
+                    <ul className="space-y-2 text-sm" style={{ color: muted }}>
+                      {data.contact?.whatsapp && <li>WhatsApp</li>}
+                      {data.contact?.email && <li>{data.contact.email}</li>}
+                      {!data.contact?.whatsapp && !data.contact?.email && <li className="italic opacity-60">Agrega tus datos</li>}
+                    </ul>
+                  </EditableElement>
+                </div>
+                <div>
+                  <EditableElement type="texto" isEditorMode={isEditorMode} onEdit={() => onEditElement('hero_element', 'footerHeading3')}>
+                    <h4 className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: neon, ...cy('footerHeading3') }}>{cyText('footerHeading3', '// Legal')}</h4>
+                  </EditableElement>
+                  <ul className="space-y-2 text-sm" style={{ color: muted }}><li>Términos</li><li>Privacidad</li></ul>
+                </div>
+              </div>
+              <div className="border-t pt-6 text-xs tracking-[0.2em] uppercase" style={{ borderColor: border, color: muted }}>© {new Date().getFullYear()} {data.logo?.alt || 'Tu Tienda'} // Powered by Toogo</div>
+            </div>
+          </footer>
+        </EditableElement>
+      </div>
+    );
+  };
+
+  const _cardText = data.hero?.styles?.productCardText;
+  const _cardResolvedSize = pickFontSize(_cardText, deviceMode);
+  const _cardStyle = (_cardText?.fontFamily || _cardResolvedSize)
+    ? { fontFamily: heroStyleFontFamily(_cardText?.fontFamily), fontSize: _cardResolvedSize ? `${_cardResolvedSize}px` : undefined }
+    : undefined;
   return (
+    <CardStyleContext.Provider value={{ style: _cardStyle, isEditorMode, onEditText: () => onEditElement('hero_element', 'productCardText') }}>
     <>
-      {templateId === 'premium_brand' ? (
+      {templateId === 'cyber' ? (
+        <CyberLayoutPreview />
+      ) : templateId === 'bauhaus' ? (
+        <BauhausLayoutPreview />
+      ) : templateId === 'premium_brand' ? (
         <PremiumBrandLayoutPreview />
       ) : templateId === 'nature' ? (
         <NatureLayoutPreview />
@@ -2461,5 +3480,6 @@ export const StorePreview = ({
         </DialogContent>
       </Dialog>
     </>
+    </CardStyleContext.Provider>
   );
 };

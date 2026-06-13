@@ -4,7 +4,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { ShoppingCart, Search, Menu, X, User, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useCart } from "@/contexts/CartContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
+import { heroFontFamily } from "@/lib/heroFonts";
 
 export const NatureTemplate = (props: any) => {
     const {
@@ -27,12 +29,13 @@ export const NatureTemplate = (props: any) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('WOMEN\'S');
+    const [activeTab, setActiveTab] = useState('TODO');
     const hideNav = useHideOnScroll();
 
     const { items: cartItems, removeItem, updateQuantity, totalPrice: cartTotal } = useCart();
     const cartCount = cartItems.reduce((acc: number, item: any) => acc + item.quantity, 0);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [showCheckout, setShowCheckout] = useState(false);
 
     const handleNavigate = (path: string, params: Record<string, string> = {}) => {
         const newParams = new URLSearchParams();
@@ -48,6 +51,12 @@ export const NatureTemplate = (props: any) => {
 
     const isCatalog = view === 'catalog';
     const displayProducts = isCatalog ? (catalogProducts || []) : products;
+    // Home grid: hand-picked featured products when chosen in the editor,
+    // otherwise the first 4 products as fallback.
+    const featuredIds = props.featuredProducts;
+    const homeProducts = (featuredIds && featuredIds.length > 0)
+        ? featuredIds.map((id: string) => (products || []).find((p: any) => p.id === id)).filter(Boolean)
+        : (products || []).slice(0, 4);
 
     // Design Tokens base on screenshot
     const brandDarkGreen = '#4f6354';
@@ -69,16 +78,46 @@ export const NatureTemplate = (props: any) => {
     const heroBanner = banners?.[0];
     const topCategories = categories?.filter((c: any) => !c.parent_id && c.show_on_home !== false).slice(0, 6) || [];
 
-    const tabs = topCategories.length > 0 ? topCategories.map(c => c.name.toUpperCase()) : ["MUJER", "HOMBRE", "ACCESORIOS"];
+    // Tabs come from REAL categories only (no fake fallbacks) and actually
+    // filter the grid below. "TODO" resets the filter.
+    const tabs = topCategories.length > 0 ? ['TODO', ...topCategories.map((c: any) => c.name.toUpperCase())] : [];
+    const tabFilteredProducts = (activeTab && activeTab !== 'TODO' && tabs.length > 0)
+        ? homeProducts.filter((p: any) => p.categories?.some((c: any) => c.name?.toUpperCase() === activeTab))
+        : homeProducts;
+
+    // Indico-level per-element styles (hero.styles[key]) + per-section backgrounds.
+    // All optional overrides — undefined keeps the template's default look.
+    const els = props.heroStyles || {};
+    const styleFor = (k: string) => ({
+        fontFamily: heroFontFamily(els?.[k]?.fontFamily),
+        fontSize: els?.[k]?.fontSize ? `${els[k].fontSize}px` : undefined,
+        color: els?.[k]?.color || undefined,
+        backgroundColor: els?.[k]?.bgColor || undefined,
+    });
+    // Buttons route to catalog / a category / a custom link (same as Indico).
+    const ctaClick = (k: string) => () => {
+        const cfg = els?.[k] || {};
+        if (cfg.action === 'link' && cfg.customUrl) {
+            window.open(cfg.customUrl, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        if (cfg.action === 'category' && cfg.categorySlug) {
+            handleNavigate('/catalogo', { category: cfg.categorySlug });
+            return;
+        }
+        handleNavigate('/catalogo');
+    };
 
     // Product Card
     const ProductCard = ({ product }: { product: any }) => {
         const isService = product.product_type === 'service';
         const pricingMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
         const isQuoteOnly = isService && pricingMode === 'quote';
-        const salePrice = product.sale_price_mxn || product.price_mxn || product.price;
-        const regularPrice = product.originalPrice || product.price * 1.2; // Mocking regular price if sale
-        const isOnSale = !isService && (product.sale_price_mxn || product.originalPrice);
+        // Honest pricing: only show a crossed-out price for REAL discounts
+        // (sale_price below the regular price). Never invent one.
+        const regularPrice = product.price_mxn || product.price || 0;
+        const isOnSale = !isService && product.sale_price_mxn && product.sale_price_mxn < regularPrice;
+        const salePrice = isOnSale ? product.sale_price_mxn : regularPrice;
         const servicePrice = product.price_mxn || product.price || 0;
 
         return (
@@ -97,12 +136,6 @@ export const NatureTemplate = (props: any) => {
                     />
                 </div>
                 <div className="flex flex-col flex-grow">
-                    {/* Mock Swatches */}
-                    <div className="flex gap-1.5 mb-2">
-                        {['#e5e0d8', '#3a4047', '#f4ecd8', '#87a2ba'].map((color, i) => (
-                            <div key={i} className={`w-4 h-4 rounded-full border border-gray-300`} style={{ backgroundColor: color }}></div>
-                        ))}
-                    </div>
                     <h3 className="font-serif text-sm font-semibold text-gray-900 leading-snug mb-1">{product.title || product.name}</h3>
                     <div className="flex items-center gap-2 text-sm">
                         {isService ? (
@@ -134,13 +167,13 @@ export const NatureTemplate = (props: any) => {
 
             {/* Top Bar */}
             {announcement?.enabled !== false && (
-                <div className="text-white text-center py-2 text-[10px] md:text-xs font-medium tracking-widest uppercase flex justify-center items-center px-4 relative" style={{ backgroundColor: brandDarkGreen }}>
+                <div className="text-white text-center py-2 text-[10px] md:text-xs font-medium tracking-widest uppercase flex justify-center items-center px-4 relative" style={{ backgroundColor: announcement?.bgColor || brandDarkGreen, ...(announcement?.textColor ? { color: announcement.textColor } : {}) }}>
                     <span>{announcement?.text || "Envío gratis en compras mayores a $999"}</span>
                 </div>
             )}
 
             {/* Header */}
-            <header className={`sticky top-0 z-40 px-6 py-4 flex items-center justify-between border-b border-gray-200 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: settings?.navbar_bg_color || brandLightBg }}>
+            <header className={`sticky top-0 z-40 px-6 py-4 flex items-center justify-between border-b border-gray-200 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: props.sectionBg?.navbar || settings?.navbar_bg_color || brandLightBg }}>
                 {/* Desktop Nav - Left */}
                 <div className="flex items-center gap-8 md:flex-1">
                     <div className="cursor-pointer" onClick={() => handleNavigate('/tienda')}>
@@ -148,10 +181,13 @@ export const NatureTemplate = (props: any) => {
                             logoUrl={settings?.logo_url}
                             fallbackText={settings?.store_name || 'LOGO'}
                             disableFetch={true}
+                        logoSize={settings?.logo_size}
+                        logoSizeMobile={(settings as any)?.logo_size_mobile}
+                        logoSizeTablet={(settings as any)?.logo_size_tablet}
                             className="text-2xl font-serif font-bold tracking-tight text-gray-900"
                         />
                     </div>
-                    <nav className="hidden md:flex items-center gap-6 text-xs font-semibold tracking-wider text-gray-700">
+                    <nav className="hidden md:flex items-center gap-6 text-xs font-semibold tracking-wider text-gray-700" style={styleFor('navMenu')}>
                         {topCategories.slice(0, 5).map((cat: any) => (
                             <button
                                 key={cat.id}
@@ -162,21 +198,13 @@ export const NatureTemplate = (props: any) => {
                             </button>
                         ))}
                         {topCategories.length === 0 && (
-                            <>
-                                <button className="hover:text-black transition-colors uppercase">Mujer</button>
-                                <button className="hover:text-black transition-colors uppercase">Hombre</button>
-                                <button className="hover:text-black transition-colors uppercase">Accesorios</button>
-                                <button className="hover:text-black transition-colors uppercase">Destacados</button>
-                                <button className="hover:text-black transition-colors uppercase">Impacto</button>
-                            </>
+                            <button onClick={() => handleNavigate('/catalogo')} className="hover:text-black transition-colors uppercase">Catálogo</button>
                         )}
                     </nav>
                 </div>
 
                 {/* Right Icons */}
                 <div className="flex items-center gap-4 justify-end md:flex-1">
-                    <User className="hidden md:block cursor-pointer hover:scale-110 transition-transform" style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
-                    <Search className="hidden md:block cursor-pointer hover:scale-110 transition-transform" style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
                     <div
                         className="relative cursor-pointer hover:scale-110 transition-transform"
                         onClick={() => setIsCartOpen(true)}
@@ -211,55 +239,56 @@ export const NatureTemplate = (props: any) => {
                     <div className="absolute inset-0 bg-black/10"></div> {/* Subtle overlay */}
 
                     <div className="relative z-10 w-full px-6 md:px-16 pb-12 md:pb-0 md:pt-0 max-w-xl text-left">
-                        <h1 className="text-4xl md:text-6xl font-serif font-bold leading-[1.1] mb-4 text-white drop-shadow-md whitespace-pre-line">
+                        <h1 className="text-4xl md:text-6xl font-serif font-bold leading-[1.1] mb-4 text-white drop-shadow-md whitespace-pre-line" style={styleFor('title')}>
                             {heroTitle}
                         </h1>
-                        <p className="text-sm md:text-base text-white/90 mb-8 max-w-sm drop-shadow">
+                        <p className="text-sm md:text-base text-white/90 mb-8 max-w-sm drop-shadow" style={styleFor('message')}>
                             {heroMessage}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4">
-                            <button
-                                onClick={() => handleNavigate('/catalogo')}
-                                className="bg-[#f4f4f0] text-gray-900 px-8 py-3.5 text-xs font-bold tracking-widest uppercase hover:bg-white transition-colors"
-                            >
-                                VER MUJER
-                            </button>
-                            <button
-                                onClick={() => handleNavigate('/catalogo')}
-                                className="bg-[#f4f4f0] text-gray-900 px-8 py-3.5 text-xs font-bold tracking-widest uppercase hover:bg-white transition-colors"
-                            >
-                                VER HOMBRE
-                            </button>
+                            {(els?.cta1?.enabled !== false) && (
+                                <button
+                                    onClick={ctaClick('cta1')}
+                                    className="bg-[#f4f4f0] text-gray-900 px-8 py-3.5 text-xs font-bold tracking-widest uppercase hover:bg-white transition-colors"
+                                    style={styleFor('cta1')}
+                                >
+                                    {props.cta1Label || 'VER CATÁLOGO'}
+                                </button>
+                            )}
+                            {(els?.cta2?.enabled !== false) && (
+                                <button
+                                    onClick={ctaClick('cta2')}
+                                    className="bg-[#f4f4f0] text-gray-900 px-8 py-3.5 text-xs font-bold tracking-widest uppercase hover:bg-white transition-colors"
+                                    style={styleFor('cta2')}
+                                >
+                                    {props.cta2Label || 'NOVEDADES'}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </section>
             )}
 
             {/* Products Section */}
-            <section className="container mx-auto px-6 py-12 md:py-16">
+            <section style={{ backgroundColor: props.sectionBg?.section1 || undefined }}>
+            <div className="container mx-auto px-6 py-12 md:py-16">
                 {!isCatalog && (
                     <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-4 border-b border-gray-300">
                         <div className="flex-1">
-                            <h2 className="text-3xl md:text-4xl font-serif font-bold text-[#142642] mb-6">Novedades</h2>
-                            <div className="flex gap-6 overflow-x-auto hide-scrollbar">
-                                {tabs.map((tab) => (
-                                    <button
-                                        key={tab}
-                                        onClick={() => setActiveTab(tab)}
-                                        className={`text-xs font-bold tracking-widest uppercase pb-1 border-b-2 whitespace-nowrap ${activeTab === tab ? 'border-gray-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
-                                    >
-                                        {tab}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="hidden md:flex gap-2 mt-4 md:mt-0">
-                            <button className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-300">
-                                <ArrowLeft className="w-5 h-5" />
-                            </button>
-                            <button className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-300">
-                                <ArrowRight className="w-5 h-5" />
-                            </button>
+                            <h2 className="text-3xl md:text-4xl font-serif font-bold text-[#142642] mb-6" style={styleFor('sectionTitle1')}>{els?.sectionTitle1?.text || 'Novedades'}</h2>
+                            {tabs.length > 0 && (
+                                <div className="flex gap-6 overflow-x-auto hide-scrollbar">
+                                    {tabs.map((tab) => (
+                                        <button
+                                            key={tab}
+                                            onClick={() => setActiveTab(tab)}
+                                            className={`text-xs font-bold tracking-widest uppercase pb-1 border-b-2 whitespace-nowrap ${activeTab === tab ? 'border-gray-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
+                                        >
+                                            {tab}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -268,61 +297,84 @@ export const NatureTemplate = (props: any) => {
                     <h1 className="text-3xl md:text-4xl font-serif font-bold mb-8 text-[#142642]">Catálogo</h1>
                 )}
 
-                {displayProducts.length > 0 ? (
+                {(isCatalog ? displayProducts : tabFilteredProducts).length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 md:gap-x-6 gap-y-10">
-                        {(isCatalog ? displayProducts : displayProducts.slice(0, 4)).map((product: any) => (
+                        {(isCatalog ? displayProducts : tabFilteredProducts).map((product: any) => (
                             <ProductCard key={product.id} product={product} />
                         ))}
                     </div>
                 ) : (
                     <div className="py-20 text-center text-gray-400">
-                        <p className="text-lg">No hay productos disponibles.</p>
+                        <p className="text-lg">No hay productos disponibles{!isCatalog && activeTab !== 'TODO' ? ' en esta categoría' : ''}.</p>
                     </div>
                 )}
+            </div>
             </section>
 
-            {/* Split Feature Section */}
+            {/* Split Feature Section — texts/buttons fully editable; collage photos
+                come from the store's own banners (no third-party stock fallbacks) */}
             {!isCatalog && (props.textBanner?.isActive !== false) && (
-                <section className="container mx-auto px-6 py-12">
+                <section style={{ backgroundColor: props.sectionBg?.section2 || undefined }}>
+                <div className="container mx-auto px-6 py-12">
                     <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-24">
-                        <div className="lg:w-1/2 flex flex-col justify-center order-2 lg:order-1">
-                            <h2 className="text-3xl md:text-5xl font-serif font-bold text-[#142642] leading-tight mb-4">
-                                {settings?.feature_title || 'Nuestra Historia'}
+                        <div className="lg:w-1/2 flex flex-col justify-center lg:order-1">
+                            <h2 className="text-3xl md:text-5xl font-serif font-bold text-[#142642] leading-tight mb-4" style={styleFor('featureTitle')}>
+                                {els?.featureTitle?.text || settings?.feature_title || 'Nuestra Historia'}
                             </h2>
-                            <h3 className="text-xl md:text-2xl text-gray-800 mb-6">
-                                {settings?.feature_subtitle || 'Comprometidos con el planeta'}
+                            <h3 className="text-xl md:text-2xl text-gray-800 mb-6" style={styleFor('featureSubtitle')}>
+                                {els?.featureSubtitle?.text || settings?.feature_subtitle || 'Comprometidos con el planeta'}
                             </h3>
-                            <p className="text-sm md:text-base text-gray-600 leading-relaxed max-w-lg mb-8">
-                                {settings?.feature_description || 'Tenemos la misión de crear productos de calidad con responsabilidad ambiental. Cada compra contribuye a un mundo mejor para las generaciones futuras.'}
+                            <p className="text-sm md:text-base text-gray-600 leading-relaxed max-w-lg mb-8" style={styleFor('featureDescription')}>
+                                {els?.featureDescription?.text || settings?.feature_description || 'Tenemos la misión de crear productos de calidad con responsabilidad ambiental. Cada compra contribuye a un mundo mejor para las generaciones futuras.'}
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4">
-                                <button
-                                    onClick={() => handleNavigate('/catalogo')}
-                                    className="bg-[#4f6354] text-white px-8 py-3.5 text-[11px] font-bold tracking-widest uppercase hover:bg-[#3d4d41] transition-colors w-full sm:w-auto text-center"
-                                >
-                                    VER CATÁLOGO
-                                </button>
-                                <button
-                                    onClick={() => handleNavigate('/catalogo')}
-                                    className="bg-[#4f6354] text-white px-8 py-3.5 text-[11px] font-bold tracking-widest uppercase hover:bg-[#3d4d41] transition-colors w-full sm:w-auto text-center"
-                                >
-                                    SOBRE NOSOTROS
-                                </button>
+                                {(els?.featureCta1?.enabled !== false) && (
+                                    <button
+                                        onClick={ctaClick('featureCta1')}
+                                        className="bg-[#4f6354] text-white px-8 py-3.5 text-[11px] font-bold tracking-widest uppercase hover:bg-[#3d4d41] transition-colors w-full sm:w-auto text-center"
+                                        style={styleFor('featureCta1')}
+                                    >
+                                        {els?.featureCta1?.text || 'VER CATÁLOGO'}
+                                    </button>
+                                )}
+                                {(els?.featureCta2?.enabled !== false) && (
+                                    <button
+                                        onClick={ctaClick('featureCta2')}
+                                        className="bg-[#4f6354] text-white px-8 py-3.5 text-[11px] font-bold tracking-widest uppercase hover:bg-[#3d4d41] transition-colors w-full sm:w-auto text-center"
+                                        style={styleFor('featureCta2')}
+                                    >
+                                        {els?.featureCta2?.text || 'NOVEDADES'}
+                                    </button>
+                                )}
                             </div>
                         </div>
-                        <div className="lg:w-1/2 relative order-1 lg:order-2 h-[400px] md:h-[600px] w-full">
-                            <div className="absolute top-0 right-10 w-[70%] h-[60%] z-10 shadow-lg" style={{ backgroundImage: `url('${banners?.[1]?.imageUrl || banners?.[1]?.image || 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=800&auto=format&fit=crop'}')`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
-                            <div className="absolute bottom-10 right-0 w-[55%] h-[80%] z-20 shadow-lg" style={{ backgroundImage: `url('${banners?.[2]?.imageUrl || banners?.[2]?.image || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&auto=format&fit=crop'}')`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
-                            <div className="absolute bottom-0 left-10 w-[60%] h-[50%] z-30 shadow-lg" style={{ backgroundImage: `url('${banners?.[3]?.imageUrl || banners?.[3]?.image || 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800&auto=format&fit=crop'}')`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
+                        <div className="lg:w-1/2 relative lg:order-2 h-[400px] md:h-[600px] w-full">
+                            {[
+                                { img: banners?.[1], cls: 'absolute top-0 right-10 w-[70%] h-[60%] z-10 shadow-lg' },
+                                { img: banners?.[2], cls: 'absolute bottom-10 right-0 w-[55%] h-[80%] z-20 shadow-lg' },
+                                { img: banners?.[3], cls: 'absolute bottom-0 left-10 w-[60%] h-[50%] z-30 shadow-lg' },
+                            ].map(({ img, cls }, i) => {
+                                const url = img?.imageUrl || img?.image;
+                                return (
+                                    <div
+                                        key={i}
+                                        className={`${cls} ${url ? '' : 'bg-[#dfe3da] flex items-center justify-center'}`}
+                                        style={url ? { backgroundImage: `url('${url}')`, backgroundSize: 'cover', backgroundPosition: img?.position || 'center' } : undefined}
+                                    >
+                                        {!url && <span className="text-[#9aa392] text-xs font-medium px-4 text-center">Sube la foto {i + 2} en Imágenes de la Plantilla</span>}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
+                </div>
                 </section>
             )}
 
             {/* Footer */}
-            <footer className="pt-16 pb-8 border-t border-gray-200 mt-12" style={{ backgroundColor: footerBgColor }}>
+            <footer className="pt-16 pb-8 border-t border-gray-200 mt-12" style={{ backgroundColor: props.sectionBg?.footer || footerBgColor }}>
                 <div className="container mx-auto px-6">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
                         <div className="md:col-span-1">
                             <LogoDisplay
                                 logoUrl={settings?.logo_url}
@@ -331,29 +383,20 @@ export const NatureTemplate = (props: any) => {
                                 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold tracking-tight text-gray-900 mb-4"
                             />
                             <p className="text-sm text-gray-600 mb-6 max-w-xs leading-relaxed">
-                                {contactData?.address || "Configura tu dirección en el editor visual para mostrarla aquí."}
+                                {contactData?.address || <span className="text-gray-400 italic">Agrega tu dirección</span>}
                             </p>
                         </div>
                         <div>
-                            <h4 className="font-bold uppercase mb-6 text-xs tracking-widest text-[#142642]">Tienda</h4>
+                            <h4 className="font-bold uppercase mb-6 text-xs tracking-widest text-[#142642]" style={styleFor('footerHeading1')}>{els?.footerHeading1?.text || 'Tienda'}</h4>
                             <ul className="space-y-4 text-sm font-medium text-gray-600">
-                                <li><button onClick={() => handleNavigate('/catalogo', { category: 'mujer' })} className="hover:text-gray-900">Mujer</button></li>
-                                <li><button onClick={() => handleNavigate('/catalogo', { category: 'hombre' })} className="hover:text-gray-900">Hombre</button></li>
-                                <li><button onClick={() => handleNavigate('/catalogo', { category: 'accesorios' })} className="hover:text-gray-900">Accesorios</button></li>
+                                {topCategories.slice(0, 4).map((cat: any) => (
+                                    <li key={cat.id}><button onClick={() => handleNavigate('/catalogo', { category: cat.name.toLowerCase() })} className="hover:text-gray-900">{cat.name}</button></li>
+                                ))}
                                 <li><button onClick={() => handleNavigate('/catalogo')} className="hover:text-gray-900">Ver todo</button></li>
                             </ul>
                         </div>
                         <div>
-                            <h4 className="font-bold uppercase mb-6 text-xs tracking-widest text-[#142642]">Acerca de</h4>
-                            <ul className="space-y-4 text-sm font-medium text-gray-600">
-                                <li><a href="#" className="hover:text-gray-900">Nuestra Historia</a></li>
-                                <li><a href="#" className="hover:text-gray-900">Impacto</a></li>
-                                <li><a href="#" className="hover:text-gray-900">Trabaja con Nosotros</a></li>
-                                <li><a href="#" className="hover:text-gray-900">Blog</a></li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h4 className="font-bold uppercase mb-6 text-xs tracking-widest text-[#142642]">Soporte</h4>
+                            <h4 className="font-bold uppercase mb-6 text-xs tracking-widest text-[#142642]" style={styleFor('footerHeading2')}>{els?.footerHeading2?.text || 'Soporte'}</h4>
                             <ul className="space-y-4 text-sm font-medium text-gray-600">
                                 {contactData?.whatsapp && (
                                     <li><a href={`https://wa.me/${contactData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-gray-900 flex items-center gap-2">WhatsApp: {contactData.whatsapp}</a></li>
@@ -361,16 +404,17 @@ export const NatureTemplate = (props: any) => {
                                 {contactData?.email && (
                                     <li><a href={`mailto:${contactData.email}`} className="hover:text-gray-900 flex items-center gap-2">Email: {contactData.email}</a></li>
                                 )}
-                                <li><a href="#" className="hover:text-gray-900">Preguntas Frecuentes</a></li>
-                                <li><a href="#" className="hover:text-gray-900">Devoluciones</a></li>
+                                {!contactData?.whatsapp && !contactData?.email && (
+                                    <li className="text-gray-400 italic">Agrega tus datos de contacto</li>
+                                )}
                             </ul>
                         </div>
                     </div>
                     <div className="border-t border-gray-300 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-500 text-[10px] uppercase tracking-widest font-semibold">
                         <p>© {new Date().getFullYear()} {settings?.store_name || 'Tu Tienda'}. Todos los derechos reservados.</p>
                         <div className="flex gap-4">
-                            <a href="#" className="hover:text-gray-900">Términos</a>
-                            <a href="#" className="hover:text-gray-900">Privacidad</a>
+                            <a href="/terminos-condiciones" target="_blank" rel="noopener noreferrer" className="hover:text-gray-900">Términos</a>
+                            <a href="/politica-privacidad" target="_blank" rel="noopener noreferrer" className="hover:text-gray-900">Privacidad</a>
                             <span>Powered by Toogo</span>
                         </div>
                     </div>
@@ -388,15 +432,12 @@ export const NatureTemplate = (props: any) => {
                             </button>
                         </div>
                         <nav className="flex-1 overflow-y-auto p-6 space-y-6">
-                            {(topCategories.length > 0 ? topCategories : [{ name: "Mujer" }, { name: "Hombre" }, { name: "Accesorios" }, { name: "Destacados" }]).map((cat: any, i) => (
-                                <button key={i} onClick={() => { handleNavigate('/catalogo', { category: cat.name.toLowerCase() }); setIsMenuOpen(false); }} className="block w-full text-left text-lg font-serif font-semibold text-gray-900 hover:text-gray-600 transition-colors">{cat.name}</button>
-                            ))}
+                            {topCategories.length > 0 ? topCategories.map((cat: any, i) => (
+                                <button key={i} onClick={() => { handleNavigate('/catalogo', { category: cat.slug || cat.name }); setIsMenuOpen(false); }} className="block w-full text-left text-lg font-serif font-semibold text-gray-900 hover:text-gray-600 transition-colors">{cat.name}</button>
+                            )) : (
+                                <button onClick={() => { handleNavigate('/catalogo'); setIsMenuOpen(false); }} className="block w-full text-left text-lg font-serif font-semibold text-gray-900 hover:text-gray-600 transition-colors">Ver catálogo</button>
+                            )}
                         </nav>
-                        <div className="p-6 border-t border-gray-200 bg-white">
-                            <button onClick={() => setIsMenuOpen(false)} className="w-full bg-[#4f6354] text-white py-4 text-xs font-bold tracking-widest uppercase hover:bg-[#3d4d41] transition-colors">
-                                Iniciar Sesión / Registrarse
-                            </button>
-                        </div>
                     </div>
                 </div>
             )}
@@ -450,12 +491,13 @@ export const NatureTemplate = (props: any) => {
                                 <span className="font-serif font-bold text-xl">${(cartTotal || 0).toFixed(2)}</span>
                             </div>
                             <p className="text-xs text-center text-gray-500 mb-4 tracking-wide">Envío e impuestos calculados al finalizar la compra</p>
-                            <button className="w-full bg-[#4f6354] text-white py-4 font-bold text-xs tracking-widest uppercase hover:bg-[#3d4d41] transition-colors">Pagar Ahora</button>
+                            <button onClick={() => { setIsCartOpen(false); setShowCheckout(true); }} className="w-full bg-[#4f6354] text-white py-4 font-bold text-xs tracking-widest uppercase hover:bg-[#3d4d41] transition-colors">Pagar Ahora</button>
                         </div>
                     )}
                 </div>
             </div>
             {isCartOpen && <div className="fixed inset-0 bg-black/30 z-40 backdrop-blur-sm" onClick={() => setIsCartOpen(false)} />}
+            <CheckoutModal open={showCheckout} onOpenChange={setShowCheckout} />
         </div>
     );
 };

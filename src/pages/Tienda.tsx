@@ -11,6 +11,9 @@ import { BauhausTemplate } from "@/templates/layouts/BauhausTemplate/BauhausTemp
 import { CyberTemplate } from "@/templates/layouts/CyberTemplate/CyberTemplate";
 import { StoreNotFound } from "./StoreNotFound";
 import { ProductDetailModal } from "@/templates/productDetail/ProductDetailModal";
+import { CardStyleContext } from "@/contexts/CardStyleContext";
+import { heroFontFamily } from "@/lib/heroFonts";
+import { useDeviceType, pickFontSize, pickEnabled } from "@/hooks/useDeviceType";
 import { useState } from "react";
 
 // Template Switcher Component — 10 templates available
@@ -18,29 +21,64 @@ const TemplateRenderer = (props: any) => {
   const { effectiveSettings } = props;
   const templateId = effectiveSettings?.template_id || 'default';
 
+  // Resolve per-device font sizes (fontSize / fontSizeTablet / fontSizeMobile)
+  // down to a single `fontSize` for the actual viewport, so templates need no
+  // changes — they keep reading heroStyles[k].fontSize.
+  const device = useDeviceType();
+  const rawStyles = props.hero?.styles || {};
+  const resolvedStyles: Record<string, any> = {};
+  for (const k in rawStyles) {
+    resolvedStyles[k] = { ...rawStyles[k], fontSize: pickFontSize(rawStyles[k], device), enabled: pickEnabled(rawStyles[k], device) };
+  }
+
+  // Indico-level editing plumbing, shared by EVERY template: per-element text
+  // styles (hero.styles[key]) and per-section backgrounds (hero.sectionBg[key]).
+  // All values are optional overrides — a template that doesn't read them yet,
+  // or a store that never edited them, renders its default look unchanged.
+  const editable = {
+    welcomeTitle: props.hero?.title,
+    welcomeMessage: props.hero?.message,
+    cta1Label: props.hero?.cta1Label,
+    cta2Label: props.hero?.cta2Label,
+    eyebrowText: props.hero?.eyebrowText,
+    heroStyles: resolvedStyles,
+    sectionBg: props.hero?.sectionBg,
+    hamburgerCount: props.hero?.hamburgerCount,
+    hamburgerThickness: props.hero?.hamburgerThickness,
+    hamburgerSize: props.hero?.hamburgerSize,
+  };
+
+  const cardText = props.hero?.styles?.productCardText;
+  const cardSize = pickFontSize(cardText, device);
+  const cardStyle = (cardText?.fontFamily || cardSize)
+    ? { fontFamily: heroFontFamily(cardText?.fontFamily), fontSize: cardSize ? `${cardSize}px` : undefined }
+    : undefined;
+  const content = (() => {
   switch (templateId) {
     case 'simple_live':
     case 'sidebar': // Backwards compatibility if DB still has 'sidebar'
-      return <SimpleLiveTemplate {...props} welcomeTitle={props.hero?.title} welcomeMessage={props.hero?.message} featuredProducts={props.featuredProducts} />;
+      return <SimpleLiveTemplate {...props} {...editable} featuredProducts={props.featuredProducts} />;
     case 'minimal':
-      return <MinimalTemplate {...props} />;
+      return <MinimalTemplate {...props} {...editable} />;
     case 'fashion_hero':
-      return <FashionHeroTemplate {...props} welcomeTitle={props.hero?.title} welcomeMessage={props.hero?.message} cta1Label={props.hero?.cta1Label} cta2Label={props.hero?.cta2Label} eyebrowText={props.hero?.eyebrowText} heroStyles={props.hero?.styles} sectionBg={props.hero?.sectionBg} hamburgerCount={props.hero?.hamburgerCount} hamburgerThickness={props.hero?.hamburgerThickness} hamburgerSize={props.hero?.hamburgerSize} featuredProducts={props.featuredProducts} />;
+      return <FashionHeroTemplate {...props} {...editable} hamburgerCount={props.hero?.hamburgerCount} hamburgerThickness={props.hero?.hamburgerThickness} hamburgerSize={props.hero?.hamburgerSize} featuredProducts={props.featuredProducts} />;
     case 'trendy_fashion':
-      return <TrendyFashionTemplate {...props} welcomeTitle={props.hero?.title} welcomeMessage={props.hero?.message} heroShape={props.hero?.shape} heroShapeScale={props.hero?.scale} banners={props.banners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} />;
+      return <TrendyFashionTemplate {...props} {...editable} heroShape={props.hero?.shape} heroShapeScale={props.hero?.scale} banners={props.banners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} />;
     case 'fashion':
-      return <FashionTemplate {...props} welcomeTitle={props.hero?.title} welcomeMessage={props.hero?.message} banners={props.banners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} />;
+      return <FashionTemplate {...props} {...editable} banners={props.banners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} textBanner={props.textBanner} />;
     case 'nature':
-      return <NatureTemplate {...props} welcomeTitle={props.hero?.title} welcomeMessage={props.hero?.message} featuredProducts={props.featuredProducts} />;
+      return <NatureTemplate {...props} {...editable} featuredProducts={props.featuredProducts} />;
     case 'premium_brand':
-      return <PremiumBrandTemplate {...props} welcomeTitle={props.hero?.title} welcomeMessage={props.hero?.message} banners={props.banners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} testimonials={props.testimonials} />;
+      return <PremiumBrandTemplate {...props} {...editable} banners={props.banners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} testimonials={props.testimonials} />;
     case 'bauhaus':
-      return <BauhausTemplate {...props} welcomeTitle={props.hero?.title} welcomeMessage={props.hero?.message} banners={props.banners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} />;
+      return <BauhausTemplate {...props} {...editable} banners={props.banners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} />;
     case 'cyber':
-      return <CyberTemplate {...props} welcomeTitle={props.hero?.title} welcomeMessage={props.hero?.message} banners={props.banners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} />;
+      return <CyberTemplate {...props} {...editable} banners={props.banners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} textBanner={props.textBanner} featuredProducts={props.featuredProducts} featuredProducts2={props.featuredProducts2} />;
     default:
-      return <DefaultTemplate {...props} />;
+      return <DefaultTemplate {...props} {...editable} />;
   }
+  })();
+  return <CardStyleContext.Provider value={{ style: cardStyle }}>{content}</CardStyleContext.Provider>;
 };
 
 const Tienda = () => {

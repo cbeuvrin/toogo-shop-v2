@@ -15,6 +15,14 @@ interface AutoCarouselProps {
   favorites?: string[];
   hoverColor?: string;
   cardBgColor?: string;
+  /** Optional style overrides for the section title and the "Ver más" link. */
+  titleStyle?: React.CSSProperties;
+  viewMoreText?: string;
+  viewMoreStyle?: React.CSSProperties;
+  /** Global card typography (font family + size) + editor click-to-edit. */
+  cardTextStyle?: React.CSSProperties;
+  isEditorMode?: boolean;
+  onEditCardText?: () => void;
 }
 
 export const AutoCarousel = ({
@@ -28,7 +36,13 @@ export const AutoCarousel = ({
   onToggleFavorite,
   favorites = [],
   hoverColor,
-  cardBgColor
+  cardBgColor,
+  titleStyle,
+  viewMoreText,
+  viewMoreStyle,
+  cardTextStyle,
+  isEditorMode,
+  onEditCardText
 }: AutoCarouselProps) => {
   const autoplayPlugin = Autoplay({
     delay: 4000,
@@ -43,14 +57,16 @@ export const AutoCarousel = ({
       {!isBestSellers && (
         <div className="relative">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+            <h2 className="text-xl font-semibold text-gray-900" style={titleStyle}>{title}</h2>
             <div
               className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 cursor-pointer transition-colors"
-              onClick={() => {
+              style={viewMoreStyle}
+              onClick={(e) => {
+                e.stopPropagation();
                 if (onViewMore) onViewMore();
               }}
             >
-              <span className="text-sm font-medium">Ver más</span>
+              <span className="text-sm font-medium">{viewMoreText || "Ver más"}</span>
               <ArrowRight className="w-4 h-4" />
             </div>
           </div>
@@ -80,6 +96,9 @@ export const AutoCarousel = ({
                 favorites={favorites}
                 hoverColor={hoverColor}
                 cardBgColor={cardBgColor}
+                cardTextStyle={cardTextStyle}
+                isEditorMode={isEditorMode}
+                onEditText={onEditCardText}
               />
             </CarouselItem>
           ))}

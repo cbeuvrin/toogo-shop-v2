@@ -110,6 +110,16 @@ export const useProductVariablesForSelector = (productId?: string, variations?: 
     }
   }, [productId, variations]);
 
+  // Refetch when variables are mutated elsewhere (e.g. the Variables modal
+  // opened on top of the product form) so new options appear without reopening.
+  useEffect(() => {
+    const onChanged = () => {
+      if (productId) loadVariables(productId);
+    };
+    window.addEventListener('toogo:variables-changed', onChanged);
+    return () => window.removeEventListener('toogo:variables-changed', onChanged);
+  }, [productId]);
+
   return {
     variables,
     isLoading,

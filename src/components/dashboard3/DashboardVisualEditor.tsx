@@ -10,6 +10,7 @@ import { AnnouncementEditModal } from "@/components/dashboard3/EditModals/Announ
 import { TickerEditModal } from "@/components/dashboard3/EditModals/TickerEditModal";
 import { TextStyleEditModal } from "./EditModals/TextStyleEditModal";
 import { SectionBgEditModal } from "./EditModals/SectionBgEditModal";
+import { getTemplateEditorConfig } from "@/templates/editorConfig";
 import { HamburgerStyleEditModal } from "./EditModals/HamburgerStyleEditModal";
 import { TextBannerEditModal } from "@/components/dashboard3/EditModals/TextBannerEditModal";
 import { FeaturedProductsEditModal } from "./EditModals/FeaturedProductsEditModal";
@@ -136,10 +137,11 @@ export interface EditorData {
     hamburgerVariant?: string;
   };
   featuredProducts?: string[];
+  featuredProducts2?: string[];
   testimonials?: any;
 }
 type EditModalType = 'logo' | 'banners' | 'contact' | 'all-colors' | 'announcement' | 'ticker' | 'text_banner' | 'featured_products' | 'testimonials' | 'hero_shape' | 'hero_element' | 'section_bg' | 'hamburger_style' | null;
-type SectionBgKey = 'section1' | 'section2';
+type SectionBgKey = 'hero' | 'section1' | 'section2' | 'footer';
 // Keys for every individually editable text node in Indico — hero, mid-page
 // section headers, footer column headers. Each stores text + style in
 // editorData.hero.styles[key].
@@ -373,6 +375,7 @@ export const DashboardVisualEditor = () => {
         const textBannerItem = visualData.find(item => item.element_type === 'text_banner' && item.element_id === 'main_text_banner');
         const heroItem = visualData.find(item => item.element_type === 'hero' && item.element_id === 'main_hero');
         const featuredProductsItem = visualData.find(item => item.element_type === 'featured_products' && item.element_id === 'featured_grid');
+        const featuredProducts2Item = visualData.find(item => item.element_type === 'featured_products' && item.element_id === 'featured_grid_2');
         const testimonialsItem = visualData.find(item => item.element_type === 'testimonials' && item.element_id === 'main_testimonials');
 
         const validBanners = bannerItems.map(item => ({
@@ -392,6 +395,7 @@ export const DashboardVisualEditor = () => {
           textBanner: textBannerItem ? (textBannerItem.data as any) : prev.textBanner,
           hero: heroItem ? (heroItem.data as any) : prev.hero,
           featuredProducts: featuredProductsItem ? (featuredProductsItem.data as any).productIds : prev.featuredProducts,
+          featuredProducts2: featuredProducts2Item ? (featuredProducts2Item.data as any).productIds : prev.featuredProducts2,
           testimonials: testimonialsItem ? (testimonialsItem.data as any) : prev.testimonials
         }));
       } else {
@@ -739,10 +743,11 @@ export const DashboardVisualEditor = () => {
   };
 
   const handleSaveFeaturedProducts = async (productIds: string[]) => {
-    await saveEditorData('featured_products', 'featured_grid', { productIds });
+    const gridId = editingItem === 'featured_grid_2' ? 'featured_grid_2' : 'featured_grid';
+    await saveEditorData('featured_products', gridId, { productIds });
     setEditorData(prev => ({
       ...prev,
-      featuredProducts: productIds
+      ...(gridId === 'featured_grid_2' ? { featuredProducts2: productIds } : { featuredProducts: productIds })
     }));
   };
 
@@ -1027,6 +1032,7 @@ export const DashboardVisualEditor = () => {
               welcomeTitle={editorData.hero?.title}
               welcomeMessage={editorData.hero?.message}
               featuredProducts={editorData.featuredProducts}
+              featuredProducts2={editorData.featuredProducts2}
               testimonials={editorData.testimonials}
             />
           </div>
@@ -1086,7 +1092,7 @@ export const DashboardVisualEditor = () => {
         isOpen={activeModal === 'featured_products'}
         onClose={() => setActiveModal(null)}
         onSave={handleSaveFeaturedProducts}
-        initialProductIds={editorData.featuredProducts}
+        initialProductIds={editingItem === 'featured_grid_2' ? editorData.featuredProducts2 : editorData.featuredProducts}
       />
 
       <TestimonialsEditModal
@@ -1115,66 +1121,24 @@ export const DashboardVisualEditor = () => {
         onSave={handleSaveHamburgerVariant}
       />
 
-      {/* Per-element editor (Indico). Works for hero text nodes AND for the
-          rest of the page (section headings, footer column titles, mid banner). */}
+      {/* Per-element editor. Works for hero text nodes AND for the rest of the
+          page (section headings, footer column titles, mid banner). What each
+          key means — label, default copy, baseline typography for the modal
+          preview — comes from the active template's editorConfig entry. */}
       {activeHeroElement && (() => {
         const key = activeHeroElement;
-        const labelMap: Record<HeroElementKey, string> = {
-          eyebrow: 'eyebrow del Héroe',
-          title: 'Título del Héroe',
-          message: 'Mensaje del Héroe',
-          cta1: 'Botón principal',
-          cta2: 'Botón secundario',
-          sectionTitle1: 'Título "Recién Llegados"',
-          sectionLink1: 'Link "Ver todo"',
-          midBannerTitle: 'Título del Mid Banner',
-          sectionTitle2: 'Título "Populares ahora"',
-          footerHeading1: 'Footer — Contacto',
-          footerHeading2: 'Footer — Ubicación',
-          footerHeading3: 'Footer — Síguenos',
-          navMenu: 'Menú de categorías',
-          productCardCta: 'Botón "Agregar" del producto',
-          menuDrawerTitle: 'Título del menú hamburguesa',
-        };
-        const defaultMap: Record<HeroElementKey, string> = {
-          eyebrow: 'Nueva Colección',
-          title: 'Estilo que Inspira',
-          message: 'Descubre nuestra nueva colección diseñada para quienes viven con propósito.',
-          cta1: 'Ver Colección',
-          cta2: 'Novedades',
-          sectionTitle1: 'Recién Llegados',
-          sectionLink1: 'Ver todo',
-          midBannerTitle: 'Mid Banner',
-          sectionTitle2: 'Populares ahora',
-          footerHeading1: 'Contacto',
-          footerHeading2: 'Ubicación',
-          footerHeading3: 'Síguenos',
-          navMenu: 'Mujer • Hombre • Kids',
-          productCardCta: 'Agregar +',
-          menuDrawerTitle: 'Categorías',
-        };
-        // Baseline typography each element gets from FashionHeroTemplate's CSS
-        // classes (weight/transform/tracking). The modal preview merges this so it
-        // matches the editor/store render — without this the preview showed every
-        // element at normal weight (400) while the title renders `font-black` (900).
-        // Keep in sync with FashionHeroTemplate.tsx. Size is omitted on purpose.
-        const heroPreviewBaseStyle: Partial<Record<HeroElementKey, React.CSSProperties>> = {
-          eyebrow:        { fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.25em' },
-          title:          { fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.05em' },
-          message:        { fontWeight: 400 },
-          cta1:           { fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' },
-          cta2:           { fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' },
-          sectionTitle1:  { fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.05em' },
-          sectionTitle2:  { fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.05em' },
-          sectionLink1:   { fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: '4px' },
-          midBannerTitle: { fontWeight: 900, textTransform: 'uppercase' },
-          footerHeading1: { fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' },
-          footerHeading2: { fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' },
-          footerHeading3: { fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' },
-          productCardCta: { fontWeight: 700 },
-          menuDrawerTitle:{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.05em' },
-          navMenu:        { fontWeight: 500 },
-        };
+        let elementConfig = getTemplateEditorConfig(settings?.template_id).elements[key];
+        // Per-category section titles use dynamic keys (sectionTitle_<categoryId>)
+        // so each product row can be renamed independently — synthesize a config.
+        if (!elementConfig && String(key).startsWith('sectionTitle_')) {
+          elementConfig = { label: 'Título de sección', defaultText: 'Nombre de la categoría', previewBaseStyle: { fontWeight: 600 } } as any;
+        }
+        if (!elementConfig && key === 'productCardText') {
+          elementConfig = { label: 'Tipografía de las tarjetas de producto', defaultText: '', hideText: true, infoText: 'Cambia la fuente y el tamaño del texto de TODAS las tarjetas de producto de la tienda.' } as any;
+        }
+        if (!elementConfig) return null;
+        // Hero text nodes live on dedicated hero fields; everything else stores
+        // its custom text inside styles[key].text.
         const heroTextNodeMap: Partial<Record<HeroElementKey, string>> = {
           title: editorData.hero?.title || '',
           message: editorData.hero?.message || '',
@@ -1190,37 +1154,34 @@ export const DashboardVisualEditor = () => {
           <TextStyleEditModal
             isOpen={activeModal === 'hero_element'}
             onClose={() => { setActiveModal(null); setActiveHeroElement(null); }}
-            elementLabel={labelMap[key]}
+            elementLabel={elementConfig.label}
             elementKey={key}
             initialText={currentText}
             initialStyle={currentStyle}
-            defaultText={defaultMap[key]}
-            multiline={key === 'message'}
-            hideText={key === 'navMenu'}
-            hidePreview={key === 'navMenu'}
-            previewBaseStyle={heroPreviewBaseStyle[key]}
-            infoText={key === 'navMenu'
-              ? 'Las categorías vienen de la pestaña Productos → Categorías. Aquí solo puedes cambiar fuente, tamaño y color. Si son muchas, el menú se convierte automáticamente en hamburguesa.'
-              : undefined}
-            isButton={key === 'cta1' || key === 'cta2'}
+            defaultText={elementConfig.defaultText}
+            multiline={elementConfig.multiline}
+            hideText={elementConfig.hideText}
+            hidePreview={elementConfig.hidePreview}
+            previewBaseStyle={elementConfig.previewBaseStyle}
+            infoText={elementConfig.infoText}
+            isButton={elementConfig.isButton}
+            canHide={elementConfig.canHide}
             categories={editorData.categories?.filter((c: any) => !c.parent_id) || []}
+            deviceMode={deviceMode}
             onSave={handleSaveHeroElement}
           />
         );
       })()}
 
-      {/* Section background editor (Indico) */}
+      {/* Section background editor — sections come from the template's config */}
       {activeSectionBg && (() => {
         const key = activeSectionBg;
-        const labelMap: Record<SectionBgKey, string> = {
-          section1: 'Recién Llegados',
-          section2: 'Populares ahora',
-        };
+        const sectionLabel = getTemplateEditorConfig(settings?.template_id).sectionBgs[key] || key;
         return (
           <SectionBgEditModal
             isOpen={activeModal === 'section_bg'}
             onClose={() => { setActiveModal(null); setActiveSectionBg(null); }}
-            sectionLabel={labelMap[key]}
+            sectionLabel={sectionLabel}
             sectionKey={key}
             initialBgColor={editorData.hero?.sectionBg?.[key] || undefined}
             onSave={handleSaveSectionBg}

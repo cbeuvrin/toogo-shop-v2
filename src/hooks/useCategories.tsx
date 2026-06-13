@@ -31,6 +31,19 @@ export const useCategories = (publicTenantId?: string) => {
     }
   }, [tenantId, tenantLoading, publicTenantId]);
 
+  // Cross-instance sync: this hook keeps local state per component, so when one
+  // copy mutates (e.g. the Categorías modal creates one) every other copy (e.g.
+  // the category selector inside the open product form) refetches too.
+  useEffect(() => {
+    const onChanged = () => loadCategories();
+    window.addEventListener('toogo:categories-changed', onChanged);
+    return () => window.removeEventListener('toogo:categories-changed', onChanged);
+  }, [tenantId, publicTenantId]);
+
+  const notifyCategoriesChanged = () => {
+    window.dispatchEvent(new CustomEvent('toogo:categories-changed'));
+  };
+
   const loadCategories = async () => {
     if (!tenantId) {
       setIsLoading(false);
@@ -92,6 +105,7 @@ export const useCategories = (publicTenantId?: string) => {
       if (error) throw error;
 
       await loadCategories(); // Reload categories after save
+      notifyCategoriesChanged();
 
       toast({
         title: editingCategoryId ? "Categoría actualizada" : "Categoría creada",
@@ -123,6 +137,7 @@ export const useCategories = (publicTenantId?: string) => {
       if (error) throw error;
 
       await loadCategories(); // Reload categories after delete
+      notifyCategoriesChanged();
 
       toast({
         title: "Categoría eliminada",
@@ -160,6 +175,7 @@ export const useCategories = (publicTenantId?: string) => {
       if (error) throw error;
 
       await loadCategories(); // Reload categories after toggle
+      notifyCategoriesChanged();
 
       toast({
         title: category.showOnHome ? "Categoría ocultada" : "Categoría mostrada",

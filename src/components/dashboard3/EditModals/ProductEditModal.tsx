@@ -585,12 +585,9 @@ export const ProductEditModal = ({
                             </TooltipProvider>
                           </div>
                           <Button variant="ghost" size="sm" className="h-auto p-1 text-xs text-muted-foreground hover:text-primary" onClick={() => {
-                            onClose();
+                            // Opens the Categorías modal ON TOP of this form — the
+                            // product being edited stays open underneath.
                             onNavigateToCategories?.();
-                            toast({
-                              title: "Navegando a Categorías",
-                              description: "Ahora puedes crear una nueva categoría para organizar tus productos."
-                            });
                           }}>
                             <Plus className="h-3 w-3 mr-1" />
                             Crear Categoría
@@ -660,12 +657,9 @@ export const ProductEditModal = ({
                             </TooltipProvider>
                           </div>
                           <Button variant="ghost" size="sm" className="h-auto p-1 text-xs text-muted-foreground hover:text-primary" onClick={() => {
-                            onClose();
+                            // Opens the Variables modal ON TOP of this form — the
+                            // product being edited stays open underneath.
                             onNavigateToVariables?.();
-                            toast({
-                              title: "Navegando a Variables",
-                              description: "Ahora puedes crear variables como tallas, colores o materiales para productos con opciones."
-                            });
                           }}>
                             <Plus className="h-3 w-3 mr-1" />
                             Crear Variables

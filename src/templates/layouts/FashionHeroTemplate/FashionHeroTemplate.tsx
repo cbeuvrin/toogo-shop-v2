@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
 import { HamburgerButton } from "@/components/ui/HamburgerButton";
+import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { heroFontFamily } from "@/lib/heroFonts";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 
@@ -61,6 +62,7 @@ export const FashionHeroTemplate = (props: any) => {
     const { items: cartItems, removeItem, updateQuantity, totalPrice: cartTotal } = useCart();
     const cartCount = cartItems.reduce((acc: number, item: any) => acc + item.quantity, 0);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [showCheckout, setShowCheckout] = useState(false);
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     // Auto-collapse header nav to hamburger when its intrinsic width would not
@@ -149,7 +151,7 @@ export const FashionHeroTemplate = (props: any) => {
         <div className="min-h-screen font-sans text-black" style={{ backgroundColor: settings?.store_background_color || '#ffffff' }}>
 
             {/* ─── HEADER ─── */}
-            <header className={`sticky top-0 z-50 border-b border-gray-100 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: settings?.navbar_bg_color || '#ffffff' }}>
+            <header className={`sticky top-0 z-50 border-b border-gray-100 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: props.sectionBg?.navbar || settings?.navbar_bg_color || '#ffffff' }}>
                 {(() => {
                   // Indico: logo always centered. Grid with two equal flexible cols flanking
                   // an auto-width center keeps the logo on the geometric middle no matter
@@ -345,7 +347,7 @@ export const FashionHeroTemplate = (props: any) => {
                     backgroundColor: s?.[k]?.bgColor || undefined,
                   });
                   return (
-                    <div className="w-full lg:w-2/5 flex flex-col justify-center px-6 sm:px-8 md:px-14 py-12 sm:py-16 bg-white min-w-0">
+                    <div className="w-full lg:w-2/5 flex flex-col justify-center px-6 sm:px-8 md:px-14 py-12 sm:py-16 bg-white min-w-0" style={{ backgroundColor: props.sectionBg?.hero || undefined }}>
                         <p
                             className="text-[11px] sm:text-xs font-bold uppercase tracking-[0.25em] text-gray-400 mb-4 sm:mb-6 break-words"
                             style={styleFor('eyebrow')}
@@ -594,7 +596,7 @@ export const FashionHeroTemplate = (props: any) => {
                                 )}
                                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8 z-10">
                                     {textBanner?.showTitle !== false && (
-                                      <h2 className="text-5xl md:text-8xl font-black text-white uppercase tracking-tighter mb-6">
+                                      <h2 className="text-4xl sm:text-5xl md:text-8xl font-black text-white uppercase tracking-tighter break-words mb-6">
                                           {textBanner?.text || "Sin Límites"}
                                       </h2>
                                     )}
@@ -647,7 +649,7 @@ export const FashionHeroTemplate = (props: any) => {
                                     return (
                                         <div key={product.id} className="relative aspect-square md:aspect-[4/3] bg-gray-100 group overflow-hidden cursor-pointer" onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}>
                                             <img src={image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={product.title} />
-                                            <div className="absolute bottom-8 left-8">
+                                            <div className="absolute bottom-8 left-8 right-8">
                                                 <h3 className="text-white text-2xl md:text-3xl font-black uppercase mb-2 drop-shadow-md tracking-tight">{product.title || product.name}</h3>
                                                 <span className="text-white underline font-semibold drop-shadow-md text-sm uppercase tracking-wider">Ver ahora</span>
                                             </div>
@@ -680,7 +682,7 @@ export const FashionHeroTemplate = (props: any) => {
             )}
 
             {/* ─── FOOTER ─── */}
-            <footer className="text-white pt-16 pb-8" style={{ backgroundColor: footerBgColor }}>
+            <footer className="text-white pt-16 pb-8" style={{ backgroundColor: props.sectionBg?.footer || footerBgColor }}>
                 <div className="container mx-auto px-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
                         {/* Contact */}
@@ -817,7 +819,7 @@ export const FashionHeroTemplate = (props: any) => {
                                 <span className="font-bold text-gray-400 uppercase tracking-wider text-xs">Subtotal</span>
                                 <span className="font-black text-2xl">${(cartTotal || 0).toFixed(2)}</span>
                             </div>
-                            <Button className="w-full bg-black text-white hover:bg-gray-800 font-bold uppercase py-6 text-sm tracking-widest shadow-lg hover:shadow-xl transition-all rounded-none">
+                            <Button onClick={() => { setIsCartOpen(false); setShowCheckout(true); }} className="w-full bg-black text-white hover:bg-gray-800 font-bold uppercase py-6 text-sm tracking-widest shadow-lg hover:shadow-xl transition-all rounded-none">
                                 Finalizar Compra
                             </Button>
                             <p className="text-center text-xs text-gray-400 mt-3">Envío e impuestos calculados al finalizar.</p>
@@ -826,6 +828,7 @@ export const FashionHeroTemplate = (props: any) => {
                 </div>
             </div>
             {isCartOpen && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-300" onClick={() => setIsCartOpen(false)} />}
+            <CheckoutModal open={showCheckout} onOpenChange={setShowCheckout} />
         </div>
     );
 };

@@ -8,7 +8,9 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
+import { heroFontFamily } from "@/lib/heroFonts";
 
 // --- Components (Internal to this template for cohesion) ---
 
@@ -44,22 +46,27 @@ const Navigation = ({ onCategoryClick, onContactClick, isMenuOpen, setIsMenuOpen
     );
 };
 
-const ProductCard = ({ product, addToCart, toggleFavorite, isFavorite }: any) => {
+const ProductCard = ({ product, addToCart, toggleFavorite, isFavorite, onOpenDetail }: any) => {
     const isService = product.product_type === 'service';
     const pricingMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
     const isQuoteOnly = isService && pricingMode === 'quote';
     const basePrice = product.price_mxn || product.price || 0;
+    // Variable products must pick options first → the hover button opens the
+    // detail modal instead of silently adding the base product to the cart.
+    const isVariable = Array.isArray(product.variations) && product.variations.length > 0;
+    const hasSale = !isService && product.sale_price_mxn && product.sale_price_mxn < (product.price_mxn || product.price);
+    const displayPrice = hasSale ? product.sale_price_mxn : basePrice;
     return (
-        <div className="group cursor-pointer">
+        <div className="group cursor-pointer" onClick={() => onOpenDetail?.(product)}>
             <div className="relative aspect-[3/4] bg-gray-50 overflow-hidden mb-4">
                 <img
                     src={product.image || product.image_url || '/placeholder.svg'}
                     alt={product.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
-                {!isService && product.compare_at_price > (product.price_mxn || product.price) && (
+                {hasSale && (
                     <span className="absolute top-2 left-2 bg-black text-white text-[10px] uppercase tracking-widest px-2 py-1">
-                        Sale
+                        Oferta
                     </span>
                 )}
                 <button
@@ -72,10 +79,13 @@ const ProductCard = ({ product, addToCart, toggleFavorite, isFavorite }: any) =>
                 {!isService && (
                     <div className="absolute bottom-0 inset-x-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-black/50 to-transparent flex justify-center">
                         <Button
-                            onClick={(e) => { e.stopPropagation(); addToCart(product); }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (isVariable) { onOpenDetail?.(product); } else { addToCart(product); }
+                            }}
                             className="bg-white text-black hover:bg-gray-100 border-none rounded-none uppercase text-xs tracking-widest w-full"
                         >
-                            Agregar al carrito
+                            {isVariable ? 'Ver opciones' : 'Agregar al carrito'}
                         </Button>
                     </div>
                 )}
@@ -90,10 +100,10 @@ const ProductCard = ({ product, addToCart, toggleFavorite, isFavorite }: any) =>
                     ) : isService ? (
                         <span className="text-gray-500 font-light">${Number(basePrice).toFixed(2)} MXN</span>
                     ) : (
-                        <span className="text-gray-500 font-light">${(product.price_mxn || product.price || 0).toFixed(2)}</span>
+                        <span className="text-gray-500 font-light">${Number(displayPrice).toFixed(2)}</span>
                     )}
-                    {!isService && product.compare_at_price > (product.price_mxn || product.price) && (
-                        <span className="text-gray-300 line-through font-light">${product.compare_at_price}</span>
+                    {hasSale && (
+                        <span className="text-gray-300 line-through font-light">${Number(basePrice).toFixed(2)}</span>
                     )}
                 </div>
             </div>
@@ -156,6 +166,7 @@ export const MinimalTemplate = (props: any) => {
     // Cart Logic from Context (using context for state, but props for add)
     const { items, removeItem, updateQuantity, totalPrice: total, clearCart } = useCart();
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [showCheckout, setShowCheckout] = useState(false);
 
     // Filter Logic
     const filteredProducts = formattedProducts?.filter((p: any) => {
@@ -182,6 +193,30 @@ export const MinimalTemplate = (props: any) => {
         footer?.scrollIntoView({ behavior: 'smooth' });
     };
 
+    // Indico-level per-element styles (hero.styles[key]) + per-section backgrounds.
+    // All optional overrides — undefined keeps the template's default look.
+    const els = props.heroStyles || {};
+    const styleFor = (k: string) => ({
+        fontFamily: heroFontFamily(els?.[k]?.fontFamily),
+        fontSize: els?.[k]?.fontSize ? `${els[k].fontSize}px` : undefined,
+        color: els?.[k]?.color || undefined,
+        backgroundColor: els?.[k]?.bgColor || undefined,
+    });
+    // Hero CTA: default scrolls to the product grid; can be re-routed to a
+    // category or custom link from the editor (same options as Indico).
+    const heroCtaClick = () => {
+        const cfg = els?.cta1 || {};
+        if (cfg.action === 'link' && cfg.customUrl) {
+            window.open(cfg.customUrl, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        if (cfg.action === 'category' && cfg.categorySlug) {
+            const cat = categories?.find((c: any) => (c.slug || c.name)?.toLowerCase() === cfg.categorySlug);
+            if (cat) { setSelectedCategory(cat.id); return; }
+        }
+        document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
+    };
+
     return (
         <div className="min-h-screen font-sans selection:bg-gray-200" style={{ backgroundColor: bgColor }}>
 
@@ -205,10 +240,10 @@ export const MinimalTemplate = (props: any) => {
             )}
 
             {/* Header */}
-            <header className={`px-6 py-6 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md text-center transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: navColor }}>
+            <header className={`px-6 py-6 flex items-center justify-between sticky top-0 z-30 backdrop-blur-md text-center transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: props.sectionBg?.navbar || navColor }}>
 
                 {/* Desktop Navigation Links (Left) */}
-                <nav className="hidden md:flex md:flex-1 md:justify-start gap-8 text-sm uppercase tracking-widest text-gray-500 font-medium">
+                <nav className="hidden md:flex md:flex-1 md:justify-start gap-8 text-sm uppercase tracking-widest text-gray-500 font-medium" style={styleFor('navMenu')}>
                     <button onClick={() => {
                         setSelectedCategory(null);
                         const productSection = document.getElementById('products');
@@ -268,27 +303,27 @@ export const MinimalTemplate = (props: any) => {
                 <section className="mb-12 px-4 md:px-6">
                     <div className="relative aspect-[16/9] md:aspect-[21/9] overflow-hidden bg-gray-100">
                         {mainBanner ? (
-                            <img src={mainBanner.image} alt={mainBanner.title || "Banner"} className="w-full h-full object-cover" />
+                            <img src={mainBanner.image} alt={mainBanner.title || "Banner"} className="w-full h-full object-cover" style={{ objectPosition: mainBanner.position || 'center center' }} />
                         ) : settings?.banner_url ? (
                             <img src={settings.banner_url} alt="Hero" className="w-full h-full object-cover" />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-300">
-                                <span className="text-6xl font-serif italic opacity-20">New Collection</span>
+                                <span className="text-3xl md:text-6xl font-serif italic opacity-20 px-4 text-center">Nueva Colección</span>
                             </div>
                         )}
                         <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
-                            <div className="text-center text-white">
-                                <h2 className="text-4xl md:text-6xl font-serif mb-4 drop-shadow-md">{settings?.welcome_title || 'Season Essentials'}</h2>
-                                <p className="text-lg font-light tracking-wide mb-8 drop-shadow-md">{settings?.welcome_message || 'Discover the new minimalist collection.'}</p>
-                                <Button
-                                    className="bg-white text-black hover:bg-white/90 rounded-none px-8 py-6 text-xs uppercase tracking-[0.2em]"
-                                    onClick={() => {
-                                        const productSection = document.getElementById('products');
-                                        productSection?.scrollIntoView({ behavior: 'smooth' });
-                                    }}
-                                >
-                                    Ver colección
-                                </Button>
+                            <div className="text-center text-white px-4">
+                                <h2 className="text-4xl md:text-6xl font-serif mb-4 drop-shadow-md" style={styleFor('title')}>{props.welcomeTitle || settings?.welcome_title || 'Esenciales de Temporada'}</h2>
+                                <p className="text-lg font-light tracking-wide mb-8 drop-shadow-md" style={styleFor('message')}>{props.welcomeMessage || settings?.welcome_message || 'Descubre la nueva colección minimalista.'}</p>
+                                {(els?.cta1?.enabled !== false) && (
+                                    <Button
+                                        className="bg-white text-black hover:bg-white/90 rounded-none px-8 py-6 text-xs uppercase tracking-[0.2em]"
+                                        style={styleFor('cta1')}
+                                        onClick={heroCtaClick}
+                                    >
+                                        {props.cta1Label || 'Ver colección'}
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -303,7 +338,7 @@ export const MinimalTemplate = (props: any) => {
                             Todo
                         </button>
                     </li>
-                    {categories?.filter((cat: any) => cat.show_on_home !== false).map((cat: any) => (
+                    {categories?.filter((cat: any) => !cat.parent_id && cat.show_on_home !== false).map((cat: any) => (
                         <li key={cat.id}>
                             <button onClick={() => setSelectedCategory(cat.id)} className={`hover:text-black transition-colors ${selectedCategory === cat.id ? 'text-black border-b border-black' : ''}`}>
                                 {cat.name}
@@ -314,7 +349,8 @@ export const MinimalTemplate = (props: any) => {
             </div>
 
             {/* Main Content */}
-            <main id="products" className="container mx-auto px-4 md:px-6 mb-20 min-h-[60vh]">
+            <main id="products" className="px-4 md:px-6 pb-20 min-h-[60vh]" style={{ backgroundColor: props.sectionBg?.section1 || undefined }}>
+              <div className="container mx-auto">
                 {selectedCategory && (
                     <div className="text-center mb-12">
                         <h2 className="text-3xl font-serif mb-2">
@@ -332,33 +368,94 @@ export const MinimalTemplate = (props: any) => {
                             addToCart={addToCart}
                             toggleFavorite={toggleFavorite}
                             isFavorite={favorites?.includes(product.id)}
+                            onOpenDetail={props.onProductClick}
                         />
                     ))}
                 </div>
 
                 {filteredProducts?.length === 0 && (
                     <div className="text-center py-20 text-gray-400 font-light">
-                        No products found directly matching your criteria.
+                        No se encontraron productos.
                     </div>
                 )}
+              </div>
             </main>
 
+            {/* Editorial banner (banners[1]) — after the catalog, home only */}
+            {!selectedCategory && !searchQuery && view !== 'catalog' && (banners?.[1]?.image || banners?.[1]?.imageUrl) && (
+                <section className="mb-20 px-4 md:px-6">
+                    <div className="relative aspect-[16/9] md:aspect-[21/9] overflow-hidden bg-gray-100">
+                        <img
+                            src={banners[1].imageUrl || banners[1].image}
+                            alt="Banner editorial"
+                            className="w-full h-full object-cover"
+                            style={{ objectPosition: banners[1].position || 'center center' }}
+                        />
+                        <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
+                            <h2 className="text-3xl md:text-5xl font-serif text-white drop-shadow-md text-center px-4" style={styleFor('midBannerTitle')}>
+                                {els?.midBannerTitle?.text || 'Hecho para durar'}
+                            </h2>
+                        </div>
+                    </div>
+                </section>
+            )}
+
+            {/* Destacados — hand-picked featured products, home only */}
+            {!selectedCategory && !searchQuery && view !== 'catalog' && (() => {
+                const featuredIds = props.featuredProducts;
+                const destacados = (featuredIds && featuredIds.length > 0)
+                    ? featuredIds.map((id: string) => formattedProducts.find((p: any) => p.id === id)).filter(Boolean)
+                    : formattedProducts.slice(0, 4);
+                if (destacados.length === 0) return null;
+                return (
+                    <section className="px-4 md:px-6 pb-20" style={{ backgroundColor: props.sectionBg?.section2 || undefined }}>
+                        <div className="container mx-auto">
+                            <div className="text-center mb-12 pt-4">
+                                <h2 className="text-3xl font-serif mb-2" style={styleFor('sectionTitle2')}>
+                                    {els?.sectionTitle2?.text || 'Destacados'}
+                                </h2>
+                                <div className="w-12 h-0.5 bg-black mx-auto"></div>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-10 md:gap-x-8">
+                                {destacados.map((product: any) => (
+                                    <ProductCard
+                                        key={product.id}
+                                        product={product}
+                                        addToCart={addToCart}
+                                        toggleFavorite={toggleFavorite}
+                                        isFavorite={favorites?.includes(product.id)}
+                                        onOpenDetail={props.onProductClick}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                );
+            })()}
+
             {/* Footer */}
-            <footer className="border-t border-gray-100 py-20 px-6" style={{ backgroundColor: footerBgColor }}>
+            <footer className="border-t border-gray-100 py-20 px-6" style={{ backgroundColor: props.sectionBg?.footer || footerBgColor }}>
                 <div className="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 text-center md:text-left">
                     <div>
-                        <h3 className="uppercase text-xs tracking-widest font-bold mb-6">About</h3>
-                        <p className="text-sm text-gray-500 font-light leading-relaxed max-w-xs mx-auto md:mx-0">
-                            {settings?.description || 'A curated selection of minimalist essentials for the modern lifestyle.'}
+                        <h3 className="uppercase text-xs tracking-widest font-bold mb-6" style={styleFor('footerHeading1')}>{els?.footerHeading1?.text || 'Nosotros'}</h3>
+                        <p className="text-sm text-gray-500 font-light leading-relaxed max-w-xs mx-auto md:mx-0" style={styleFor('footerAbout')}>
+                            {els?.footerAbout?.text || settings?.description || 'Una selección curada de esenciales minimalistas para el estilo de vida moderno.'}
                         </p>
                     </div>
                     <div>
-                        <h3 className="uppercase text-xs tracking-widest font-bold mb-6">Contact</h3>
-                        <p className="text-sm text-gray-500 font-light mb-2">{contactData?.email || settings?.contact?.email || 'hello@minimal.store'}</p>
-                        <p className="text-sm text-gray-500 font-light">{contactData?.phone || settings?.contact?.phone || '+1 (555) 000-0000'}</p>
+                        <h3 className="uppercase text-xs tracking-widest font-bold mb-6" style={styleFor('footerHeading2')}>{els?.footerHeading2?.text || 'Contacto'}</h3>
+                        {(contactData?.email || settings?.contact?.email) && (
+                            <p className="text-sm text-gray-500 font-light mb-2">{contactData?.email || settings?.contact?.email}</p>
+                        )}
+                        {(contactData?.phone || contactData?.whatsapp || settings?.contact?.phone) && (
+                            <p className="text-sm text-gray-500 font-light">{contactData?.phone || contactData?.whatsapp || settings?.contact?.phone}</p>
+                        )}
+                        {!contactData?.email && !settings?.contact?.email && !contactData?.phone && !contactData?.whatsapp && !settings?.contact?.phone && (
+                            <p className="text-sm text-gray-400 font-light italic">Agrega tus datos de contacto</p>
+                        )}
                     </div>
                     <div>
-                        <h3 className="uppercase text-xs tracking-widest font-bold mb-6">Social</h3>
+                        <h3 className="uppercase text-xs tracking-widest font-bold mb-6" style={styleFor('footerHeading3')}>{els?.footerHeading3?.text || 'Síguenos'}</h3>
                         <div className="flex justify-center md:justify-start gap-4">
                             {(contactData?.instagram || settings?.social_links?.instagram) && (
                                 <a href={contactData?.instagram || settings?.social_links?.instagram} className="hover:text-black transition-colors" style={{ color: footerIconColor }}><Instagram className="h-5 w-5" style={{ width: `${20 * footerIconScale}px`, height: `${20 * footerIconScale}px` }} /></a>
@@ -366,11 +463,14 @@ export const MinimalTemplate = (props: any) => {
                             {(contactData?.facebook || settings?.social_links?.facebook) && (
                                 <a href={contactData?.facebook || settings?.social_links?.facebook} className="hover:text-black transition-colors" style={{ color: footerIconColor }}><Facebook className="h-5 w-5" style={{ width: `${20 * footerIconScale}px`, height: `${20 * footerIconScale}px` }} /></a>
                             )}
+                            {!contactData?.instagram && !settings?.social_links?.instagram && !contactData?.facebook && !settings?.social_links?.facebook && (
+                                <span className="text-sm text-gray-400 font-light italic">Agrega tus redes sociales</span>
+                            )}
                         </div>
                     </div>
                 </div>
                 <div className="mt-20 text-center text-xs text-gray-300">
-                    &copy; {new Date().getFullYear()} {settings?.store_name}. All rights reserved. Powered by TOOGO.
+                    &copy; {new Date().getFullYear()} {settings?.store_name}. Todos los derechos reservados. Powered by TOOGO.
                 </div>
             </footer>
 
@@ -378,7 +478,7 @@ export const MinimalTemplate = (props: any) => {
             <div className={`fixed inset-y-0 right-0 w-full md:w-96 bg-white shadow-2xl z-50 transform ${isCartOpen ? 'translate-x-0' : 'translate-x-full'} transition-transform duration-300 ease-in-out`}>
                 <div className="h-full flex flex-col">
                     <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-                        <h2 className="text-xl font-serif">Your Bag ({cartItemCount})</h2>
+                        <h2 className="text-xl font-serif">Tu Bolsa ({cartItemCount})</h2>
                         <button onClick={() => setIsCartOpen(false)}><X className="h-5 w-5 text-gray-400 hover:text-black" /></button>
                     </div>
 
@@ -386,8 +486,8 @@ export const MinimalTemplate = (props: any) => {
                         {items.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
                                 <ShoppingCart className="h-12 w-12 opacity-20" />
-                                <p className="font-light">Your bag is empty.</p>
-                                <Button variant="outline" onClick={() => setIsCartOpen(false)}>Continue Shopping</Button>
+                                <p className="font-light">Tu bolsa está vacía.</p>
+                                <Button variant="outline" onClick={() => setIsCartOpen(false)}>Seguir comprando</Button>
                             </div>
                         ) : (
                             <ul className="space-y-6">
@@ -426,8 +526,8 @@ export const MinimalTemplate = (props: any) => {
                                 <span className="text-gray-500">Subtotal</span>
                                 <span className="font-medium text-lg">${(total || 0).toFixed(2)}</span>
                             </div>
-                            <Button className="w-full bg-black text-white hover:bg-gray-800 rounded-none py-6 uppercase tracking-widest text-xs">
-                                Checkout
+                            <Button onClick={() => { setIsCartOpen(false); setShowCheckout(true); }} className="w-full bg-black text-white hover:bg-gray-800 rounded-none py-6 uppercase tracking-widest text-xs">
+                                Finalizar Compra
                             </Button>
                         </div>
                     )}
@@ -435,6 +535,7 @@ export const MinimalTemplate = (props: any) => {
             </div>
             {/* Overlay for Cart */}
             {isCartOpen && <div className="fixed inset-0 bg-black/20 z-40" onClick={() => setIsCartOpen(false)} />}
+            <CheckoutModal open={showCheckout} onOpenChange={setShowCheckout} />
         </div>
     );
 };

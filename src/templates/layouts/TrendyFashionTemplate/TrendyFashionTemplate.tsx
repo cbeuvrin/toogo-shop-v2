@@ -5,7 +5,10 @@ import { ShoppingCart, Heart, Search, Menu, X, ChevronLeft, ChevronRight, User }
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
+import { heroFontFamily } from "@/lib/heroFonts";
+import { getHeroShapeRadius } from "@/lib/heroShapes";
 
 export const TrendyFashionTemplate = (props: any) => {
     const {
@@ -34,6 +37,7 @@ export const TrendyFashionTemplate = (props: any) => {
     const { items: cartItems, removeItem, updateQuantity, totalPrice: cartTotal } = useCart();
     const cartCount = cartItems.reduce((acc: number, item: any) => acc + item.quantity, 0);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [showCheckout, setShowCheckout] = useState(false);
 
     const handleNavigate = (path: string, params: Record<string, string> = {}) => {
         const newParams = new URLSearchParams();
@@ -49,6 +53,12 @@ export const TrendyFashionTemplate = (props: any) => {
 
     const isCatalog = view === 'catalog';
     const displayProducts = isCatalog ? (catalogProducts || []) : products;
+    // "Nueva Colección" grid: hand-picked featured products when chosen in the
+    // editor, otherwise the first 8 products as fallback.
+    const featuredIds = props.featuredProducts;
+    const homeProducts = (featuredIds && featuredIds.length > 0)
+        ? featuredIds.map((id: string) => (products || []).find((p: any) => p.id === id)).filter(Boolean)
+        : (products || []).slice(0, 8);
 
     // Extract settings
     const headerIconColor = settings?.header_icon_color || '#1a3a3a';
@@ -62,10 +72,34 @@ export const TrendyFashionTemplate = (props: any) => {
     const heroTitle = props.welcomeTitle || settings?.welcome_title || 'Los Mejores Productos\nPara Ti';
     const heroMessage = props.welcomeMessage || settings?.welcome_message || 'Descubre nuestra colección diseñada para cada ocasión.';
 
-    const heroBanner = banners?.[0];
-    const topCategories = categories?.filter((c: any) => !c.parent_id && c.show_on_home !== false).slice(0, 6) || [];
+    // Indico-level per-element styles (hero.styles[key]) + per-section backgrounds.
+    // Everything is an optional override — undefined keeps the template's default look.
+    const els = props.heroStyles || {};
+    const styleFor = (k: string) => ({
+        fontFamily: heroFontFamily(els?.[k]?.fontFamily),
+        fontSize: els?.[k]?.fontSize ? `${els[k].fontSize}px` : undefined,
+        color: els?.[k]?.color || undefined,
+        backgroundColor: els?.[k]?.bgColor || undefined,
+    });
+    // Buttons can route to catalog / a category / a custom link (same as Indico).
+    const ctaClick = (k: string) => () => {
+        const cfg = els?.[k] || {};
+        if (cfg.action === 'link' && cfg.customUrl) {
+            window.open(cfg.customUrl, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        if (cfg.action === 'category' && cfg.categorySlug) {
+            handleNavigate('/catalogo', { category: cfg.categorySlug });
+            return;
+        }
+        handleNavigate('/catalogo');
+    };
 
+    // Real hero carousel: the arrows cycle through every uploaded banner
+    // (up to 3 slots in the banners editor for this template).
     const totalHeroSlides = Math.max(banners?.length || 1, 1);
+    const heroBanner = banners?.[heroIndex % totalHeroSlides] || banners?.[0];
+    const topCategories = categories?.filter((c: any) => !c.parent_id && c.show_on_home !== false).slice(0, 6) || [];
 
     // CSS for circular rotating text
     const circularTextCSS = `
@@ -131,18 +165,7 @@ export const TrendyFashionTemplate = (props: any) => {
         );
     };
 
-    // Determine hero shape style
-    const getHeroShapeRadius = () => {
-        const shape = props.heroShape || settings?.hero_image_shape || 'organic';
-        switch (shape) {
-            case 'square': return '0';
-            case 'rounded': return '2rem';
-            case 'circle': return '50%';
-            case 'organic':
-            default:
-                return '60% 40% 40% 60% / 55% 55% 45% 45%';
-        }
-    };
+    const heroShapeRadius = getHeroShapeRadius(props.heroShape || settings?.hero_image_shape || 'organic');
 
     return (
         <div className="min-h-screen font-sans text-gray-900" style={{ backgroundColor: settings?.store_background_color || '#e8f0ef' }}>
@@ -150,25 +173,28 @@ export const TrendyFashionTemplate = (props: any) => {
 
             {/* Announcement Bar */}
             {announcement?.enabled !== false && announcement?.text && (
-                <div className="bg-gray-800 text-white text-center py-2 text-xs font-medium tracking-wide">
+                <div className="bg-gray-800 text-white text-center py-2 text-xs font-medium tracking-wide" style={{ ...(announcement?.bgColor ? { backgroundColor: announcement.bgColor } : {}), ...(announcement?.textColor ? { color: announcement.textColor } : {}) }}>
                     {announcement.text}
                 </div>
             )}
 
             {/* Header */}
-            <header className={`sticky top-0 z-50 px-6 py-4 flex items-center justify-between transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: settings?.navbar_bg_color || 'transparent' }}>
+            <header className={`sticky top-0 z-50 px-6 py-4 flex items-center justify-between transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: props.sectionBg?.navbar || settings?.navbar_bg_color || 'transparent' }}>
                 {/* Logo */}
                 <div className="cursor-pointer" onClick={() => handleNavigate('/tienda')}>
                     <LogoDisplay
                         logoUrl={settings?.logo_url}
                         fallbackText={settings?.store_name || 'LOGO'}
                         disableFetch={true}
+                        logoSize={settings?.logo_size}
+                        logoSizeMobile={(settings as any)?.logo_size_mobile}
+                        logoSizeTablet={(settings as any)?.logo_size_tablet}
                         className="text-2xl font-serif font-bold tracking-tight text-gray-900"
                     />
                 </div>
 
                 {/* Desktop Nav */}
-                <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700">
+                <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700" style={styleFor('navMenu')}>
                     {topCategories.slice(0, 5).map((cat: any) => (
                         <button
                             key={cat.id}
@@ -223,32 +249,40 @@ export const TrendyFashionTemplate = (props: any) => {
 
             {/* Hero Section */}
             {!isCatalog && (
-                <section className="relative w-full min-h-[80vh] flex flex-col lg:flex-row items-center px-6 lg:px-16 py-8 lg:py-0 overflow-hidden">
+                <section className="relative w-full min-h-[80vh] flex flex-col lg:flex-row items-center px-6 lg:px-16 py-8 lg:py-0 overflow-hidden" style={{ backgroundColor: props.sectionBg?.hero || undefined }}>
                     {/* Left Content */}
-                    <div className="w-full lg:w-1/2 z-10 flex flex-col justify-center py-8 lg:py-20 order-2 lg:order-1">
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold leading-tight mb-8 text-gray-900 whitespace-pre-line">
+                    <div className="w-full lg:w-1/2 z-10 flex flex-col justify-center py-8 lg:py-20 lg:order-1">
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold leading-tight mb-8 text-gray-900 whitespace-pre-line" style={styleFor('title')}>
                             {heroTitle}
                         </h1>
 
                         {/* CTA buttons */}
                         <div className="flex gap-4 mb-8">
-                            <button
-                                onClick={() => handleNavigate('/catalogo')}
-                                className="bg-gray-900 text-white px-8 py-3 rounded-none text-sm font-semibold hover:bg-gray-700 transition-colors"
-                            >
-                                Ver Ahora
-                            </button>
-                            <button
-                                onClick={() => handleNavigate('/catalogo')}
-                                className="border border-gray-900 text-gray-900 px-8 py-3 rounded-none text-sm font-semibold hover:bg-gray-900 hover:text-white transition-colors"
-                            >
-                                Nueva Colección
-                            </button>
+                            {(els?.cta1?.enabled !== false) && (
+                                <button
+                                    onClick={ctaClick('cta1')}
+                                    className="bg-gray-900 text-white px-8 py-3 rounded-none text-sm font-semibold hover:bg-gray-700 transition-colors"
+                                    style={styleFor('cta1')}
+                                >
+                                    {props.cta1Label || 'Ver Ahora'}
+                                </button>
+                            )}
+                            {(els?.cta2?.enabled !== false) && (
+                                <button
+                                    onClick={ctaClick('cta2')}
+                                    className="border border-gray-900 text-gray-900 px-8 py-3 rounded-none text-sm font-semibold hover:bg-gray-900 hover:text-white transition-colors"
+                                    style={styleFor('cta2')}
+                                >
+                                    {props.cta2Label || 'Nueva Colección'}
+                                </button>
+                            )}
                         </div>
 
-                        {/* Promotional text */}
-                        <p className="text-sm text-gray-600">
-                            ¡Ahorra <span className="text-xl font-bold text-gray-900">20% Ahora!</span>
+                        {/* Promotional text — custom override renders as plain text */}
+                        <p className="text-sm text-gray-600" style={styleFor('promoText')}>
+                            {els?.promoText?.text
+                                ? els.promoText.text
+                                : (<>¡Ahorra <span className="text-xl font-bold text-gray-900">20% Ahora!</span></>)}
                         </p>
 
                         {/* Decorative star */}
@@ -256,7 +290,7 @@ export const TrendyFashionTemplate = (props: any) => {
                     </div>
 
                     {/* Right: Hero Image */}
-                    <div className="w-full lg:w-1/2 flex items-center justify-center relative order-1 lg:order-2">
+                    <div className="w-full lg:w-1/2 flex items-center justify-center relative lg:order-2">
                         {/* Circular rotating badge */}
                         <div className="absolute top-8 right-8 lg:top-10 lg:right-10 z-20 w-20 h-20">
                             <svg viewBox="0 0 100 100" className="w-full h-full rotating-badge">
@@ -275,16 +309,17 @@ export const TrendyFashionTemplate = (props: any) => {
                             <div
                                 className="w-full h-full overflow-hidden shadow-2xl transition-transform duration-500"
                                 style={{
-                                    borderRadius: getHeroShapeRadius(),
+                                    borderRadius: heroShapeRadius,
                                     backgroundColor: '#f5e6d3',
                                     transform: `scale(${(props.heroShapeScale || 100) / 100})`
                                 }}
                             >
                                 {heroBanner ? (
                                     <img
+                                        key={heroIndex}
                                         src={heroBanner.imageUrl || heroBanner.image}
                                         alt="Hero"
-                                        className="w-full h-full object-cover transition-transform duration-700"
+                                        className="w-full h-full object-cover transition-transform duration-700 animate-in fade-in"
                                         style={{ objectPosition: heroBanner.position || 'center' }}
                                     />
                                 ) : (
@@ -298,25 +333,27 @@ export const TrendyFashionTemplate = (props: any) => {
                         {/* Slide counter */}
                         <div className="absolute bottom-4 right-4 lg:bottom-10 lg:right-2 text-right">
                             <p className="text-lg font-semibold text-gray-700">
-                                <span className="text-gray-900">0{heroIndex + 1}</span>/ {totalHeroSlides < 10 ? `0${totalHeroSlides}` : totalHeroSlides}
+                                <span className="text-gray-900">0{(heroIndex % totalHeroSlides) + 1}</span>/ {totalHeroSlides < 10 ? `0${totalHeroSlides}` : totalHeroSlides}
                             </p>
                         </div>
 
-                        {/* Navigation arrows */}
-                        <div className="absolute bottom-4 right-20 lg:bottom-10 lg:right-24 flex gap-2">
-                            <button
-                                onClick={() => setHeroIndex(prev => (prev - 1 + totalHeroSlides) % totalHeroSlides)}
-                                className="w-9 h-9 rounded-full bg-gray-900 text-white flex items-center justify-center hover:bg-gray-700 transition-colors text-xs"
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                            </button>
-                            <button
-                                onClick={() => setHeroIndex(prev => (prev + 1) % totalHeroSlides)}
-                                className="w-9 h-9 rounded-full bg-gray-900 text-white flex items-center justify-center hover:bg-gray-700 transition-colors text-xs"
-                            >
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
-                        </div>
+                        {/* Navigation arrows — only when there's something to cycle */}
+                        {totalHeroSlides > 1 && (
+                            <div className="absolute bottom-4 right-20 lg:bottom-10 lg:right-24 flex gap-2">
+                                <button
+                                    onClick={() => setHeroIndex(prev => (prev - 1 + totalHeroSlides) % totalHeroSlides)}
+                                    className="w-9 h-9 rounded-full bg-gray-900 text-white flex items-center justify-center hover:bg-gray-700 transition-colors text-xs"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => setHeroIndex(prev => (prev + 1) % totalHeroSlides)}
+                                    className="w-9 h-9 rounded-full bg-gray-900 text-white flex items-center justify-center hover:bg-gray-700 transition-colors text-xs"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </section>
             )}
@@ -354,8 +391,9 @@ export const TrendyFashionTemplate = (props: any) => {
                 </div>
             )}
 
-            {/* Catalog Filter Bar (catalog view) */}
+            {/* Catalog Filter Bar (catalog view) — inherits products-section bg */}
             {isCatalog && (
+                <div style={{ backgroundColor: props.sectionBg?.section1 || undefined }}>
                 <div className="container mx-auto px-6 pt-8 pb-4">
                     <div className="flex flex-wrap justify-center gap-3">
                         {topCategories.map((cat: any) => (
@@ -375,21 +413,24 @@ export const TrendyFashionTemplate = (props: any) => {
                         </button>
                     </div>
                 </div>
+                </div>
             )}
 
             {/* Products Section */}
-            <section className="container mx-auto px-6 py-12">
+            <section style={{ backgroundColor: props.sectionBg?.section1 || undefined }}>
+            <div className="container mx-auto px-6 py-12">
                 {!isCatalog && (
                     <div className="flex items-center justify-between mb-10">
                         <div>
-                            <h2 className="text-3xl font-serif font-bold text-gray-900">Nueva Colección</h2>
-                            <p className="text-gray-500 text-sm mt-1">Los mejores estilos de temporada</p>
+                            <h2 className="text-3xl font-serif font-bold text-gray-900" style={styleFor('sectionTitle1')}>{els?.sectionTitle1?.text || 'Nueva Colección'}</h2>
+                            <p className="text-gray-500 text-sm mt-1" style={styleFor('sectionSubtitle1')}>{els?.sectionSubtitle1?.text || 'Los mejores estilos de temporada'}</p>
                         </div>
                         <button
                             onClick={() => handleNavigate('/catalogo')}
                             className="text-sm font-semibold underline underline-offset-4 text-gray-700 hover:text-gray-900"
+                            style={styleFor('sectionLink1')}
                         >
-                            Ver todo
+                            {els?.sectionLink1?.text || 'Ver todo'}
                         </button>
                     </div>
                 )}
@@ -399,7 +440,7 @@ export const TrendyFashionTemplate = (props: any) => {
 
                 {displayProducts.length > 0 ? (
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
-                        {(isCatalog ? displayProducts : displayProducts.slice(0, 8)).map((product: any) => (
+                        {(isCatalog ? displayProducts : homeProducts).map((product: any) => (
                             <ProductCard key={product.id} product={product} />
                         ))}
                     </div>
@@ -408,14 +449,15 @@ export const TrendyFashionTemplate = (props: any) => {
                         <p className="text-lg">No hay productos disponibles.</p>
                     </div>
                 )}
+            </div>
             </section>
 
             {/* Footer */}
-            <footer className="text-white pt-16 pb-8" style={{ backgroundColor: footerBgColor }}>
+            <footer className="text-white pt-16 pb-8" style={{ backgroundColor: props.sectionBg?.footer || footerBgColor }}>
                 <div className="container mx-auto px-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
                         <div>
-                            <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500">Contacto</h4>
+                            <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500" style={styleFor('footerHeading1')}>{els?.footerHeading1?.text || 'Contacto'}</h4>
                             <ul className="space-y-4 text-sm font-medium">
                                 {contactData?.whatsapp && (
                                     <li className="flex items-center gap-3">
@@ -437,13 +479,13 @@ export const TrendyFashionTemplate = (props: any) => {
                             </ul>
                         </div>
                         <div>
-                            <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500">Ubicación</h4>
+                            <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500" style={styleFor('footerHeading2')}>{els?.footerHeading2?.text || 'Ubicación'}</h4>
                             <p className="text-sm font-medium leading-relaxed max-w-xs text-gray-300">
                                 {contactData?.address || <span className="text-zinc-600 italic">Configura tu dirección</span>}
                             </p>
                         </div>
                         <div>
-                            <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500">Síguenos</h4>
+                            <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500" style={styleFor('footerHeading3')}>{els?.footerHeading3?.text || 'Síguenos'}</h4>
                             <div className="flex flex-col gap-3 text-sm">
                                 {contactData?.instagram && (
                                     <a href={contactData.instagram} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" style={{ color: footerIconColor, fontSize: `${14 * footerIconScale}px` }}>Instagram</a>
@@ -529,12 +571,13 @@ export const TrendyFashionTemplate = (props: any) => {
                                 <span className="text-gray-500 font-medium">Subtotal</span>
                                 <span className="font-bold text-xl">${(cartTotal || 0).toFixed(2)}</span>
                             </div>
-                            <button className="w-full bg-gray-900 text-white py-4 font-semibold text-sm tracking-widest uppercase hover:bg-gray-700 transition-colors">Finalizar Compra</button>
+                            <button onClick={() => { setIsCartOpen(false); setShowCheckout(true); }} className="w-full bg-gray-900 text-white py-4 font-semibold text-sm tracking-widest uppercase hover:bg-gray-700 transition-colors">Finalizar Compra</button>
                         </div>
                     )}
                 </div>
             </div>
             {isCartOpen && <div className="fixed inset-0 bg-black/30 z-40" onClick={() => setIsCartOpen(false)} />}
+            <CheckoutModal open={showCheckout} onOpenChange={setShowCheckout} />
         </div>
     );
 };

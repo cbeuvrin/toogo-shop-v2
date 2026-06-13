@@ -3,8 +3,11 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ShoppingCart, Search, Menu, X, User, Zap, ChevronRight } from 'lucide-react';
 import { useCart } from "@/contexts/CartContext";
+import { useCardStyle } from "@/contexts/CardStyleContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
+import { heroFontFamily } from "@/lib/heroFonts";
 
 export const CyberTemplate = (props: any) => {
     const {
@@ -30,6 +33,7 @@ export const CyberTemplate = (props: any) => {
     const { items: cartItems, removeItem, updateQuantity, totalPrice: cartTotal } = useCart();
     const cartCount = cartItems.reduce((acc: number, item: any) => acc + item.quantity, 0);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [showCheckout, setShowCheckout] = useState(false);
 
     const handleNavigate = (path: string, params: Record<string, string> = {}) => {
         const newParams = new URLSearchParams();
@@ -44,7 +48,20 @@ export const CyberTemplate = (props: any) => {
     };
 
     const isCatalog = view === 'catalog';
-    const displayProducts = isCatalog ? (catalogProducts || []) : (products || []).slice(0, 8);
+    // Home grid: hand-picked featured products when chosen in the editor,
+    // otherwise the first products as fallback.
+    const featuredIds = props.featuredProducts;
+    const homeProducts = (featuredIds && featuredIds.length > 0)
+        ? featuredIds.map((id: string) => (products || []).find((p: any) => p.id === id)).filter(Boolean)
+        : (products || []).slice(0, 8);
+    const displayProducts = isCatalog ? (catalogProducts || []) : homeProducts;
+    // "Otros productos": hand-picked via a second product selector, or the next
+    // batch not already shown in the main grid as fallback.
+    const homeIds = new Set(homeProducts.map((p: any) => p?.id));
+    const featured2 = props.featuredProducts2;
+    const otherProducts = (featured2 && featured2.length > 0)
+        ? featured2.map((id: string) => (products || []).find((p: any) => p.id === id)).filter(Boolean)
+        : (products || []).filter((p: any) => !homeIds.has(p.id)).slice(0, 8);
 
     // Cyber palette — neon on dark
     const cyberBg = settings?.store_background_color || '#0A0A14';
@@ -61,7 +78,28 @@ export const CyberTemplate = (props: any) => {
     const heroBanner = banners?.[0];
     const topCategories = categories?.filter((c: any) => !c.parent_id && c.show_on_home !== false).slice(0, 5) || [];
 
-    const tickerText = ticker?.text || '◢ NUEVA TEMPORADA  ◢ ENVÍO INMEDIATO  ◢ 100% GARANTIZADO  ◢ COMPRA SEGURA';
+    const tickerText = ticker?.text || announcement?.text || '◢ NUEVA TEMPORADA  ◢ ENVÍO INMEDIATO  ◢ 100% GARANTIZADO  ◢ COMPRA SEGURA';
+
+    // Indico-level per-element styles (hero.styles[key]) + per-section backgrounds.
+    const els = props.heroStyles || {};
+    const { style: cardTextStyle } = useCardStyle();
+    const styleFor = (k: string) => {
+        const e = els?.[k] || {};
+        const st: any = {};
+        if (e.fontFamily) st.fontFamily = heroFontFamily(e.fontFamily);
+        if (e.fontSize) st.fontSize = `${e.fontSize}px`;
+        if (e.color) st.color = e.color;
+        if (e.bgColor) st.backgroundColor = e.bgColor;
+        return st;
+    };
+    const ctaClick = (k: string) => () => {
+        const cfg = els?.[k] || {};
+        if (cfg.action === 'link' && cfg.customUrl) { window.open(cfg.customUrl, '_blank', 'noopener,noreferrer'); return; }
+        if (cfg.action === 'category' && cfg.categorySlug) { handleNavigate('/catalogo', { category: cfg.categorySlug }); return; }
+        handleNavigate('/catalogo');
+    };
+    const elText = (k: string, fallback: string) => els?.[k]?.text || fallback;
+
 
     return (
         <div className="min-h-screen font-sans" style={{ backgroundColor: cyberBg, color: cyberText, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace' }}>
@@ -75,7 +113,7 @@ export const CyberTemplate = (props: any) => {
                                 className={`font-bold tracking-[0.2em] mx-8 ${ticker?.fontSize ? '' : 'text-xs'}`}
                                 style={{ color: ticker?.textColor || cyberNeon, ...(ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : {}) }}
                             >
-                                {announcement?.text || tickerText}
+                                {tickerText}
                             </span>
                         </div>
                     ) : (
@@ -86,7 +124,7 @@ export const CyberTemplate = (props: any) => {
                                     className={`font-bold tracking-[0.2em] mx-8 ${ticker?.fontSize ? '' : 'text-xs'}`}
                                     style={{ color: ticker?.textColor || cyberNeon, ...(ticker?.fontSize ? { fontSize: `${ticker.fontSize}px` } : {}) }}
                                 >
-                                    {announcement?.text || tickerText}
+                                    {tickerText}
                                 </span>
                             ))}
                         </div>
@@ -95,23 +133,25 @@ export const CyberTemplate = (props: any) => {
             )}
 
             {/* Header — glassmorphic */}
-            <header className={`sticky top-0 z-40 backdrop-blur-xl border-b transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: settings?.navbar_bg_color || `${cyberBg}cc`, borderColor: cyberBorder }}>
+            <header className={`sticky top-0 z-40 backdrop-blur-xl border-b transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: props.sectionBg?.navbar || settings?.navbar_bg_color || `${cyberBg}cc`, borderColor: cyberBorder }}>
                 <div className="container mx-auto px-6 py-4 flex items-center justify-between">
                     <button className="md:hidden" onClick={() => setIsMenuOpen(true)}>
                         <Menu className="w-6 h-6" style={{ color: cyberNeon }} />
                     </button>
 
                     <div className="cursor-pointer flex items-center gap-2" onClick={() => handleNavigate('/tienda')}>
-                        <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: cyberNeon, boxShadow: `0 0 8px ${cyberNeon}` }} />
                         <LogoDisplay
                             logoUrl={settings?.logo_url}
                             fallbackText={settings?.store_name || 'CYBER'}
                             disableFetch={true}
+                        logoSize={settings?.logo_size}
+                        logoSizeMobile={(settings as any)?.logo_size_mobile}
+                        logoSizeTablet={(settings as any)?.logo_size_tablet}
                             className="text-xl md:text-2xl font-black tracking-[0.15em] uppercase"
                         />
                     </div>
 
-                    <nav className="hidden md:flex items-center gap-8 text-xs font-bold tracking-[0.15em] uppercase">
+                    <nav className="hidden md:flex items-center gap-8 text-xs font-bold tracking-[0.15em] uppercase" style={styleFor('navMenu')}>
                         {(topCategories.length > 0 ? topCategories : [{ name: 'Catálogo' }, { name: 'Drops' }, { name: 'Tech' }]).map((cat: any, i: number) => (
                             <button
                                 key={i}
@@ -142,7 +182,7 @@ export const CyberTemplate = (props: any) => {
 
             {/* HERO — glow + gradient + grid */}
             {!isCatalog && (
-                <section className="relative overflow-hidden">
+                <section className="relative overflow-hidden" style={{ backgroundColor: props.sectionBg?.hero || undefined }}>
                     {/* Background grid */}
                     <div className="absolute inset-0 opacity-[0.07]" style={{
                         backgroundImage: `linear-gradient(${cyberText} 1px, transparent 1px), linear-gradient(90deg, ${cyberText} 1px, transparent 1px)`,
@@ -155,56 +195,66 @@ export const CyberTemplate = (props: any) => {
                     <div className="relative container mx-auto px-6 py-20 md:py-32">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                             <div>
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border mb-6 text-xs tracking-[0.3em] uppercase" style={{ borderColor: cyberNeon, color: cyberNeon }}>
-                                    <Zap className="w-3 h-3" /> SYSTEM ONLINE
+                                {els?.heroBadge?.enabled !== false && (
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border mb-6 text-xs tracking-[0.3em] uppercase" style={{ borderColor: cyberNeon, color: cyberNeon, ...styleFor('heroBadge') }}>
+                                    {els?.heroBadge?.text || 'SYSTEM ONLINE'}
                                 </div>
-                                <h1 className="text-5xl md:text-7xl lg:text-8xl font-black leading-[0.95] tracking-tight uppercase whitespace-pre-line mb-6"
-                                    style={{
+                                )}
+                                <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black leading-[0.95] tracking-tight uppercase whitespace-pre-line break-words mb-6"
+                                    style={els?.title?.color ? styleFor('title') : {
                                         background: `linear-gradient(135deg, ${cyberText} 0%, ${cyberNeon} 50%, ${cyberMagenta} 100%)`,
                                         WebkitBackgroundClip: 'text',
                                         backgroundClip: 'text',
-                                        WebkitTextFillColor: 'transparent'
+                                        WebkitTextFillColor: 'transparent',
+                                        ...styleFor('title'),
                                     }}
                                 >
                                     {heroTitle}
                                 </h1>
-                                <p className="text-base md:text-lg mb-8 max-w-md leading-relaxed" style={{ color: cyberMuted }}>{heroMessage}</p>
+                                <p className="text-base md:text-lg mb-8 max-w-md leading-relaxed" style={{ color: cyberMuted, ...styleFor('message') }}>{heroMessage}</p>
                                 <div className="flex flex-col sm:flex-row gap-4">
+                                    {(els?.cta1?.enabled !== false) && (
                                     <button
-                                        onClick={() => handleNavigate('/catalogo')}
+                                        onClick={ctaClick('cta1')}
                                         className="group relative px-8 py-4 text-sm font-bold tracking-widest uppercase overflow-hidden transition-all hover:scale-[1.02]"
                                         style={{
-                                            background: `linear-gradient(135deg, ${cyberNeon} 0%, ${cyberMagenta} 100%)`,
+                                            background: els?.cta1?.bgColor || `linear-gradient(135deg, ${cyberNeon} 0%, ${cyberMagenta} 100%)`,
                                             color: cyberBg,
-                                            boxShadow: `0 0 30px ${cyberNeon}40`
+                                            boxShadow: `0 0 30px ${cyberNeon}40`,
+                                            ...styleFor('cta1'),
                                         }}
                                     >
-                                        <span className="relative z-10 flex items-center gap-2">Explorar drops <ChevronRight className="w-4 h-4" /></span>
+                                        <span className="relative z-10 flex items-center gap-2">{props.cta1Label || 'Explorar drops'} <ChevronRight className="w-4 h-4" /></span>
                                     </button>
+                                    )}
+                                    {(els?.cta2?.enabled !== false) && (
                                     <button
-                                        onClick={() => handleNavigate('/catalogo')}
+                                        onClick={ctaClick('cta2')}
                                         className="px-8 py-4 text-sm font-bold tracking-widest uppercase border transition-all hover:bg-white/5"
-                                        style={{ borderColor: cyberBorder, color: cyberText }}
+                                        style={{ borderColor: cyberBorder, color: cyberText, ...styleFor('cta2') }}
                                     >
-                                        Ver catálogo
+                                        {props.cta2Label || 'Ver catálogo'}
                                     </button>
+                                    )}
                                 </div>
 
-                                {/* Stats line */}
-                                <div className="grid grid-cols-3 gap-4 mt-12 pt-8 border-t" style={{ borderColor: cyberBorder }}>
+                                {/* Stats line — editable values/labels; whole block hideable via stat1 */}
+                                {(els?.stat1?.enabled !== false) && (
+                                <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-12 pt-8 border-t" style={{ borderColor: cyberBorder }}>
                                     <div>
-                                        <div className="text-2xl font-black" style={{ color: cyberNeon }}>24/7</div>
-                                        <div className="text-[10px] tracking-widest uppercase" style={{ color: cyberMuted }}>Soporte</div>
+                                        <div className="text-2xl font-black" style={{ color: cyberNeon, ...styleFor('stat1') }}>{elText('stat1', '24/7')}</div>
+                                        <div className="text-[10px] tracking-widest uppercase" style={{ color: cyberMuted, ...styleFor('statLabel1') }}>{elText('statLabel1', 'Soporte')}</div>
                                     </div>
                                     <div>
-                                        <div className="text-2xl font-black" style={{ color: cyberMagenta }}>100%</div>
-                                        <div className="text-[10px] tracking-widest uppercase" style={{ color: cyberMuted }}>Garantía</div>
+                                        <div className="text-2xl font-black" style={{ color: cyberMagenta, ...styleFor('stat2') }}>{elText('stat2', '100%')}</div>
+                                        <div className="text-[10px] tracking-widest uppercase" style={{ color: cyberMuted, ...styleFor('statLabel2') }}>{elText('statLabel2', 'Garantía')}</div>
                                     </div>
                                     <div>
-                                        <div className="text-2xl font-black" style={{ color: cyberNeon }}>FAST</div>
-                                        <div className="text-[10px] tracking-widest uppercase" style={{ color: cyberMuted }}>Envíos</div>
+                                        <div className="text-2xl font-black" style={{ color: cyberNeon, ...styleFor('stat3') }}>{elText('stat3', 'FAST')}</div>
+                                        <div className="text-[10px] tracking-widest uppercase" style={{ color: cyberMuted, ...styleFor('statLabel3') }}>{elText('statLabel3', 'Envíos')}</div>
                                     </div>
                                 </div>
+                                )}
                             </div>
 
                             <div className="relative">
@@ -240,11 +290,12 @@ export const CyberTemplate = (props: any) => {
             )}
 
             {/* Products */}
-            <section className="container mx-auto px-6 py-16 md:py-24">
+            <section style={{ backgroundColor: props.sectionBg?.section1 || undefined }}>
+            <div className="container mx-auto px-6 py-16 md:py-24">
                 <div className="flex items-end justify-between mb-12">
                     <div>
-                        <div className="text-xs tracking-[0.3em] uppercase mb-2" style={{ color: cyberNeon }}>// PRODUCTS</div>
-                        <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight">{isCatalog ? 'Catálogo' : 'Drops activos'}</h2>
+                        <div className="text-xs tracking-[0.3em] uppercase mb-2" style={{ color: cyberNeon, ...styleFor('sectionEyebrow1') }}>{els?.sectionEyebrow1?.text || 'PRODUCTS'}</div>
+                        <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight" style={styleFor('sectionTitle1')}>{isCatalog ? 'Catálogo' : elText('sectionTitle1', 'Drops activos')}</h2>
                     </div>
                     {!isCatalog && (
                         <button
@@ -284,7 +335,7 @@ export const CyberTemplate = (props: any) => {
                                         )}
                                     </div>
                                     <div className="p-4">
-                                        <h3 className="text-sm font-bold uppercase tracking-tight line-clamp-1 mb-1">{product.title || product.name}</h3>
+                                        <h3 className="text-sm font-bold uppercase tracking-tight line-clamp-1 mb-1" style={cardTextStyle}>{product.title || product.name}</h3>
                                         <div className="flex items-center justify-between">
                                             {isQuoteOnly ? (
                                                 <span className="text-base font-black italic" style={{ color: cyberNeon }}>A cotizar</span>
@@ -297,11 +348,16 @@ export const CyberTemplate = (props: any) => {
                                             )}
                                             {!isService && (
                                                 <button
-                                                    onClick={(e) => { e.stopPropagation(); addToCart(product); }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const isVar = Array.isArray(product.variations) && product.variations.length > 0;
+                                                        if (isVar) { props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`); }
+                                                        else { addToCart(product); }
+                                                    }}
                                                     className="text-[10px] font-bold tracking-widest uppercase opacity-60 hover:opacity-100"
                                                     style={{ color: cyberMagenta }}
                                                 >
-                                                    + ADD
+                                                    {(Array.isArray(product.variations) && product.variations.length > 0) ? 'OPC.' : '+ ADD'}
                                                 </button>
                                             )}
                                         </div>
@@ -315,47 +371,115 @@ export const CyberTemplate = (props: any) => {
                         <p>// No hay productos disponibles</p>
                     </div>
                 )}
+            </div>
             </section>
 
-            {/* CTA banner */}
-            {!isCatalog && (
-                <section className="container mx-auto px-6 py-16">
-                    <div className="relative overflow-hidden rounded-2xl p-8 md:p-16 border" style={{ borderColor: cyberBorder, backgroundColor: cyberSurface }}>
-                        <div className="absolute inset-0 opacity-30" style={{
-                            background: `radial-gradient(circle at 20% 50%, ${cyberNeon}40 0%, transparent 50%), radial-gradient(circle at 80% 50%, ${cyberMagenta}40 0%, transparent 50%)`
-                        }} />
+            {/* CTA banner — background image uploadable via textBanner */}
+            {!isCatalog && (els?.newsletter?.enabled !== false) && (
+                <section style={{ backgroundColor: props.sectionBg?.section2 || undefined }}>
+                <div className="container mx-auto px-6 py-16">
+                    <div
+                        className="relative overflow-hidden rounded-2xl p-8 md:p-16 border bg-cover bg-center"
+                        style={{
+                            borderColor: cyberBorder,
+                            backgroundColor: cyberSurface,
+                            backgroundImage: props.textBanner?.imageUrl ? `url(${props.textBanner.imageUrl})` : undefined,
+                            backgroundPosition: props.textBanner?.imagePosition || '50% 50%',
+                        }}
+                    >
+                        {props.textBanner?.imageUrl ? (
+                            <div className="absolute inset-0" style={{ backgroundColor: `${cyberBg}99` }} />
+                        ) : (
+                            <div className="absolute inset-0 opacity-30" style={{
+                                background: `radial-gradient(circle at 20% 50%, ${cyberNeon}40 0%, transparent 50%), radial-gradient(circle at 80% 50%, ${cyberMagenta}40 0%, transparent 50%)`
+                            }} />
+                        )}
                         <div className="relative text-center max-w-2xl mx-auto">
-                            <div className="text-xs tracking-[0.3em] uppercase mb-4" style={{ color: cyberNeon }}>// SUSCRÍBETE</div>
-                            <h3 className="text-3xl md:text-5xl font-black uppercase tracking-tight mb-4">
-                                Sé el primero<br/>en saber.
+                            <h3 className="text-3xl md:text-5xl font-black uppercase tracking-tight mb-4" style={styleFor('newsletterTitle')}>
+                                {els?.newsletterTitle?.text || 'Sé el primero en saber.'}
                             </h3>
-                            <p className="mb-6" style={{ color: cyberMuted }}>Drops exclusivos. Ofertas anticipadas. Cero spam.</p>
-                            <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
-                                <input
-                                    type="email"
-                                    placeholder="tu@email.com"
-                                    className="flex-1 px-4 py-3 rounded-lg border bg-transparent text-sm outline-none focus:border-opacity-100 transition-colors"
-                                    style={{ borderColor: cyberBorder, color: cyberText }}
-                                />
-                                <button className="px-6 py-3 rounded-lg text-xs font-bold tracking-widest uppercase" style={{
-                                    background: `linear-gradient(135deg, ${cyberNeon} 0%, ${cyberMagenta} 100%)`,
-                                    color: cyberBg
-                                }}>
-                                    Suscribirme
-                                </button>
-                            </div>
+                            <p style={{ color: cyberMuted, ...styleFor('newsletterText') }}>{elText('newsletterText', 'Drops exclusivos. Ofertas anticipadas. Cero spam.')}</p>
                         </div>
                     </div>
+                </div>
+                </section>
+            )}
+
+            {/* Otros productos — second grid below the banner */}
+            {!isCatalog && otherProducts.length > 0 && (
+                <section style={{ backgroundColor: props.sectionBg?.section3 || undefined }}>
+                <div className="container mx-auto px-6 pb-16 md:pb-24">
+                    <div className="mb-12">
+                        <div className="text-xs tracking-[0.3em] uppercase mb-2" style={{ color: cyberNeon, ...styleFor('sectionEyebrow3') }}>{els?.sectionEyebrow3?.text || 'MÁS'}</div>
+                        <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight" style={styleFor('sectionTitle3')}>{elText('sectionTitle3', 'También te puede interesar')}</h2>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                        {otherProducts.map((product: any) => {
+                            const isService = product.product_type === 'service';
+                            const pricingMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
+                            const isQuoteOnly = isService && pricingMode === 'quote';
+                            const image = (product.images?.[0] && typeof product.images[0] === 'object') ? product.images[0].url : (product.images?.[0] || product.image || '/placeholder.svg');
+                            const price = !isService ? (product.sale_price_mxn || product.price_mxn || product.price || 0) : (product.price_mxn || product.price || 0);
+                            const onSale = !isService && product.sale_price_mxn !== null && product.sale_price_mxn !== undefined;
+                            return (
+                                <div
+                                    key={product.id}
+                                    className="group cursor-pointer rounded-xl overflow-hidden border transition-all hover:border-opacity-100"
+                                    style={{ borderColor: cyberBorder, backgroundColor: cyberSurface }}
+                                    onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}
+                                >
+                                    <div className="relative aspect-square overflow-hidden">
+                                        <img src={image} alt={product.title || product.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        {onSale && (
+                                            <span className="absolute top-2 left-2 px-2 py-1 text-[10px] font-bold tracking-widest uppercase rounded" style={{
+                                                background: `linear-gradient(135deg, ${cyberMagenta} 0%, ${cyberNeon} 100%)`,
+                                                color: cyberBg
+                                            }}>OFERTA</span>
+                                        )}
+                                    </div>
+                                    <div className="p-4">
+                                        <h3 className="text-sm font-bold uppercase tracking-tight line-clamp-1 mb-1" style={cardTextStyle}>{product.title || product.name}</h3>
+                                        <div className="flex items-center justify-between">
+                                            {isQuoteOnly ? (
+                                                <span className="text-base font-black italic" style={{ color: cyberNeon }}>A cotizar</span>
+                                            ) : isService && pricingMode === 'starting_from' ? (
+                                                <span className="text-base font-black" style={{ color: cyberNeon }}>Desde ${Number(price).toFixed(0)} MXN</span>
+                                            ) : isService ? (
+                                                <span className="text-base font-black" style={{ color: cyberNeon }}>${Number(price).toFixed(0)} MXN</span>
+                                            ) : (
+                                                <span className="text-base font-black" style={{ color: cyberNeon }}>${Number(price).toFixed(0)}</span>
+                                            )}
+                                            {!isService && (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const isVar = Array.isArray(product.variations) && product.variations.length > 0;
+                                                        if (isVar) { props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`); }
+                                                        else { addToCart(product); }
+                                                    }}
+                                                    className="text-[10px] font-bold tracking-widest uppercase opacity-60 hover:opacity-100"
+                                                    style={{ color: cyberMagenta }}
+                                                >
+                                                    {(Array.isArray(product.variations) && product.variations.length > 0) ? 'OPC.' : '+ ADD'}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
                 </section>
             )}
 
             {/* Footer */}
-            <footer className="border-t mt-12" style={{ borderColor: cyberBorder, backgroundColor: cyberSurface }}>
+            <footer className="border-t mt-12" style={{ borderColor: cyberBorder, backgroundColor: props.sectionBg?.footer || cyberSurface }}>
                 <div className="container mx-auto px-6 py-12">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
                         <div>
                             <div className="flex items-center gap-2 mb-4">
-                                <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: cyberNeon, boxShadow: `0 0 8px ${cyberNeon}` }} />
                                 <LogoDisplay
                                     logoUrl={settings?.logo_url}
                                     fallbackText={settings?.store_name || 'CYBER'}
@@ -363,10 +487,10 @@ export const CyberTemplate = (props: any) => {
                                     className="text-xl font-black tracking-[0.15em] uppercase"
                                 />
                             </div>
-                            <p className="text-sm" style={{ color: cyberMuted }}>{contactData?.address || "Configura tu dirección en el editor visual."}</p>
+                            <p className="text-sm" style={{ color: cyberMuted }}>{contactData?.address || <span className="italic opacity-60">Agrega tu dirección</span>}</p>
                         </div>
                         <div>
-                            <h4 className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: cyberNeon }}>// Tienda</h4>
+                            <h4 className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: cyberNeon, ...styleFor('footerHeading1') }}>{els?.footerHeading1?.text || '// Tienda'}</h4>
                             <ul className="space-y-2 text-sm">
                                 <li><button onClick={() => handleNavigate('/catalogo')} className="hover:opacity-100" style={{ color: cyberMuted }}>Catálogo</button></li>
                                 <li><button onClick={() => handleNavigate('/catalogo', { onSale: 'true' })} className="hover:opacity-100" style={{ color: cyberMuted }}>Drops</button></li>
@@ -374,7 +498,7 @@ export const CyberTemplate = (props: any) => {
                             </ul>
                         </div>
                         <div>
-                            <h4 className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: cyberNeon }}>// Contacto</h4>
+                            <h4 className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: cyberNeon, ...styleFor('footerHeading2') }}>{els?.footerHeading2?.text || '// Contacto'}</h4>
                             <ul className="space-y-2 text-sm">
                                 {contactData?.whatsapp && (
                                     <li><a href={`https://wa.me/${contactData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:opacity-100" style={{ color: cyberMuted }}>WhatsApp</a></li>
@@ -382,14 +506,16 @@ export const CyberTemplate = (props: any) => {
                                 {contactData?.email && (
                                     <li><a href={`mailto:${contactData.email}`} className="hover:opacity-100" style={{ color: cyberMuted }}>{contactData.email}</a></li>
                                 )}
+                                {!contactData?.whatsapp && !contactData?.email && (
+                                    <li className="italic opacity-60" style={{ color: cyberMuted }}>Agrega tus datos</li>
+                                )}
                             </ul>
                         </div>
                         <div>
-                            <h4 className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: cyberNeon }}>// Legal</h4>
+                            <h4 className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: cyberNeon, ...styleFor('footerHeading3') }}>{els?.footerHeading3?.text || '// Legal'}</h4>
                             <ul className="space-y-2 text-sm">
-                                <li><a href="#" className="hover:opacity-100" style={{ color: cyberMuted }}>Términos</a></li>
-                                <li><a href="#" className="hover:opacity-100" style={{ color: cyberMuted }}>Privacidad</a></li>
-                                <li><a href="#" className="hover:opacity-100" style={{ color: cyberMuted }}>Envíos</a></li>
+                                <li><a href="/terminos-condiciones" target="_blank" rel="noopener noreferrer" className="hover:opacity-100" style={{ color: cyberMuted }}>Términos</a></li>
+                                <li><a href="/politica-privacidad" target="_blank" rel="noopener noreferrer" className="hover:opacity-100" style={{ color: cyberMuted }}>Privacidad</a></li>
                             </ul>
                         </div>
                     </div>
@@ -477,7 +603,7 @@ export const CyberTemplate = (props: any) => {
                                 <span className="text-xs tracking-widest uppercase" style={{ color: cyberMuted }}>// Subtotal</span>
                                 <span className="font-black text-2xl" style={{ color: cyberNeon }}>${(cartTotal || 0).toFixed(0)}</span>
                             </div>
-                            <button className="w-full py-4 rounded-lg font-bold text-sm tracking-widest uppercase" style={{
+                            <button onClick={() => { setIsCartOpen(false); setShowCheckout(true); }} className="w-full py-4 rounded-lg font-bold text-sm tracking-widest uppercase" style={{
                                 background: `linear-gradient(135deg, ${cyberNeon} 0%, ${cyberMagenta} 100%)`,
                                 color: cyberBg,
                                 boxShadow: `0 0 20px ${cyberNeon}40`
@@ -489,6 +615,7 @@ export const CyberTemplate = (props: any) => {
                 </div>
             </div>
             {isCartOpen && <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm" onClick={() => setIsCartOpen(false)} />}
+            <CheckoutModal open={showCheckout} onOpenChange={setShowCheckout} />
         </div>
     );
 };

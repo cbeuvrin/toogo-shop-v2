@@ -48,6 +48,18 @@ export const useProductVariables = () => {
     }
   }, [user, tenantId, tenantLoading]);
 
+  // Cross-instance sync: when any copy of this hook mutates variables (e.g. the
+  // Variables modal), other copies and the product-form selector refetch too.
+  useEffect(() => {
+    const onChanged = () => loadVariables();
+    window.addEventListener('toogo:variables-changed', onChanged);
+    return () => window.removeEventListener('toogo:variables-changed', onChanged);
+  }, [user, tenantId]);
+
+  const notifyVariablesChanged = () => {
+    window.dispatchEvent(new CustomEvent('toogo:variables-changed'));
+  };
+
   const loadVariables = async () => {
     if (!tenantId) {
       console.log('No tenant ID available for loading variables');
@@ -161,6 +173,7 @@ export const useProductVariables = () => {
       }
 
       await loadVariables();
+      notifyVariablesChanged();
       
       toast({
         title: "Éxito",
@@ -186,6 +199,7 @@ export const useProductVariables = () => {
       if (error) throw error;
 
       await loadVariables();
+      notifyVariablesChanged();
       
       toast({
         title: "Éxito",
@@ -225,6 +239,7 @@ export const useProductVariables = () => {
       }
 
       await loadVariables();
+      notifyVariablesChanged();
       
       toast({
         title: "Éxito",
@@ -319,6 +334,7 @@ export const useProductVariables = () => {
 
       // Reload variables
       await loadVariables();
+      notifyVariablesChanged();
 
       toast({
         title: isActive ? "Variable activada" : "Variable archivada",

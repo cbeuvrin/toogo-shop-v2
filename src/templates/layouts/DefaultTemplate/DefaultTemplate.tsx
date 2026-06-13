@@ -16,8 +16,11 @@ import { ProductCard } from "@/components/ui/ProductCard";
 import { AutoCarousel } from "@/components/ui/AutoCarousel";
 import { MobileBottomNav } from "@/components/ui/MobileBottomNav";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { HamburgerButton } from "@/components/ui/HamburgerButton";
 import { CartSidebar } from "@/components/cart/CartSidebar";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
+import { useCart } from "@/contexts/CartContext";
+import { heroFontFamily } from "@/lib/heroFonts";
 import React, { useState, useEffect } from "react";
 
 export const DefaultTemplate = (props: any) => {
@@ -50,6 +53,19 @@ export const DefaultTemplate = (props: any) => {
 
     // Local state for UI logic specific to this template
     const hideNav = useHideOnScroll();
+    const { items: cartItems } = useCart();
+    const cartItemsCount = cartItems.reduce((acc: number, item: any) => acc + item.quantity, 0);
+
+    // Indico-level per-element styles (hero.styles[key]).
+    const els = props.heroStyles || {};
+    const styleFor = (k: string) => {
+        const e = els?.[k] || {};
+        const st: any = {};
+        if (e.fontFamily) st.fontFamily = heroFontFamily(e.fontFamily);
+        if (e.fontSize) st.fontSize = `${e.fontSize}px`;
+        if (e.color) st.color = e.color;
+        return st;
+    };
     const [currentBanner, setCurrentBanner] = useState(0);
     const [currentPrice, setCurrentPrice] = useState(0);
     const [currentStock, setCurrentStock] = useState(0);
@@ -102,7 +118,12 @@ export const DefaultTemplate = (props: any) => {
         };
     }) || [];
 
-    const bestSellers = formattedProducts.slice(0, 8);
+    // "Más vendidos": hand-picked featured products when chosen in the editor,
+    // otherwise the first 8 products as fallback.
+    const featuredIds = props.featuredProducts;
+    const bestSellers = (featuredIds && featuredIds.length > 0)
+        ? featuredIds.map((id: string) => formattedProducts.find((p: any) => p.id === id)).filter(Boolean)
+        : formattedProducts.slice(0, 8);
     const categoriesWithProducts = categories?.filter((category: any) => category.show_on_home !== false).map((category: any) => ({
         id: category.id,
         name: category.name,
@@ -150,7 +171,7 @@ export const DefaultTemplate = (props: any) => {
 
     return (
         <div className="min-h-screen" style={{ backgroundColor: effectiveSettings?.store_background_color || '#ffffff' }}>
-            <header className={`sticky top-0 z-50 border-b border-gray-200 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: effectiveSettings?.navbar_bg_color || '#ffffff' }}>
+            <header className={`sticky top-0 z-50 border-b border-gray-200 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: props.sectionBg?.navbar || effectiveSettings?.navbar_bg_color || '#ffffff' }}>
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
@@ -159,11 +180,12 @@ export const DefaultTemplate = (props: any) => {
                         <div className="hidden md:flex items-center flex-1 max-w-md mx-8">
                             <div className="relative w-full">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2" style={{ color: effectiveSettings?.header_icon_color || '#6b7280', width: `${20 * (effectiveSettings?.header_icon_scale || 1.0)}px`, height: `${20 * (effectiveSettings?.header_icon_scale || 1.0)}px` }} />
-                                <Input placeholder="Buscar productos..." className="border-2 pl-10" onKeyDown={(e) => { if (e.key === 'Enter') handleSearchSubmit(e.currentTarget.value); }}
+                                <Input placeholder={els?.searchBar?.text || "Buscar productos..."} className="border-2 pl-10" onKeyDown={(e) => { if (e.key === 'Enter') handleSearchSubmit(e.currentTarget.value); }}
                                     style={{
                                         height: `${40 * (effectiveSettings?.header_icon_scale || 1.0)}px`,
                                         fontSize: `${14 * (effectiveSettings?.header_icon_scale || 1.0)}px`,
-                                        backgroundColor: 'transparent'
+                                        backgroundColor: 'transparent',
+                                        ...styleFor('searchBar')
                                     }}
                                 />
                             </div>
@@ -173,15 +195,20 @@ export const DefaultTemplate = (props: any) => {
                                 <Heart style={{ color: effectiveSettings?.header_icon_color || '#6b7280', width: `${20 * (effectiveSettings?.header_icon_scale || 1.0)}px`, height: `${20 * (effectiveSettings?.header_icon_scale || 1.0)}px` }} />
                                 {favorites.length > 0 && <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">{favorites.length}</Badge>}
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(true)}>
-                                <Menu style={{ color: effectiveSettings?.header_icon_color || '#6b7280', width: `${20 * (effectiveSettings?.header_icon_scale || 1.0)}px`, height: `${20 * (effectiveSettings?.header_icon_scale || 1.0)}px` }} />
-                            </Button>
+                            <HamburgerButton
+                                isOpen={isMobileMenuOpen}
+                                onClick={() => setIsMobileMenuOpen(true)}
+                                count={props.hamburgerCount || 3}
+                                thickness={props.hamburgerThickness || 2}
+                                size={(props.hamburgerSize || 20) * (effectiveSettings?.header_icon_scale || 1.0)}
+                                color={effectiveSettings?.header_icon_color || '#6b7280'}
+                            />
                         </div>
                     </div>
                 </div>
 
                 {isMobileMenuOpen && <div className="fixed inset-0 z-50 bg-black bg-opacity-50" onClick={() => setIsMobileMenuOpen(false)}>
-                    <div className="fixed right-0 top-0 h-full w-80 bg-white shadow-lg" onClick={e => e.stopPropagation()}>
+                    <div className="fixed right-0 top-0 h-full w-80 max-w-[85vw] bg-white shadow-lg" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between p-4 border-b">
                             <h2 className="text-xl font-semibold text-gray-900">Menú</h2>
                             <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)}><X className="h-5 w-5" /></Button>
@@ -190,8 +217,8 @@ export const DefaultTemplate = (props: any) => {
                             <nav className="space-y-4">
                                 <Link to="/catalogo" className="block py-3 text-lg text-gray-700 hover:text-gray-900 border-b border-gray-100" onClick={() => setIsMobileMenuOpen(false)}>Catálogo</Link>
                                 <button onClick={scrollToContact} className="block py-3 text-lg text-gray-700 hover:text-gray-900 border-b border-gray-100 w-full text-left">Contacto</button>
-                                <button onClick={() => { setLegalModalOpen('terms'); setIsMobileMenuOpen(false); }} className="block py-3 text-lg text-gray-700 hover:text-gray-900 border-b border-gray-100 w-full text-left">Términos y Condiciones</button>
-                                <button onClick={() => { setLegalModalOpen('privacy'); setIsMobileMenuOpen(false); }} className="block py-3 text-lg text-gray-700 hover:text-gray-900 border-b border-gray-100 w-full text-left">Política de Privacidad</button>
+                                <a href="/terminos-condiciones" target="_blank" rel="noopener noreferrer" className="block py-3 text-lg text-gray-700 hover:text-gray-900 border-b border-gray-100 w-full text-left">Términos y Condiciones</a>
+                                <a href="/politica-privacidad" target="_blank" rel="noopener noreferrer" className="block py-3 text-lg text-gray-700 hover:text-gray-900 border-b border-gray-100 w-full text-left">Política de Privacidad</a>
                             </nav>
                         </div>
                     </div>
@@ -203,7 +230,11 @@ export const DefaultTemplate = (props: any) => {
             <div className="hidden md:block fixed bottom-4 right-4 z-40">
                 <Button onClick={toggleCart} className="w-12 h-12 rounded-full bg-black hover:bg-gray-800 text-white shadow-lg flex items-center justify-center relative">
                     <ShoppingCart className="w-5 h-5" />
-                    {/* totalItems logic needed here, pass from hook? Yes */}
+                    {cartItemsCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] min-w-5 h-5 px-1 flex items-center justify-center rounded-full font-bold">
+                            {cartItemsCount}
+                        </span>
+                    )}
                 </Button>
             </div>
 
@@ -217,17 +248,20 @@ export const DefaultTemplate = (props: any) => {
                 </>}
             </section>}
 
-            {bestSellers.length > 0 && <div className="relative -mt-20 z-10 w-full px-4 pt-8 pb-4">
-                <AutoCarousel title="Más vendidos" products={bestSellers} isBestSellers={true} onProductClick={openProductModalLocal} onToggleFavorite={toggleFavorite} favorites={favorites} hoverColor={effectiveSettings?.product_card_hover_color} cardBgColor={effectiveSettings?.product_card_bg_color} />
-            </div>}
+            {/* Products area — background editable via sectionBg.section1 */}
+            <div style={{ backgroundColor: props.sectionBg?.section1 || undefined }}>
+                {bestSellers.length > 0 && <div className="relative -mt-20 z-10 w-full px-4 pt-8 pb-4">
+                    <AutoCarousel title="Más vendidos" products={bestSellers} isBestSellers={true} onProductClick={openProductModalLocal} onToggleFavorite={toggleFavorite} favorites={favorites} hoverColor={effectiveSettings?.product_card_hover_color} cardBgColor={effectiveSettings?.product_card_bg_color} />
+                </div>}
 
-            <main className="container mx-auto px-4 py-8 space-y-12">
-                {categoriesWithProducts.map(category => <AutoCarousel key={category.name} title={category.name} products={category.products} onProductClick={openProductModalLocal} onViewMore={() => navigate(`/catalogo?category=${category.slug || category.name}`)} onToggleFavorite={toggleFavorite} favorites={favorites} hoverColor={effectiveSettings?.product_card_hover_color} cardBgColor={effectiveSettings?.product_card_bg_color} />)}
-            </main>
+                <main className="container mx-auto px-4 py-8 space-y-12">
+                    {categoriesWithProducts.map(category => <AutoCarousel key={category.name} title={els?.[`sectionTitle_${category.id}`]?.text || category.name} products={category.products} onProductClick={openProductModalLocal} onViewMore={() => navigate(`/catalogo?category=${category.slug || category.name}`)} onToggleFavorite={toggleFavorite} favorites={favorites} hoverColor={effectiveSettings?.product_card_hover_color} cardBgColor={effectiveSettings?.product_card_bg_color} titleStyle={styleFor(`sectionTitle_${category.id}`)} viewMoreText={els?.viewMore?.text || undefined} viewMoreStyle={styleFor('viewMore')} />)}
+                </main>
+            </div>
 
             {/* Modals */}
             <Dialog open={productModalOpen} onOpenChange={closeProductModalLocal}>
-                <DialogContent className="w-[80%] lg:max-w-4xl max-h-[90vh] overflow-y-auto rounded-[15px]">
+                <DialogContent className="w-[95%] sm:w-[80%] lg:max-w-4xl max-h-[90vh] overflow-y-auto rounded-[15px]">
                     {selectedProduct && (
                         <div className="grid md:grid-cols-2 gap-8">
                             {/* Product Variation Logic & Details here... simplified for artifact size limit, but full logic must exist */}
@@ -247,8 +281,8 @@ export const DefaultTemplate = (props: any) => {
                 </DialogContent>
             </Dialog>
 
-            <ContactSection contactData={contactData} className="hidden md:block" backgroundColor={effectiveSettings?.footer_bg_color} iconColor={effectiveSettings?.footer_icon_color} iconScale={effectiveSettings?.footer_icon_scale} />
-            <MobileBottomNav contactData={contactData} cartItemsCount={0} onCartClick={toggleCart} onSearchSubmit={handleSearchSubmit} /> {/* Need cartItemsCount from props */}
+            <ContactSection contactData={contactData} className="hidden md:block" backgroundColor={props.sectionBg?.footer || effectiveSettings?.footer_bg_color} iconColor={effectiveSettings?.footer_icon_color} iconScale={effectiveSettings?.footer_icon_scale} />
+            <MobileBottomNav contactData={contactData} cartItemsCount={cartItemsCount} onCartClick={toggleCart} onSearchSubmit={handleSearchSubmit} />
         </div>
     );
 }

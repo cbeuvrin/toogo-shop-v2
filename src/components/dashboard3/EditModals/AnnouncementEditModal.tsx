@@ -15,6 +15,9 @@ interface AnnouncementData {
     text: string;
     enabled: boolean;
     link?: string;
+    /** Optional overrides — empty keeps each template's default bar colors. */
+    bgColor?: string;
+    textColor?: string;
 }
 
 interface AnnouncementEditModalProps {
@@ -75,6 +78,55 @@ export const AnnouncementEditModal = ({ isOpen, onClose, onSave, initialData }: 
                             onChange={(e) => setFormData(prev => ({ ...prev, text: e.target.value }))}
                             placeholder="Ej: Envío gratis en todas tus compras"
                         />
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="ann-bg-color">Color de fondo</Label>
+                        <div className="flex items-center gap-2">
+                            <input
+                                id="ann-bg-color"
+                                type="color"
+                                value={formData.bgColor || "#000000"}
+                                onChange={(e) => setFormData(prev => ({ ...prev, bgColor: e.target.value }))}
+                                className="h-9 w-12 rounded border cursor-pointer"
+                            />
+                            <Input
+                                value={formData.bgColor || ""}
+                                onChange={(e) => setFormData(prev => ({ ...prev, bgColor: e.target.value }))}
+                                placeholder="Por defecto"
+                                className="font-mono text-xs"
+                            />
+                            {formData.bgColor && (
+                                <Button variant="ghost" size="sm" className="text-xs" onClick={() => setFormData(prev => ({ ...prev, bgColor: undefined }))}>
+                                    Quitar
+                                </Button>
+                            )}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">Vacío = usar el color por defecto de la plantilla.</p>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="ann-text-color">Color del texto</Label>
+                        <div className="flex items-center gap-2">
+                            <input
+                                id="ann-text-color"
+                                type="color"
+                                value={formData.textColor || "#ffffff"}
+                                onChange={(e) => setFormData(prev => ({ ...prev, textColor: e.target.value }))}
+                                className="h-9 w-12 rounded border cursor-pointer"
+                            />
+                            <Input
+                                value={formData.textColor || ""}
+                                onChange={(e) => setFormData(prev => ({ ...prev, textColor: e.target.value }))}
+                                placeholder="Por defecto"
+                                className="font-mono text-xs"
+                            />
+                            {formData.textColor && (
+                                <Button variant="ghost" size="sm" className="text-xs" onClick={() => setFormData(prev => ({ ...prev, textColor: undefined }))}>
+                                    Quitar
+                                </Button>
+                            )}
+                        </div>
                     </div>
 
                     <div className="space-y-2">

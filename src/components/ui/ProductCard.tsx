@@ -24,6 +24,7 @@ interface ProductCardProps {
   cardBgColor?: string;
 }
 import { useOptimizedImage } from '@/hooks/useOptimizedImage';
+import { useCardStyle } from '@/contexts/CardStyleContext';
 
 export const ProductCard = ({
   product,
@@ -34,8 +35,22 @@ export const ProductCard = ({
   favorites = [],
   hoverColor,
   cardBgColor = '#ffffff',
+  cardTextStyle,
+  isEditorMode = false,
+  onEditText,
   priority = false // New prop to control lazy loading
-}: ProductCardProps & { priority?: boolean }) => {
+}: ProductCardProps & { priority?: boolean; cardTextStyle?: React.CSSProperties; isEditorMode?: boolean; onEditText?: () => void }) => {
+  // Global, store-wide card typography (font family + size). Explicit props win,
+  // otherwise fall back to the CardStyleContext (set by store / editor preview).
+  const cardCtx = useCardStyle();
+  const effTextStyle = cardTextStyle || cardCtx.style;
+  const effEditorMode = isEditorMode || cardCtx.isEditorMode;
+  const effOnEdit = onEditText || cardCtx.onEditText;
+  // Price keeps its own size but inherits the chosen family.
+  const priceFont = effTextStyle?.fontFamily ? { fontFamily: effTextStyle.fontFamily } : {};
+  const handleNameClick = (e: React.MouseEvent) => {
+    if (effEditorMode && effOnEdit) { e.stopPropagation(); effOnEdit(); }
+  };
   const [isHovered, setIsHovered] = useState(false);
   const handleCardClick = () => {
     if (onProductClick) {
@@ -105,8 +120,9 @@ export const ProductCard = ({
     </div>
 
     <CardContent className="p-[12px] space-y-1.5">
-      <h3 className="font-medium transition-colors duration-300 text-[13px] md:text-[15px] leading-tight line-clamp-2" style={{
-        color: textColor || (isHovered ? '#ffffff' : '#111827')
+      <h3 className={`font-medium transition-colors duration-300 text-[13px] md:text-[15px] leading-tight line-clamp-2 ${effEditorMode && effOnEdit ? 'cursor-pointer hover:underline' : ''}`} onClick={handleNameClick} style={{
+        color: textColor || (isHovered ? '#ffffff' : '#111827'),
+        ...effTextStyle
       }}>
         {product.name}
       </h3>
@@ -121,7 +137,7 @@ export const ProductCard = ({
         <div className="flex flex-col space-y-1">
           {isServiceProduct ? (
             <span className="font-semibold transition-colors duration-300" style={{
-              color: textColor || (isHovered ? '#ffffff' : '#111827')
+              color: textColor || (isHovered ? '#ffffff' : '#111827'), ...priceFont
             }}>
               {isQuoteOnly
                 ? <span className="italic">A cotizar</span>

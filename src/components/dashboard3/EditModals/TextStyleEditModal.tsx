@@ -26,7 +26,9 @@ import { HERO_FONT_OPTIONS, heroFontFamily } from "@/lib/heroFonts";
 
 export interface TextStyle {
   fontFamily?: string;
-  fontSize?: number; // px
+  fontSize?: number; // px — desktop (base; also fallback for tablet/mobile)
+  fontSizeTablet?: number; // px — tablet override
+  fontSizeMobile?: number; // px — mobile override
   color?: string;
   // Button-specific (cta1, cta2): background color + visibility + action routing.
   bgColor?: string;
@@ -61,8 +63,12 @@ interface TextStyleEditModalProps {
   infoText?: string;
   /** Render the button-specific Action section (visibility + catalog/category/link routing). */
   isButton?: boolean;
+  /** Show only a "show/hide this element" switch (for decorative texts that can be hidden but have no action). */
+  canHide?: boolean;
   /** Categories list for the "Ir a categoría" picker. */
   categories?: Array<{ id?: string; name: string; slug?: string }>;
+  /** Current device tab in the editor — the size slider edits THIS device's size. */
+  deviceMode?: 'desktop' | 'tablet' | 'mobile';
   onSave: (elementKey: string, text: string, style: TextStyle) => void;
 }
 
@@ -82,13 +88,39 @@ export const TextStyleEditModal = ({
   previewBaseStyle,
   infoText,
   isButton,
+  canHide,
   categories = [],
+  deviceMode = 'desktop',
   onSave,
 }: TextStyleEditModalProps) => {
   const [text, setText] = useState("");
   const [fontFamily, setFontFamily] = useState("default");
   const [fontSize, setFontSize] = useState<number>(0);
+  const [fontSizeTablet, setFontSizeTablet] = useState<number>(0);
+  const [fontSizeMobile, setFontSizeMobile] = useState<number>(0);
+  // The slider always edits the size for the CURRENTLY selected device.
+  const deviceLabel = deviceMode === 'mobile' ? 'Móvil' : deviceMode === 'tablet' ? 'Tablet' : 'Escritorio';
+  const activeSize = deviceMode === 'mobile' ? fontSizeMobile : deviceMode === 'tablet' ? fontSizeTablet : fontSize;
+  const setActiveSize = (v: number) => {
+    if (deviceMode === 'mobile') setFontSizeMobile(v);
+    else if (deviceMode === 'tablet') setFontSizeTablet(v);
+    else setFontSize(v);
+  };
+  // What the slider shows: this device's override, or the desktop value as baseline.
+  const sliderSize = activeSize > 0 ? activeSize : fontSize;
+  // Per-device visibility: a device override wins, otherwise inherits desktop.
+  const [enabledTablet, setEnabledTablet] = useState<boolean | undefined>(undefined);
+  const [enabledMobile, setEnabledMobile] = useState<boolean | undefined>(undefined);
+  const effectiveEnabled = deviceMode === 'mobile' ? (enabledMobile ?? enabled) : deviceMode === 'tablet' ? (enabledTablet ?? enabled) : enabled;
+  const setActiveEnabled = (v: boolean) => {
+    if (deviceMode === 'mobile') setEnabledMobile(v);
+    else if (deviceMode === 'tablet') setEnabledTablet(v);
+    else setEnabled(v);
+  };
   const [color, setColor] = useState<string>("#000000");
+  // Track whether the user actually touched the color picker, so choosing black
+  // (#000000) on purpose is saved instead of being treated as "untouched".
+  const [colorTouched, setColorTouched] = useState(false);
   const [bgColor, setBgColor] = useState<string>("");
   const [enabled, setEnabled] = useState(true);
   const [action, setAction] = useState<'catalog' | 'category' | 'link'>('catalog');
@@ -100,9 +132,14 @@ export const TextStyleEditModal = ({
     setText(initialText || "");
     setFontFamily(initialStyle?.fontFamily || "default");
     setFontSize(initialStyle?.fontSize || 0);
+    setFontSizeTablet(initialStyle?.fontSizeTablet || 0);
+    setFontSizeMobile(initialStyle?.fontSizeMobile || 0);
     setColor(initialStyle?.color || "#000000");
+    setColorTouched(false);
     setBgColor(initialStyle?.bgColor || "");
     setEnabled(initialStyle?.enabled !== false);
+    setEnabledTablet(initialStyle?.enabledTablet);
+    setEnabledMobile(initialStyle?.enabledMobile);
     setAction(initialStyle?.action || 'catalog');
     setCategorySlug(initialStyle?.categorySlug || "");
     setCustomUrl(initialStyle?.customUrl || "");
@@ -112,10 +149,12 @@ export const TextStyleEditModal = ({
     onSave(elementKey, text, {
       fontFamily: fontFamily === "default" ? undefined : fontFamily,
       fontSize: fontSize > 0 ? fontSize : undefined,
-      color: color && color !== "#000000" ? color : initialStyle?.color,
+      fontSizeTablet: fontSizeTablet > 0 ? fontSizeTablet : undefined,
+      fontSizeMobile: fontSizeMobile > 0 ? fontSizeMobile : undefined,
+      color: colorTouched ? color : initialStyle?.color,
+      ...((isButton || canHide) && { enabled, enabledTablet, enabledMobile }),
       ...(isButton && {
         bgColor: bgColor || undefined,
-        enabled,
         action,
         categorySlug: action === 'category' ? categorySlug : undefined,
         customUrl: action === 'link' ? customUrl : undefined,
@@ -128,7 +167,7 @@ export const TextStyleEditModal = ({
     // Template baseline (weight/transform/tracking) first, so user overrides win.
     ...previewBaseStyle,
     fontFamily: heroFontFamily(fontFamily),
-    fontSize: fontSize > 0 ? `${fontSize}px` : undefined,
+    fontSize: sliderSize > 0 ? `${sliderSize}px` : undefined,
     color: color || undefined,
     ...(isButton && bgColor && {
       backgroundColor: bgColor,
@@ -183,19 +222,23 @@ export const TextStyleEditModal = ({
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>Tamaño</Label>
+              <Label>Tamaño · {deviceLabel}</Label>
               <span className="text-xs text-muted-foreground">
-                {fontSize > 0 ? `${fontSize}px` : "default"}
+                {activeSize > 0 ? `${activeSize}px` : (deviceMode === 'desktop' ? "default" : `heredado (${fontSize > 0 ? fontSize + 'px' : 'default'})`)}
               </span>
             </div>
             <Slider
-              value={[fontSize]}
-              onValueChange={(v) => setFontSize(v[0])}
+              value={[sliderSize]}
+              onValueChange={(v) => setActiveSize(v[0])}
               min={0}
               max={96}
               step={1}
             />
-            <p className="text-[10px] text-muted-foreground">0 = usar tamaño por defecto.</p>
+            <p className="text-[10px] text-muted-foreground">
+              {deviceMode === 'desktop'
+                ? '0 = tamaño por defecto. Editás el tamaño en Escritorio.'
+                : `Editás el tamaño solo para ${deviceLabel}. 0 = heredar el de Escritorio. Cambiá el dispositivo en la barra superior para ajustar cada uno.`}
+            </p>
           </div>
 
           <div className="space-y-2">
@@ -205,12 +248,12 @@ export const TextStyleEditModal = ({
                 id="text-color"
                 type="color"
                 value={color}
-                onChange={(e) => setColor(e.target.value)}
+                onChange={(e) => { setColor(e.target.value); setColorTouched(true); }}
                 className="h-9 w-12 rounded border cursor-pointer"
               />
               <Input
                 value={color}
-                onChange={(e) => setColor(e.target.value)}
+                onChange={(e) => { setColor(e.target.value); setColorTouched(true); }}
                 placeholder="#000000"
                 className="font-mono text-xs"
               />
@@ -244,17 +287,24 @@ export const TextStyleEditModal = ({
             </div>
           )}
 
+          {!isButton && canHide && (
+            <div className="flex items-center justify-between border rounded-md p-3 bg-muted/20">
+              <Label htmlFor="el-enabled">Mostrar elemento · {deviceLabel}</Label>
+              <Switch id="el-enabled" checked={effectiveEnabled} onCheckedChange={setActiveEnabled} />
+            </div>
+          )}
+
           {isButton && (
             <div className="space-y-3 border rounded-md p-3 bg-muted/20">
               <div className="flex items-center justify-between">
-                <Label htmlFor="btn-enabled">Mostrar botón</Label>
+                <Label htmlFor="btn-enabled">Mostrar botón · {deviceLabel}</Label>
                 <Switch
                   id="btn-enabled"
-                  checked={enabled}
-                  onCheckedChange={setEnabled}
+                  checked={effectiveEnabled}
+                  onCheckedChange={setActiveEnabled}
                 />
               </div>
-              {enabled && (
+              {effectiveEnabled && (
                 <>
                   <div className="space-y-2">
                     <Label className="text-xs">Acción al hacer click</Label>

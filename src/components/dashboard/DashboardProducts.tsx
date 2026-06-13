@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Package, Edit, Trash2, Image, Search, Crown, AlertTriangle, HelpCircle } from "lucide-react";
+import { Plus, Package, Edit, Trash2, Image, Search, Crown, AlertTriangle, HelpCircle, Tag, Settings } from "lucide-react";
 import { useProducts, type Product } from "@/hooks/useProducts";
 import { useCategories, type Category } from "@/hooks/useCategories";
 import { ProductImageGallery } from "@/components/ui/product-image-gallery";
@@ -18,9 +18,13 @@ interface DashboardProductsProps {
   onNavigateToCategories?: () => void;
   onNavigateToVariables?: () => void;
   onNavigateToUpgrade?: () => void;
+  /** "?" next to the Categorías button — opens its tutorial. */
+  onCategoriesHelp?: () => void;
+  /** "?" next to the Variables button — opens its tutorial. */
+  onVariablesHelp?: () => void;
 }
 
-export const DashboardProducts = ({ onNavigateToCategories, onNavigateToVariables, onNavigateToUpgrade }: DashboardProductsProps) => {
+export const DashboardProducts = ({ onNavigateToCategories, onNavigateToVariables, onNavigateToUpgrade, onCategoriesHelp, onVariablesHelp }: DashboardProductsProps) => {
   const { products, isLoading: productsLoading, saveProduct, deleteProduct } = useProducts();
   const { categories, isLoading: categoriesLoading } = useCategories();
   const { restrictions, plan } = usePlanRestrictions();
@@ -83,7 +87,7 @@ export const DashboardProducts = ({ onNavigateToCategories, onNavigateToVariable
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-lg font-semibold">Gestión de Productos</h3>
@@ -101,17 +105,61 @@ export const DashboardProducts = ({ onNavigateToCategories, onNavigateToVariable
             Administra tu catálogo de productos
           </p>
         </div>
-        <Button 
-          onClick={handleNewProduct} 
-          className="bg-purple-600 hover:bg-purple-700 text-white rounded-[30px]"
-          disabled={products.length >= restrictions.maxProducts}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Nuevo Producto
-          {products.length >= restrictions.maxProducts && restrictions.maxProducts !== Infinity && (
-            <Crown className="w-3 h-3 ml-1" />
-          )}
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Categorías + ? */}
+          <div className="flex items-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onNavigateToCategories}
+              className="rounded-[30px] border-purple-200 text-purple-700 hover:bg-purple-50"
+            >
+              <Tag className="w-4 h-4 mr-1.5" />
+              Categorías
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onCategoriesHelp}
+              className="text-purple-600 hover:bg-purple-100 rounded-full w-6 h-6 p-0 ml-0.5"
+              title="¿Qué son las categorías?"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+          {/* Variables + ? */}
+          <div className="flex items-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onNavigateToVariables}
+              className="rounded-[30px] border-purple-200 text-purple-700 hover:bg-purple-50"
+            >
+              <Settings className="w-4 h-4 mr-1.5" />
+              Variables
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onVariablesHelp}
+              className="text-purple-600 hover:bg-purple-100 rounded-full w-6 h-6 p-0 ml-0.5"
+              title="¿Qué son las variables?"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+          <Button
+            onClick={handleNewProduct}
+            className="bg-purple-600 hover:bg-purple-700 text-white rounded-[30px]"
+            disabled={products.length >= restrictions.maxProducts}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Nuevo Producto
+            {products.length >= restrictions.maxProducts && restrictions.maxProducts !== Infinity && (
+              <Crown className="w-3 h-3 ml-1" />
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Product Edit Modal */}

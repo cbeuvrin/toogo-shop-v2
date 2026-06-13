@@ -3,8 +3,11 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ShoppingCart, Search, Menu, X, User } from 'lucide-react';
 import { useCart } from "@/contexts/CartContext";
+import { useCardStyle } from "@/contexts/CardStyleContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
+import { heroFontFamily } from "@/lib/heroFonts";
 
 export const BauhausTemplate = (props: any) => {
     const {
@@ -29,6 +32,7 @@ export const BauhausTemplate = (props: any) => {
     const { items: cartItems, removeItem, updateQuantity, totalPrice: cartTotal } = useCart();
     const cartCount = cartItems.reduce((acc: number, item: any) => acc + item.quantity, 0);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [showCheckout, setShowCheckout] = useState(false);
 
     const handleNavigate = (path: string, params: Record<string, string> = {}) => {
         const newParams = new URLSearchParams();
@@ -43,7 +47,13 @@ export const BauhausTemplate = (props: any) => {
     };
 
     const isCatalog = view === 'catalog';
-    const displayProducts = isCatalog ? (catalogProducts || []) : (products || []).slice(0, 6);
+    // Home grid: hand-picked featured products when chosen in the editor,
+    // otherwise the first products as fallback.
+    const featuredIds = props.featuredProducts;
+    const homeProducts = (featuredIds && featuredIds.length > 0)
+        ? featuredIds.map((id: string) => (products || []).find((p: any) => p.id === id)).filter(Boolean)
+        : (products || []).slice(0, 6);
+    const displayProducts = isCatalog ? (catalogProducts || []) : homeProducts;
 
     // Bauhaus palette — strict primaries
     const bauhausRed = settings?.primary_color || '#E63946';
@@ -61,18 +71,45 @@ export const BauhausTemplate = (props: any) => {
 
     const topCategories = categories?.filter((c: any) => !c.parent_id && c.show_on_home !== false).slice(0, 5) || [];
 
+    // Indico-level per-element styles (hero.styles[key]) + per-section backgrounds.
+    const els = props.heroStyles || {};
+    const { style: cardTextStyle } = useCardStyle();
+    // Only include keys that actually have a value, so merging with a base style
+    // (e.g. { color: bauhausRed, ...styleFor(k) }) never wipes the base with undefined.
+    const styleFor = (k: string) => {
+        const e = els?.[k] || {};
+        const st: any = {};
+        if (e.fontFamily) st.fontFamily = heroFontFamily(e.fontFamily);
+        if (e.fontSize) st.fontSize = `${e.fontSize}px`;
+        if (e.color) st.color = e.color;
+        if (e.bgColor) st.backgroundColor = e.bgColor;
+        return st;
+    };
+    const ctaClick = (k: string) => () => {
+        const cfg = els?.[k] || {};
+        if (cfg.action === 'link' && cfg.customUrl) {
+            window.open(cfg.customUrl, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        if (cfg.action === 'category' && cfg.categorySlug) {
+            handleNavigate('/catalogo', { category: cfg.categorySlug });
+            return;
+        }
+        handleNavigate('/catalogo');
+    };
+
     return (
         <div className="min-h-screen font-sans" style={{ backgroundColor: bauhausBg, color: bauhausBlack }}>
 
             {/* Announcement bar */}
             {announcement?.enabled !== false && (
-                <div className="text-center py-2 text-xs font-bold tracking-[0.3em] uppercase" style={{ backgroundColor: bauhausBlack, color: bauhausYellow }}>
+                <div className="text-center py-2 text-xs font-bold tracking-[0.3em] uppercase" style={{ backgroundColor: announcement?.bgColor || bauhausBlack, color: announcement?.textColor || bauhausYellow }}>
                     {announcement?.text || "ENVÍO GRATIS EN PEDIDOS MAYORES A $999"}
                 </div>
             )}
 
             {/* Header — asymmetric */}
-            <header className={`sticky top-0 z-40 border-b-[3px] px-6 py-5 flex items-center justify-between transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ borderColor: bauhausBlack, backgroundColor: settings?.navbar_bg_color || 'transparent' }}>
+            <header className={`sticky top-0 z-40 border-b-[3px] px-6 py-5 flex items-center justify-between transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ borderColor: bauhausBlack, backgroundColor: props.sectionBg?.navbar || settings?.navbar_bg_color || 'transparent' }}>
                 <button className="md:hidden" onClick={() => setIsMenuOpen(true)}>
                     <Menu className="w-6 h-6" />
                 </button>
@@ -82,11 +119,14 @@ export const BauhausTemplate = (props: any) => {
                         logoUrl={settings?.logo_url}
                         fallbackText={settings?.store_name || 'BAUHAUS'}
                         disableFetch={true}
+                        logoSize={settings?.logo_size}
+                        logoSizeMobile={(settings as any)?.logo_size_mobile}
+                        logoSizeTablet={(settings as any)?.logo_size_tablet}
                         className="text-2xl md:text-3xl font-black tracking-tighter uppercase"
                     />
                 </div>
 
-                <nav className="hidden md:flex items-center gap-8 mx-auto text-sm font-bold tracking-wide uppercase">
+                <nav className="hidden md:flex items-center gap-8 mx-auto text-sm font-bold tracking-wide uppercase" style={styleFor('navMenu')}>
                     {(topCategories.length > 0 ? topCategories : [{ name: 'Tienda' }, { name: 'Colección' }, { name: 'Diario' }]).map((cat: any, i: number) => (
                         <button
                             key={i}
@@ -114,32 +154,37 @@ export const BauhausTemplate = (props: any) => {
 
             {/* HERO — asymmetric grid Bauhaus */}
             {!isCatalog && (
-                <section className="container mx-auto px-6 py-12 md:py-20">
+                <section style={{ backgroundColor: props.sectionBg?.hero || undefined }}>
+                    <div className="container mx-auto px-6 py-12 md:py-20">
                     <div className="grid grid-cols-12 gap-4 md:gap-6">
-                        {/* Big number */}
-                        <div className="col-span-12 md:col-span-2 flex items-start">
-                            <div className="text-[120px] md:text-[160px] font-black leading-none" style={{ color: bauhausRed }}>
-                                01
+                        {/* Big number — editable text + can be hidden */}
+                        {(els?.heroNumber?.enabled !== false) && (
+                            <div className="col-span-12 md:col-span-2 flex items-start order-3 md:order-1">
+                                <div className="text-[80px] sm:text-[120px] md:text-[160px] font-black leading-none" style={{ color: bauhausRed, ...styleFor('heroNumber') }}>
+                                    {els?.heroNumber?.text || '01'}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Hero text — breaks the grid */}
-                        <div className="col-span-12 md:col-span-6 flex flex-col justify-center">
-                            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black leading-[0.85] tracking-tighter uppercase whitespace-pre-line mb-6">
+                        <div className="col-span-12 md:col-span-6 flex flex-col justify-center order-1 md:order-2">
+                            <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black leading-[0.85] tracking-tighter uppercase whitespace-pre-line break-words mb-6" style={styleFor('title')}>
                                 {heroTitle}
                             </h1>
-                            <p className="text-base md:text-lg max-w-md mb-8 leading-relaxed">{heroMessage}</p>
+                            <p className="text-base md:text-lg max-w-md mb-8 leading-relaxed" style={styleFor('message')}>{heroMessage}</p>
+                            {(els?.cta1?.enabled !== false) && (
                             <button
-                                onClick={() => handleNavigate('/catalogo')}
+                                onClick={ctaClick('cta1')}
                                 className="self-start px-8 py-4 text-sm font-bold tracking-widest uppercase transition-all hover:opacity-80"
-                                style={{ backgroundColor: bauhausBlack, color: bauhausYellow }}
+                                style={{ backgroundColor: bauhausBlack, color: bauhausYellow, ...styleFor('cta1') }}
                             >
-                                Explorar colección →
+                                {props.cta1Label || 'Explorar colección →'}
                             </button>
+                            )}
                         </div>
 
                         {/* Hero image — geometric circle frame */}
-                        <div className="col-span-12 md:col-span-4 relative">
+                        <div className="col-span-12 md:col-span-4 relative order-2 md:order-3">
                             <div className="absolute inset-0 translate-x-3 translate-y-3" style={{ backgroundColor: bauhausYellow }} />
                             <div className="relative aspect-[3/4] overflow-hidden">
                                 {heroBanner ? (
@@ -159,16 +204,18 @@ export const BauhausTemplate = (props: any) => {
                         <div className="w-4 h-4 rotate-45" style={{ backgroundColor: bauhausBlue }} />
                         <div className="h-[3px] flex-1" style={{ backgroundColor: bauhausBlack }} />
                     </div>
+                    </div>
                 </section>
             )}
 
             {/* Products — asymmetric Bauhaus grid */}
-            <section className="container mx-auto px-6 py-12 md:py-20">
+            <section style={{ backgroundColor: props.sectionBg?.section1 || undefined }}>
+            <div className="container mx-auto px-6 py-12 md:py-20">
                 <div className="flex items-end justify-between mb-12">
                     <div>
                         <div className="text-sm font-bold tracking-widest uppercase mb-2" style={{ color: bauhausRed }}>02 — Catálogo</div>
-                        <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter">
-                            {isCatalog ? 'Productos' : 'Selección'}
+                        <h2 className="text-4xl md:text-6xl font-black uppercase tracking-tighter" style={styleFor('sectionTitle1')}>
+                            {isCatalog ? 'Productos' : (els?.sectionTitle1?.text || 'Selección')}
                         </h2>
                     </div>
                     {!isCatalog && (
@@ -204,7 +251,7 @@ export const BauhausTemplate = (props: any) => {
                                         </div>
                                     </div>
                                     <div className="flex items-baseline justify-between">
-                                        <h3 className="text-lg font-bold uppercase tracking-tight line-clamp-1">{product.title || product.name}</h3>
+                                        <h3 className="text-lg font-bold uppercase tracking-tight line-clamp-1" style={cardTextStyle}>{product.title || product.name}</h3>
                                         {isQuoteOnly ? (
                                             <span className="text-base font-black italic" style={{ color: accentColor }}>A cotizar</span>
                                         ) : isService && pricingMode === 'starting_from' ? (
@@ -217,10 +264,15 @@ export const BauhausTemplate = (props: any) => {
                                     </div>
                                     {!isService && (
                                         <button
-                                            onClick={(e) => { e.stopPropagation(); addToCart(product); }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const isVariable = Array.isArray(product.variations) && product.variations.length > 0;
+                                                if (isVariable) { props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`); }
+                                                else { addToCart(product); }
+                                            }}
                                             className="mt-3 text-xs font-bold tracking-widest uppercase underline underline-offset-4 hover:no-underline"
                                         >
-                                            Agregar al carrito
+                                            {(Array.isArray(product.variations) && product.variations.length > 0) ? 'Ver opciones' : 'Agregar al carrito'}
                                         </button>
                                     )}
                                 </div>
@@ -230,11 +282,13 @@ export const BauhausTemplate = (props: any) => {
                 ) : (
                     <div className="py-20 text-center text-gray-500">No hay productos disponibles.</div>
                 )}
+            </div>
             </section>
 
             {/* Manifesto block — geometric duo banners */}
             {!isCatalog && (
-                <section className="container mx-auto px-6 py-12 md:py-20">
+                <section style={{ backgroundColor: props.sectionBg?.section2 || undefined }}>
+                    <div className="container mx-auto px-6 py-12 md:py-20">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                         <div className="aspect-[4/5] relative overflow-hidden" style={{ backgroundColor: bauhausBlue }}>
                             {sideBanner1 ? (
@@ -247,8 +301,8 @@ export const BauhausTemplate = (props: any) => {
                             <div className="absolute inset-0 bg-black/20" />
                             <div className="absolute bottom-8 left-8 right-8 text-white">
                                 <div className="text-xs font-bold tracking-widest uppercase mb-2" style={{ color: bauhausYellow }}>03 — Manifiesto</div>
-                                <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tighter leading-none">
-                                    Menos pero mejor
+                                <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tighter leading-none" style={styleFor('manifesto1')}>
+                                    {els?.manifesto1?.text || 'Menos pero mejor'}
                                 </h3>
                             </div>
                         </div>
@@ -263,17 +317,18 @@ export const BauhausTemplate = (props: any) => {
                             <div className="absolute inset-0 bg-black/20" />
                             <div className="absolute bottom-8 left-8 right-8 text-white">
                                 <div className="text-xs font-bold tracking-widest uppercase mb-2" style={{ color: bauhausYellow }}>04 — Filosofía</div>
-                                <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tighter leading-none">
-                                    Diseño honesto
+                                <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tighter leading-none" style={styleFor('manifesto2')}>
+                                    {els?.manifesto2?.text || 'Diseño honesto'}
                                 </h3>
                             </div>
                         </div>
+                    </div>
                     </div>
                 </section>
             )}
 
             {/* Footer */}
-            <footer className="border-t-[3px] mt-12" style={{ borderColor: bauhausBlack, backgroundColor: bauhausBg }}>
+            <footer className="border-t-[3px] mt-12" style={{ borderColor: bauhausBlack, backgroundColor: props.sectionBg?.footer || bauhausBg }}>
                 <div className="container mx-auto px-6 py-12">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
                         <div>
@@ -283,10 +338,10 @@ export const BauhausTemplate = (props: any) => {
                                 disableFetch={true}
                                 className="text-3xl font-black uppercase tracking-tighter mb-4"
                             />
-                            <p className="text-sm leading-relaxed">{contactData?.address || "Configura tu dirección en el editor visual."}</p>
+                            <p className="text-sm leading-relaxed">{contactData?.address || <span className="italic opacity-50">Agrega tu dirección</span>}</p>
                         </div>
                         <div>
-                            <h4 className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: bauhausRed }}>Tienda</h4>
+                            <h4 className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: bauhausRed, ...styleFor('footerHeading1') }}>{els?.footerHeading1?.text || 'Tienda'}</h4>
                             <ul className="space-y-2 text-sm">
                                 <li><button onClick={() => handleNavigate('/catalogo')} className="hover:underline">Catálogo</button></li>
                                 <li><button onClick={() => handleNavigate('/catalogo', { onSale: 'true' })} className="hover:underline">Ofertas</button></li>
@@ -294,7 +349,7 @@ export const BauhausTemplate = (props: any) => {
                             </ul>
                         </div>
                         <div>
-                            <h4 className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: bauhausRed }}>Contacto</h4>
+                            <h4 className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: bauhausRed, ...styleFor('footerHeading2') }}>{els?.footerHeading2?.text || 'Contacto'}</h4>
                             <ul className="space-y-2 text-sm">
                                 {contactData?.whatsapp && (
                                     <li><a href={`https://wa.me/${contactData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:underline">WhatsApp</a></li>
@@ -302,14 +357,16 @@ export const BauhausTemplate = (props: any) => {
                                 {contactData?.email && (
                                     <li><a href={`mailto:${contactData.email}`} className="hover:underline">{contactData.email}</a></li>
                                 )}
+                                {!contactData?.whatsapp && !contactData?.email && (
+                                    <li className="italic opacity-50">Agrega tus datos</li>
+                                )}
                             </ul>
                         </div>
                         <div>
-                            <h4 className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: bauhausRed }}>Legal</h4>
+                            <h4 className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: bauhausRed, ...styleFor('footerHeading3') }}>{els?.footerHeading3?.text || 'Legal'}</h4>
                             <ul className="space-y-2 text-sm">
-                                <li><a href="#" className="hover:underline">Términos</a></li>
-                                <li><a href="#" className="hover:underline">Privacidad</a></li>
-                                <li><a href="#" className="hover:underline">Envíos</a></li>
+                                <li><a href="/terminos-condiciones" target="_blank" rel="noopener noreferrer" className="hover:underline">Términos</a></li>
+                                <li><a href="/politica-privacidad" target="_blank" rel="noopener noreferrer" className="hover:underline">Privacidad</a></li>
                             </ul>
                         </div>
                     </div>
@@ -396,7 +453,7 @@ export const BauhausTemplate = (props: any) => {
                                 <span className="font-bold uppercase tracking-widest text-sm">Total</span>
                                 <span className="font-black text-2xl">${(cartTotal || 0).toFixed(0)}</span>
                             </div>
-                            <button className="w-full py-4 font-bold text-sm tracking-widest uppercase" style={{ backgroundColor: bauhausBlack, color: bauhausYellow }}>
+                            <button onClick={() => { setIsCartOpen(false); setShowCheckout(true); }} className="w-full py-4 font-bold text-sm tracking-widest uppercase" style={{ backgroundColor: announcement?.bgColor || bauhausBlack, color: announcement?.textColor || bauhausYellow }}>
                                 Finalizar compra →
                             </button>
                         </div>
@@ -404,6 +461,7 @@ export const BauhausTemplate = (props: any) => {
                 </div>
             </div>
             {isCartOpen && <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setIsCartOpen(false)} />}
+            <CheckoutModal open={showCheckout} onOpenChange={setShowCheckout} />
         </div>
     );
 };

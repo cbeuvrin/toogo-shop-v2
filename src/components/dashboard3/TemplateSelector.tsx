@@ -76,7 +76,7 @@ const TEMPLATES = [
         id: 'premium_brand',
         name: 'Premium Brand',
         description: 'Plantilla de alta conversión con colores oscuros, ideal para mostrar múltiples características y recomendaciones.',
-        thumbnail: '/assets/templates/premium_brand.png',
+        thumbnail: '/assets/templates/premium_brand.svg',
         tags: ['Premium', 'Café', 'Oscuro'],
         requires: []
     },
@@ -164,9 +164,20 @@ export const TemplateSelector = ({ onUpdate }: TemplateSelectorProps) => {
                                     alt={template.name}
                                     className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
                                     onError={(e) => {
-                                        (e.target as HTMLImageElement).style.display = 'none';
+                                        const img = e.target as HTMLImageElement;
+                                        img.style.display = 'none';
+                                        const fb = img.nextElementSibling as HTMLElement | null;
+                                        if (fb) fb.style.display = 'flex';
                                     }}
                                 />
+                                {/* Fallback when the thumbnail image is missing/broken */}
+                                <div
+                                    className="absolute inset-0 hidden flex-col items-center justify-center text-white text-center px-4"
+                                    style={{ background: 'linear-gradient(135deg, #023f66 0%, #e98063 100%)' }}
+                                >
+                                    <span className="text-xl font-black uppercase tracking-tight drop-shadow">{template.name}</span>
+                                    <span className="text-[10px] uppercase tracking-widest opacity-80 mt-1">Vista previa</span>
+                                </div>
                                 {isActive && (
                                     <div className="absolute top-2 right-2 bg-primary text-white px-2 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                                         <Check size={12} /> Activa

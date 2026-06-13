@@ -61,6 +61,7 @@ export const useToogoStore = () => {
   const [textBanner, setTextBanner] = useState<any>(null);
   const [hero, setHero] = useState<any>(null);
   const [featuredProducts, setFeaturedProducts] = useState<string[]>([]);
+  const [featuredProducts2, setFeaturedProducts2] = useState<string[]>([]);
   const [storeLoading, setStoreLoading] = useState(true);
   const [checkoutConfig, setCheckoutConfig] = useState<any>(null);
 
@@ -225,6 +226,11 @@ export const useToogoStore = () => {
           setFeaturedProducts((featuredProductsData.data as any).productIds || []);
         }
 
+        const featuredProducts2Data = visualData.find((item: any) => item.element_type === 'featured_products' && item.element_id === 'featured_grid_2');
+        if (featuredProducts2Data) {
+          setFeaturedProducts2((featuredProducts2Data.data as any).productIds || []);
+        }
+
       } catch (error) {
         console.error('❌ [useToogoStore] Error loading data:', error);
       } finally {
@@ -266,6 +272,7 @@ export const useToogoStore = () => {
     textBanner,
     hero,
     featuredProducts,
+    featuredProducts2,
     effectiveSettings,
     tenant: storeData?.tenant || tenant,
     isLoading: storeLoading,

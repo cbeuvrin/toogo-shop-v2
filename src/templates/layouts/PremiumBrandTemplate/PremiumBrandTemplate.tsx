@@ -3,8 +3,11 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ShoppingCart, Heart, Search, Menu, X, User } from 'lucide-react';
 import { useCart } from "@/contexts/CartContext";
+import { useCardStyle } from "@/contexts/CardStyleContext";
 import { LogoDisplay } from "@/components/ui/LogoDisplay";
+import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
+import { heroFontFamily } from "@/lib/heroFonts";
 
 export const PremiumBrandTemplate = (props: any) => {
     const {
@@ -28,6 +31,7 @@ export const PremiumBrandTemplate = (props: any) => {
     const [searchParams] = useSearchParams();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isCartOpen, setIsCartOpen] = useState(false);
+    const [showCheckout, setShowCheckout] = useState(false);
     const hideNav = useHideOnScroll();
 
     const { items: cartItems, removeItem, updateQuantity, totalPrice: cartTotal } = useCart();
@@ -61,26 +65,58 @@ export const PremiumBrandTemplate = (props: any) => {
 
     const topCategories = categories?.filter((c: any) => !c.parent_id && c.show_on_home !== false).slice(0, 4) || [];
 
-    const currentTestimonials = testimonials || {
-        enabled: true,
-        position: 'beneath_hero',
-        title: "Recomendaciones de Personas",
-        list: [
-            {
-                id: '1',
-                text: "¡Este producto es increíble! Muy recomendado.",
-                author: "Cliente Feliz",
-                role: "Usuario",
-                company: "",
-                logo: "/placeholder.svg"
-            }
-        ]
+    // Category cards use the first product photo of each category — never a
+    // gray placeholder. Categories without a product photo are skipped.
+    const firstProductImage = (cat: any) => {
+        const prod = (products || []).find((p: any) =>
+            p.categories?.some((c: any) => c.id === cat.id) || p.category_id === cat.id
+        );
+        if (!prod) return null;
+        const img = prod.images?.[0];
+        return (img && typeof img === 'object') ? img.url : (img || prod.image || null);
+    };
+    const categoryCards = topCategories
+        .map((c: any) => ({ ...c, photo: firstProductImage(c) }))
+        .filter((c: any) => !!c.photo);
+
+    // Indico-level per-element styles (hero.styles[key]) + per-section backgrounds.
+    const els = props.heroStyles || {};
+    const { style: cardTextStyle } = useCardStyle();
+    const styleFor = (k: string) => ({
+        fontFamily: heroFontFamily(els?.[k]?.fontFamily),
+        fontSize: els?.[k]?.fontSize ? `${els[k].fontSize}px` : undefined,
+        color: els?.[k]?.color || undefined,
+        backgroundColor: els?.[k]?.bgColor || undefined,
+    });
+    const ctaClick = (k: string) => () => {
+        const cfg = els?.[k] || {};
+        if (cfg.action === 'link' && cfg.customUrl) {
+            window.open(cfg.customUrl, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        if (cfg.action === 'category' && cfg.categorySlug) {
+            handleNavigate('/catalogo', { category: cfg.categorySlug });
+            return;
+        }
+        handleNavigate('/catalogo');
     };
 
-    const testimonialsPos = currentTestimonials.position || 'beneath_hero';
+    const [searchOpen, setSearchOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            handleNavigate('/catalogo', { search: searchQuery });
+            setSearchOpen(false);
+        }
+    };
+
+    // Testimonials: ONLY what the owner configured — never invent reviews.
+    const currentTestimonials = testimonials;
+    const testimonialsPos = currentTestimonials?.position || 'beneath_hero';
 
     const renderTestimonials = () => {
-        if (!currentTestimonials.enabled) return null;
+        if (!currentTestimonials?.enabled || !(currentTestimonials.list?.length > 0)) return null;
         return (
             <div className="relative py-24 md:py-32 bg-[#023f66] text-white overflow-hidden">
                 {/* Olas Arriba (Wave Top) */}
@@ -127,24 +163,27 @@ export const PremiumBrandTemplate = (props: any) => {
 
             {/* Announcement Bar */}
             {announcement?.enabled !== false && announcement?.text && (
-                <div className="bg-[#023f66] text-white text-center py-2.5 text-xs font-medium tracking-wide">
+                <div className="bg-[#023f66] text-white text-center py-2.5 text-xs font-medium tracking-wide" style={{ ...(announcement?.bgColor ? { backgroundColor: announcement.bgColor } : {}), ...(announcement?.textColor ? { color: announcement.textColor } : {}) }}>
                     {announcement.text}
                 </div>
             )}
 
             {/* Header */}
-            <header className={`sticky top-0 z-50 shadow-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: navbarBgColor }}>
+            <header className={`sticky top-0 z-50 shadow-sm transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: props.sectionBg?.navbar || navbarBgColor }}>
                 <div className="px-6 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-8">
+                    <div className="flex items-center gap-8 min-w-0">
                         <div className="cursor-pointer" onClick={() => handleNavigate('/tienda')}>
                             <LogoDisplay
                                 logoUrl={settings?.logo_url}
                                 fallbackText={settings?.store_name || 'LOGO'}
                                 disableFetch={true}
+                        logoSize={settings?.logo_size}
+                        logoSizeMobile={(settings as any)?.logo_size_mobile}
+                        logoSizeTablet={(settings as any)?.logo_size_tablet}
                                 className="text-2xl font-bold tracking-tight text-gray-900"
                             />
                         </div>
-                        <nav className="hidden md:flex items-center gap-6 text-xs font-bold uppercase tracking-wider text-gray-600">
+                        <nav className="hidden md:flex items-center gap-6 text-xs font-bold uppercase tracking-wider text-gray-600" style={styleFor('navMenu')}>
                             {topCategories.map((cat: any) => (
                                 <button
                                     key={cat.id}
@@ -164,11 +203,9 @@ export const PremiumBrandTemplate = (props: any) => {
                     </div>
 
                     <div className="flex items-center gap-5">
-                        <button className="hidden md:flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-gray-600 hover:text-gray-900">
-                            <User style={{ color: headerIconColor, width: `${18 * headerIconScale}px`, height: `${18 * headerIconScale}px` }} />
-                            Iniciar Sesión
+                        <button onClick={() => setSearchOpen(!searchOpen)} aria-label="Buscar">
+                            <Search className="cursor-pointer hover:scale-110 transition-transform" style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
                         </button>
-                        <Search className="hidden md:block cursor-pointer hover:scale-110 transition-transform" style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
                         <div className="relative cursor-pointer hover:scale-110 transition-transform" onClick={() => setIsCartOpen(true)}>
                             <ShoppingCart style={{ color: headerIconColor, width: `${20 * headerIconScale}px`, height: `${20 * headerIconScale}px` }} />
                             {cartCount > 0 && <span className="absolute -bottom-1.5 -right-1.5 bg-[#e98063] text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full">{cartCount}</span>}
@@ -176,11 +213,30 @@ export const PremiumBrandTemplate = (props: any) => {
                         <button className="md:hidden" onClick={() => setIsMenuOpen(true)}>
                             <Menu style={{ color: headerIconColor, width: `${24 * headerIconScale}px`, height: `${24 * headerIconScale}px` }} />
                         </button>
-                        <button onClick={() => handleNavigate('/catalogo')} className="hidden lg:block border-2 border-[#023f66] text-[#023f66] text-xs font-bold uppercase px-5 py-2 rounded-full hover:bg-[#023f66] hover:text-white transition-colors">
-                            VER TODO
-                        </button>
+                        {(els?.headerCta?.enabled !== false) && (
+                            <button onClick={ctaClick('headerCta')} className="hidden lg:block border-2 border-[#023f66] text-[#023f66] text-xs font-bold uppercase px-5 py-2 rounded-full hover:bg-[#023f66] hover:text-white transition-colors" style={styleFor('headerCta')}>
+                                {els?.headerCta?.text || 'VER TODO'}
+                            </button>
+                        )}
                     </div>
                 </div>
+                {/* Search bar (toggled by the magnifier icon) */}
+                {searchOpen && (
+                    <div className="px-6 pb-4">
+                        <form onSubmit={handleSearch} className="flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 max-w-md mx-auto w-full">
+                            <Search className="w-4 h-4 text-gray-400 shrink-0" />
+                            <input
+                                type="text"
+                                autoFocus
+                                placeholder="Buscar productos..."
+                                className="bg-transparent border-none outline-none text-sm placeholder:text-gray-400 w-full"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            <button type="submit" className="text-xs font-bold uppercase tracking-wider text-[#023f66] hover:opacity-70">Buscar</button>
+                        </form>
+                    </div>
+                )}
             </header>
 
             {/* Hero Section */}
@@ -194,19 +250,23 @@ export const PremiumBrandTemplate = (props: any) => {
                     <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent"></div>
                     <div className="container mx-auto px-6 relative z-10 text-white">
                         <div className="max-w-xl">
-                            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 whitespace-pre-line leading-tight">
+                            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 whitespace-pre-line break-words leading-tight" style={styleFor('title')}>
                                 {heroTitle}
                             </h1>
-                            <p className="text-lg md:text-xl text-white/90 mb-8 max-w-sm">
+                            <p className="text-lg md:text-xl text-white/90 mb-8 max-w-sm" style={styleFor('message')}>
                                 {heroMessage}
                             </p>
                             <div className="flex flex-col sm:flex-row gap-4">
-                                <button onClick={() => handleNavigate('/catalogo')} className="bg-[#e98063] text-white px-8 py-3.5 rounded-full font-bold shadow-lg hover:bg-[#d46a4f] transition-colors text-center">
-                                    Comprar Ahora
-                                </button>
-                                <button onClick={() => handleNavigate('/catalogo')} className="bg-transparent border-2 border-white text-white px-8 py-3.5 rounded-full font-bold hover:bg-white hover:text-gray-900 transition-colors text-center">
-                                    Cómo Funciona
-                                </button>
+                                {(els?.cta1?.enabled !== false) && (
+                                    <button onClick={ctaClick('cta1')} className="bg-[#e98063] text-white px-8 py-3.5 rounded-full font-bold shadow-lg hover:bg-[#d46a4f] transition-colors text-center" style={styleFor('cta1')}>
+                                        {props.cta1Label || 'Comprar Ahora'}
+                                    </button>
+                                )}
+                                {(els?.cta2?.enabled !== false) && (
+                                    <button onClick={ctaClick('cta2')} className="bg-transparent border-2 border-white text-white px-8 py-3.5 rounded-full font-bold hover:bg-white hover:text-gray-900 transition-colors text-center" style={styleFor('cta2')}>
+                                        {props.cta2Label || 'Ver Catálogo'}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -215,15 +275,16 @@ export const PremiumBrandTemplate = (props: any) => {
 
             {testimonialsPos === 'beneath_hero' && !isCatalog && renderTestimonials()}
 
-            {/* Categories Section */}
-            {!isCatalog && topCategories.length > 0 && (
-                <section className="py-20 text-center">
-                    <h2 className="text-3xl md:text-4xl font-bold text-[#023f66] mb-12">¿Qué estás buscando?</h2>
+            {/* Categories Section — cards use each category's first product photo;
+                categories without one are skipped (no gray placeholders) */}
+            {!isCatalog && categoryCards.length > 0 && (
+                <section className="py-20 text-center" style={{ backgroundColor: props.sectionBg?.section1 || undefined }}>
+                    <h2 className="text-3xl md:text-4xl font-bold text-[#023f66] mb-12" style={styleFor('sectionTitle1')}>{els?.sectionTitle1?.text || '¿Qué estás buscando?'}</h2>
                     <div className="container mx-auto px-6 flex flex-wrap justify-center gap-8">
-                        {topCategories.map((c: any) => (
+                        {categoryCards.map((c: any) => (
                             <div key={c.id} className="group cursor-pointer flex flex-col items-center" onClick={() => handleNavigate('/catalogo', { category: c.name.toLowerCase() })}>
-                                <div className="w-56 h-40 rounded-3xl overflow-hidden mb-6 bg-gray-100 shadow-md group-hover:shadow-xl transition-all duration-300">
-                                    <img src="/placeholder.svg" alt={c.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                <div className="w-40 h-28 sm:w-56 sm:h-40 rounded-3xl overflow-hidden mb-6 bg-gray-100 shadow-md group-hover:shadow-xl transition-all duration-300">
+                                    <img src={c.photo} alt={c.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                                 </div>
                                 <h3 className="text-[#023f66] font-bold text-xl">{c.name}</h3>
                             </div>
@@ -234,9 +295,9 @@ export const PremiumBrandTemplate = (props: any) => {
 
             {/* Best Sellers Section */}
             {!isCatalog && (
-                <section className="py-20 bg-gray-50 border-y border-gray-200">
+                <section className="py-20 bg-gray-50 border-y border-gray-200" style={{ backgroundColor: props.sectionBg?.section2 || undefined }}>
                     <div className="container mx-auto px-6">
-                        <h2 className="text-3xl md:text-4xl font-bold text-[#023f66] text-center mb-16">Productos más vendidos</h2>
+                        <h2 className="text-3xl md:text-4xl font-bold text-[#023f66] text-center mb-16" style={styleFor('sectionTitle2')}>{els?.sectionTitle2?.text || 'Productos más vendidos'}</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                             {(props.featuredProducts && props.featuredProducts.length > 0) ? (
                                 props.featuredProducts.map((productId: string) => {
@@ -255,7 +316,7 @@ export const PremiumBrandTemplate = (props: any) => {
                                                 </button>
                                             </div>
                                             <div className="p-6 text-center">
-                                                <h3 className="font-bold text-[#023f66] text-lg mb-2 line-clamp-2">{product.title || product.name}</h3>
+                                                <h3 className="font-bold text-[#023f66] text-lg mb-2 line-clamp-2" style={cardTextStyle}>{product.title || product.name}</h3>
                                                 {(() => {
                                                     const isService = product.product_type === 'service';
                                                     const pricingMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
@@ -294,14 +355,17 @@ export const PremiumBrandTemplate = (props: any) => {
             )}
 
             {isCatalog && (
+                <div style={{ backgroundColor: props.sectionBg?.section3 || undefined }}>
                 <div className="container mx-auto px-6 py-12">
                     <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#023f66] mb-6 sm:mb-8">Catálogo</h1>
+                </div>
                 </div>
             )}
 
             {/* Products Grid */}
-            <section className="container mx-auto px-6 py-16">
-                {!isCatalog && <h2 className="text-3xl font-bold text-[#023f66] mb-10 border-b border-gray-200 pb-4">Productos</h2>}
+            <section style={{ backgroundColor: props.sectionBg?.section3 || undefined }}>
+            <div className="container mx-auto px-6 py-16">
+                {!isCatalog && <h2 className="text-3xl font-bold text-[#023f66] mb-10 border-b border-gray-200 pb-4" style={styleFor('sectionTitle3')}>{els?.sectionTitle3?.text || 'Productos'}</h2>}
                 {displayProducts.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                         {(isCatalog ? displayProducts : displayProducts.slice(0, 8)).map((product: any) => (
@@ -317,7 +381,7 @@ export const PremiumBrandTemplate = (props: any) => {
                                 </div>
                                 <div className="p-6 text-center">
                                     <h3 className="font-bold text-[#023f66] text-lg mb-2 line-clamp-2">{product.title || product.name}</h3>
-                                    <p className="text-[#023f66] opacity-60 text-sm mb-4 line-clamp-2">{product.description || "La mejor experiencia de calidad."}</p>
+                                    {product.description && <p className="text-[#023f66] opacity-60 text-sm mb-4 line-clamp-2">{product.description}</p>}
                                     <span className="font-bold text-[#e98063] text-xl">${product.sale_price_mxn || product.price_mxn || product.price}</span>
                                 </div>
                             </div>
@@ -326,12 +390,13 @@ export const PremiumBrandTemplate = (props: any) => {
                 ) : (
                     <p className="text-gray-500 py-10">No se encontraron productos.</p>
                 )}
+            </div>
             </section>
 
             {testimonialsPos === 'above_footer' && !isCatalog && renderTestimonials()}
 
             {/* Footer */}
-            <footer className="relative pt-24 pb-10 overflow-hidden" style={{ backgroundColor: footColor, color: '#fff' }}>
+            <footer className="relative pt-24 pb-10 overflow-hidden" style={{ backgroundColor: props.sectionBg?.footer || footColor, color: '#fff' }}>
                 {/* Olas Arriba de Footer (Wave Top) */}
                 <div className="absolute top-0 left-0 w-full overflow-hidden leading-none z-0">
                     <svg className="relative block w-full h-[40px] md:h-[60px]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
@@ -343,10 +408,10 @@ export const PremiumBrandTemplate = (props: any) => {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
                         <div className="md:col-span-1">
                             <LogoDisplay logoUrl={settings?.logo_url} fallbackText={settings?.store_name || 'LOGO'} className="text-3xl font-bold tracking-tight text-white mb-6" />
-                            <p className="text-sm text-white/70 max-w-xs leading-relaxed">{contactData?.address || "Transforma tu rutina diaria con nuestra colección premium."}</p>
+                            <p className="text-sm text-white/70 max-w-xs leading-relaxed">{contactData?.address || <span className="italic text-white/40">Agrega tu dirección</span>}</p>
                         </div>
                         <div>
-                            <h4 className="font-bold text-sm mb-6 uppercase tracking-widest text-[#e98063]">Tienda</h4>
+                            <h4 className="font-bold text-sm mb-6 uppercase tracking-widest text-[#e98063]" style={styleFor('footerHeading1')}>{els?.footerHeading1?.text || 'Tienda'}</h4>
                             <ul className="space-y-4 text-sm text-white/80">
                                 {topCategories.map((c: any) => (
                                     <li key={c.id}><button onClick={() => handleNavigate('/catalogo', { category: c.name.toLowerCase() })} className="hover:text-white transition-colors">{c.name}</button></li>
@@ -355,19 +420,19 @@ export const PremiumBrandTemplate = (props: any) => {
                             </ul>
                         </div>
                         <div>
-                            <h4 className="font-bold text-sm mb-6 uppercase tracking-widest text-[#e98063]">Soporte</h4>
+                            <h4 className="font-bold text-sm mb-6 uppercase tracking-widest text-[#e98063]" style={styleFor('footerHeading2')}>{els?.footerHeading2?.text || 'Soporte'}</h4>
                             <ul className="space-y-4 text-sm text-white/80">
                                 {contactData?.whatsapp && <li><a href={`https://wa.me/${contactData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">WhatsApp: {contactData.whatsapp}</a></li>}
                                 {contactData?.email && <li><a href={`mailto:${contactData.email}`} className="hover:text-white transition-colors">Email: {contactData.email}</a></li>}
-                                <li>Preguntas Frecuentes</li>
-                                <li>Envíos y Devoluciones</li>
+                                {!contactData?.whatsapp && !contactData?.email && <li className="italic text-white/40">Agrega tus datos de contacto</li>}
                             </ul>
                         </div>
                         <div>
-                            <h4 className="font-bold text-sm mb-6 uppercase tracking-widest text-[#e98063]">Síguenos</h4>
+                            <h4 className="font-bold text-sm mb-6 uppercase tracking-widest text-[#e98063]" style={styleFor('footerHeading3')}>{els?.footerHeading3?.text || 'Síguenos'}</h4>
                             <div className="flex gap-4">
-                                {contactData?.instagram && <a href={contactData.instagram} className="hover:text-white transition-colors opacity-80 hover:opacity-100">Instagram</a>}
-                                {contactData?.facebook && <a href={contactData.facebook} className="hover:text-white transition-colors opacity-80 hover:opacity-100">Facebook</a>}
+                                {contactData?.instagram && <a href={contactData.instagram} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors opacity-80 hover:opacity-100">Instagram</a>}
+                                {contactData?.facebook && <a href={contactData.facebook} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors opacity-80 hover:opacity-100">Facebook</a>}
+                                {!contactData?.instagram && !contactData?.facebook && <span className="italic text-white/40 text-sm">Agrega tus redes sociales</span>}
                             </div>
                         </div>
                     </div>
@@ -440,12 +505,13 @@ export const PremiumBrandTemplate = (props: any) => {
                                 <span className="text-[#023f66] font-bold text-lg">Subtotal</span>
                                 <span className="font-bold text-2xl text-[#023f66]">${(cartTotal || 0).toFixed(2)}</span>
                             </div>
-                            <button className="w-full bg-[#023f66] text-white py-4 rounded-full font-bold uppercase tracking-widest hover:bg-[#114b70] transition-colors shadow-xl">Pago Seguro</button>
+                            <button onClick={() => { setIsCartOpen(false); setShowCheckout(true); }} className="w-full bg-[#023f66] text-white py-4 rounded-full font-bold uppercase tracking-widest hover:bg-[#114b70] transition-colors shadow-xl">Pago Seguro</button>
                         </div>
                     )}
                 </div>
             )}
             {isCartOpen && <div className="fixed inset-0 bg-[#023f66]/50 backdrop-blur-sm z-[65]" onClick={() => setIsCartOpen(false)} />}
+            <CheckoutModal open={showCheckout} onOpenChange={setShowCheckout} />
         </div>
     );
 };

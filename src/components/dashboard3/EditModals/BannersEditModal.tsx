@@ -27,8 +27,9 @@ function getBannerAspectRatio(templateId: string | undefined, index: number): nu
   const t = (templateId || "default").toLowerCase();
 
   if (t.includes("fashion") && !t.includes("hero") && !t.includes("trendy")) {
-    // FashionTemplate: [0] portrait 4:5, [1] cuadrado 1:1, [2] portrait 3:4
-    const ratios = [4 / 5, 1, 3 / 4];
+    // FashionTemplate: [0] portrait 4:5, [1] cuadrado 1:1, [2] portrait 3:4,
+    // [3] banner editorial panorámico 21:9 (tras "Recién Llegados")
+    const ratios = [4 / 5, 1, 3 / 4, 21 / 9];
     return ratios[index] ?? 4 / 5;
   }
   if (t.includes("hero")) {
@@ -91,7 +92,7 @@ function getBannerSlotInfo(templateId: string | undefined, index: number): { lab
       { label: "Foto Grande – Héroe Izquierdo", hint: "Imagen principal grande a la izquierda (recomendado: 4:5)" },
       { label: "Foto Pequeña – Esquina Superior", hint: "Imagen pequeña en la parte superior derecha (recomendado: 1:1)" },
       { label: "Foto Pequeña – Esquina Inferior", hint: "Imagen pequeña en la parte inferior derecha (recomendado: 3:4)" },
-      { label: "Banner 4 (no usado)", hint: "Esta plantilla no usa un cuarto banner" },
+      { label: "Banner Editorial – Bajo Recién Llegados", hint: "Banner panorámico a lo ancho, después de la sección de productos (recomendado: 21:9)" },
     ];
     return labels[index] || labels[3];
   }
@@ -108,10 +109,11 @@ function getBannerSlotInfo(templateId: string | undefined, index: number): { lab
   }
 
   if (template.includes("trendy")) {
+    // Caribe: the hero shape is a real carousel — up to 3 photos cycled by the arrows.
     const labels = [
-      { label: "Foto Héroe – Forma Orgánica", hint: "Imagen principal en el héroe con forma orgánica (recomendado: portrait)" },
-      { label: "Banner 2 (no usado en esta plantilla)", hint: "" },
-      { label: "Banner 3 (no usado en esta plantilla)", hint: "" },
+      { label: "Foto 1 del Carrusel del Héroe", hint: "Primera imagen del carrusel con forma orgánica (recomendado: portrait)" },
+      { label: "Foto 2 del Carrusel (opcional)", hint: "Las flechas del héroe pasan de una foto a otra" },
+      { label: "Foto 3 del Carrusel (opcional)", hint: "Las flechas del héroe pasan de una foto a otra" },
       { label: "Banner 4 (no usado en esta plantilla)", hint: "" },
     ];
     return labels[index] || labels[0];
@@ -130,7 +132,7 @@ function getBannerSlotInfo(templateId: string | undefined, index: number): { lab
   if (template.includes("minimal")) {
     const labels = [
       { label: "Foto Héroe Principal", hint: "Imagen grande del héroe (recomendado: 21:9)" },
-      { label: "Banner 2 (no usado)", hint: "" },
+      { label: "Banner Editorial – Bajo el Catálogo", hint: "Banner panorámico después de los productos (recomendado: 21:9)" },
       { label: "Banner 3 (no usado)", hint: "" },
       { label: "Banner 4 (no usado)", hint: "" },
     ];
@@ -383,10 +385,12 @@ export const BannersEditModal = ({
   const getSlotCount = () => {
     const t = (templateId || "").toLowerCase();
     if (t.includes("nature")) return 4;
-    if (t.includes("fashion") && !t.includes("hero") && !t.includes("trendy")) return 3;
+    if (t.includes("fashion") && !t.includes("hero") && !t.includes("trendy")) return 4;
     if (t.includes("bauhaus")) return 3;
     if (t.includes("cyber")) return 1;
-    if (t.includes("hero") || t.includes("trendy") || t.includes("minimal") || t.includes("premium_brand")) return 1;
+    if (t.includes("trendy")) return 3; // Caribe: hero carousel, up to 3 photos
+    if (t.includes("minimal")) return 2; // Mediterráneo: hero + banner editorial
+    if (t.includes("hero") || t.includes("premium_brand")) return 1;
     return 4; // default / simple_live
   };
 

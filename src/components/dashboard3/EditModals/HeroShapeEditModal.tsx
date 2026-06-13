@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Upload, Loader2, Crop } from "lucide-react";
+import { HERO_SHAPE_OPTIONS, getHeroShapeRadius } from "@/lib/heroShapes";
 import { useToast } from "@/hooks/use-toast";
 import { ImageCropperModal } from "../../ui/ImageCropperModal";
 import { supabase } from "@/integrations/supabase/client";
@@ -217,16 +218,6 @@ export const HeroShapeEditModal = ({
         e.currentTarget.releasePointerCapture(e.pointerId);
     };
 
-    const getHeroShapeRadius = (s: string) => {
-        switch (s) {
-            case 'square': return '0';
-            case 'rounded': return '2rem';
-            case 'circle': return '50%';
-            case 'organic':
-            default: return '60% 40% 40% 60% / 55% 55% 45% 45%';
-        }
-    };
-
     const imageUrl = bannerState?.imageUrl || bannerState?.image;
 
     return (
@@ -245,10 +236,9 @@ export const HeroShapeEditModal = ({
                                 <SelectValue placeholder="Selecciona una forma" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="organic">Orgánica (Forma Irregular)</SelectItem>
-                                <SelectItem value="square">Cuadrada</SelectItem>
-                                <SelectItem value="rounded">Bordes Redondeados</SelectItem>
-                                <SelectItem value="circle">Círculo Perfecto</SelectItem>
+                                {HERO_SHAPE_OPTIONS.map(opt => (
+                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
