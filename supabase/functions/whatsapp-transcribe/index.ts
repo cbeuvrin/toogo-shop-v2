@@ -23,15 +23,16 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Twilio credentials para autenticar descarga
-    const TWILIO_API_KEY_SID = Deno.env.get('TWILIO_API_KEY_SID')!;
-    const TWILIO_API_KEY_SECRET = Deno.env.get('TWILIO_API_KEY_SECRET')!;
+    // Twilio credentials para autenticar descarga — las media URLs de Twilio
+    // requieren Account SID + Auth Token (las API Keys NO sirven para media).
+    const TWILIO_ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID')!;
+    const TWILIO_AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')!;
     const openaiKey = Deno.env.get('OPENAI_API_KEY')!;
 
     console.log('🎤 Starting audio transcription from Twilio URL:', audioUrl);
 
     // Descargar audio de Twilio (requiere autenticación Basic)
-    const authHeader = 'Basic ' + btoa(`${TWILIO_API_KEY_SID}:${TWILIO_API_KEY_SECRET}`);
+    const authHeader = 'Basic ' + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
     
     const audioResponse = await fetch(audioUrl, {
       headers: { 'Authorization': authHeader }

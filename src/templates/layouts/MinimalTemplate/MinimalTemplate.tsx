@@ -303,7 +303,7 @@ export const MinimalTemplate = (props: any) => {
                 <section className="mb-12 px-4 md:px-6">
                     <div className="relative aspect-[16/9] md:aspect-[21/9] overflow-hidden bg-gray-100">
                         {mainBanner ? (
-                            <img src={mainBanner.image} alt={mainBanner.title || "Banner"} className="w-full h-full object-cover" style={{ objectPosition: mainBanner.position || 'center center' }} />
+                            <img src={mainBanner.image} alt={mainBanner.title || "Banner"} className="w-full h-full object-contain lg:object-cover" style={{ objectPosition: mainBanner.position || 'center center' }} />
                         ) : settings?.banner_url ? (
                             <img src={settings.banner_url} alt="Hero" className="w-full h-full object-cover" />
                         ) : (
@@ -388,7 +388,7 @@ export const MinimalTemplate = (props: any) => {
                         <img
                             src={banners[1].imageUrl || banners[1].image}
                             alt="Banner editorial"
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain lg:object-cover"
                             style={{ objectPosition: banners[1].position || 'center center' }}
                         />
                         <div className="absolute inset-0 bg-black/10 flex items-center justify-center">

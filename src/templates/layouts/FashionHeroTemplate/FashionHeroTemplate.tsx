@@ -582,13 +582,13 @@ export const FashionHeroTemplate = (props: any) => {
                                     <>
                                         <img
                                             src={textBanner.imageUrl}
-                                            className="w-full h-full object-cover opacity-80 absolute inset-0"
+                                            className="w-full h-full object-contain lg:object-cover opacity-80 absolute inset-0"
                                             alt="Banner Background"
                                         />
                                         <div className="absolute inset-0 bg-black/40" />
                                     </>
                                 ) : secondaryBanner ? (
-                                    <img src={secondaryBanner.imageUrl || secondaryBanner.image} className="w-full h-full object-cover opacity-80" alt="Mid Banner" />
+                                    <img src={secondaryBanner.imageUrl || secondaryBanner.image} className="w-full h-full object-contain lg:object-cover opacity-80" alt="Mid Banner" />
                                 ) : (
                                     <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
                                         <span className="text-zinc-600 font-black text-4xl uppercase">Mid Banner</span>

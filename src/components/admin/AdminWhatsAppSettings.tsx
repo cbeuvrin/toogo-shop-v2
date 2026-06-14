@@ -60,7 +60,7 @@ export const AdminWhatsAppSettings = () => {
             phone: botPhone,
             display_name: botDisplayName,
           },
-        });
+        }, { onConflict: "setting_key" });
 
       if (error) throw error;
       

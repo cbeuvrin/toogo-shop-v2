@@ -61,9 +61,33 @@ function getBannerAspectRatio(templateId: string | undefined, index: number): nu
 interface BannerItem {
   id: string;
   imageUrl: string;
+  imageUrlTablet?: string;
+  imageUrlMobile?: string;
   sort: number;
   position?: string;
+  positionTablet?: string;
+  positionMobile?: string;
 }
+
+type DeviceMode = 'desktop' | 'tablet' | 'mobile';
+
+/** Field key on a banner for the image of a given device. */
+const imgField = (d: DeviceMode) => d === 'mobile' ? 'imageUrlMobile' : d === 'tablet' ? 'imageUrlTablet' : 'imageUrl';
+/** The effective image for a device (its own, else inherit desktop). */
+const deviceImage = (b: BannerItem | undefined, d: DeviceMode): string => {
+  if (!b) return "/placeholder.svg";
+  if (d === 'mobile') return b.imageUrlMobile || b.imageUrl || "/placeholder.svg";
+  if (d === 'tablet') return b.imageUrlTablet || b.imageUrl || "/placeholder.svg";
+  return b.imageUrl || "/placeholder.svg";
+};
+/** Whether this device has its OWN image (not inherited). */
+const deviceHasOwn = (b: BannerItem | undefined, d: DeviceMode): boolean => {
+  if (!b) return false;
+  if (d === 'mobile') return !!b.imageUrlMobile && b.imageUrlMobile !== "/placeholder.svg";
+  if (d === 'tablet') return !!b.imageUrlTablet && b.imageUrlTablet !== "/placeholder.svg";
+  return !!b.imageUrl && b.imageUrl !== "/placeholder.svg";
+};
+const DEVICE_LABEL: Record<DeviceMode, string> = { desktop: 'Escritorio', tablet: 'Tablet', mobile: 'Móvil' };
 
 interface BannersEditModalProps {
   isOpen: boolean;
@@ -80,6 +104,9 @@ interface BannersEditModalProps {
     cta2Label?: string;
   };
   templateId?: string;
+  deviceMode?: DeviceMode;
+  /** When set, the modal shows ONLY this slot (click-a-banner → edit just that one). */
+  focusSlot?: number;
 }
 
 /** Returns label info per slot index based on active template */
@@ -177,6 +204,8 @@ export const BannersEditModal = ({
   initialData,
   initialHeroText,
   templateId,
+  deviceMode = 'desktop',
+  focusSlot,
 }: BannersEditModalProps) => {
   const [banners, setBanners] = useState<BannerItem[]>([]);
   const [heroTitle, setHeroTitle] = useState("");
@@ -200,7 +229,15 @@ export const BannersEditModal = ({
 
   useEffect(() => {
     if (initialData && initialData.length > 0) {
-      setBanners(initialData.sort((a, b) => a.sort - b.sort));
+      // Place each banner at its real slot index (`sort`) WITHOUT compressing —
+      // empty middle slots must stay empty so slot N maps to the same image the
+      // template reads as banners[N].
+      const byIndex: BannerItem[] = [];
+      initialData.forEach((b) => {
+        const i = typeof b.sort === 'number' ? b.sort : byIndex.length;
+        byIndex[i] = b;
+      });
+      setBanners(byIndex);
     } else {
       setBanners([]);
     }
@@ -214,11 +251,20 @@ export const BannersEditModal = ({
   }, [initialData, initialHeroText, isOpen]);
 
   const removeBanner = (index: number) => {
-    if (index === 0) {
-      toast.error("El Banner 1 es obligatorio y no se puede eliminar");
+    const newBanners = [...banners];
+    // On tablet/mobile, "remove" clears ONLY this device's override → inherits desktop.
+    if (deviceMode !== 'desktop') {
+      if (newBanners[index]) {
+        const field = imgField(deviceMode);
+        newBanners[index] = { ...newBanners[index], [field]: undefined };
+        setBanners(newBanners);
+      }
       return;
     }
-    const newBanners = [...banners];
+    if (index === 0) {
+      toast.error("El Banner 1 (Escritorio) es obligatorio y no se puede eliminar");
+      return;
+    }
     if (newBanners[index]) {
       newBanners[index] = {
         id: `placeholder_${index}`,
@@ -277,7 +323,7 @@ export const BannersEditModal = ({
   // it again — same flow as a fresh upload. We fetch it to a data URL first so the
   // crop canvas stays same-origin (no CORS taint on the remote Supabase URL).
   const handleRecrop = async (bannerIndex: number) => {
-    const url = banners[bannerIndex]?.imageUrl;
+    const url = deviceImage(banners[bannerIndex], deviceMode);
     if (!url || url === "/placeholder.svg") return;
     try {
       const resp = await fetch(url, { mode: "cors" });
@@ -304,6 +350,7 @@ export const BannersEditModal = ({
     newUploadingStates[bannerIndex] = true;
     setUploadingStates(newUploadingStates);
 
+    const field = imgField(deviceMode);
     try {
       const previewUrl = URL.createObjectURL(croppedBlob);
       const newBanners = [...banners];
@@ -316,10 +363,12 @@ export const BannersEditModal = ({
           position: "center center",
         });
       }
+      // Only set the ACTIVE device's image; keep the other devices' images intact.
       newBanners[bannerIndex] = {
-        id: `banner_${Date.now()}`,
-        imageUrl: previewUrl,
+        ...newBanners[bannerIndex],
+        id: newBanners[bannerIndex]?.id && !String(newBanners[bannerIndex].id).startsWith('placeholder') ? newBanners[bannerIndex].id : `banner_${Date.now()}`,
         sort: bannerIndex,
+        [field]: previewUrl,
         position: newBanners[bannerIndex]?.position || "center center",
       };
       setBanners(newBanners);
@@ -335,7 +384,7 @@ export const BannersEditModal = ({
 
       newBanners[bannerIndex] = {
         ...newBanners[bannerIndex],
-        imageUrl: publicUrl
+        [field]: publicUrl
       };
       setBanners([...newBanners]);
 
@@ -364,13 +413,23 @@ export const BannersEditModal = ({
       return;
     }
 
-    const validBanners = banners
-      .filter(banner => banner.imageUrl !== "/placeholder.svg")
-      .map(b => ({
+    const cb = Date.now();
+    // Build by REAL slot index so `sort` always matches the visible slot (e.g. the
+    // editorial banner is slot 3). Each slot gets a stable id (`banner_slot_N`) so
+    // empty middle slots never compress later slots into earlier positions.
+    const validBanners: BannerItem[] = [];
+    banners.forEach((b, index) => {
+      if (!b || !b.imageUrl || b.imageUrl === "/placeholder.svg") return;
+      validBanners.push({
         ...b,
-        imageUrl: `${b.imageUrl}?cb=${Date.now()}`,
+        id: `banner_slot_${index}`,
+        sort: index,
+        imageUrl: `${b.imageUrl}?cb=${cb}`,
+        imageUrlTablet: b.imageUrlTablet && b.imageUrlTablet !== "/placeholder.svg" ? `${b.imageUrlTablet}?cb=${cb}` : undefined,
+        imageUrlMobile: b.imageUrlMobile && b.imageUrlMobile !== "/placeholder.svg" ? `${b.imageUrlMobile}?cb=${cb}` : undefined,
         position: b.position || "center center",
-      }));
+      });
+    });
 
     onSave(validBanners, {
       title: heroTitle,
@@ -403,6 +462,11 @@ export const BannersEditModal = ({
     position: "center center",
   });
 
+  // When a single banner was clicked in the preview, show ONLY that slot — editing
+  // each image separately is far clearer than one popup with every slot at once.
+  const focused = typeof focusSlot === 'number' && focusSlot >= 0 && focusSlot < slotCount;
+  const slotIndices = focused ? [focusSlot as number] : bannerSlots.map((_, i) => i);
+
   return <Dialog open={isOpen} onOpenChange={onClose}>
     <DialogContent className="sm:max-w-4xl rounded-[30px] h-[90vh] overflow-hidden flex flex-col" aria-describedby="banners-edit-description">
       <DialogHeader className="relative shrink-0">
@@ -425,7 +489,8 @@ export const BannersEditModal = ({
             </p>
           </div>
 
-          {/* Banner Text Config */}
+          {/* Banner Text Config — hidden when editing a single image (less clutter) */}
+          {!focused && (
           <div className="space-y-4 bg-muted/30 p-4 rounded-lg border">
             <div>
               <Label htmlFor="hero-title">Título del Héroe</Label>
@@ -468,22 +533,35 @@ export const BannersEditModal = ({
               </div>
             </div>
           </div>
+          )}
 
           {/* Image Slots */}
           <div className="space-y-8">
-            {bannerSlots.map((banner, index) => {
+            {slotIndices.map((index) => {
+              const banner = bannerSlots[index] || { id: `placeholder_${index}`, imageUrl: "/placeholder.svg", sort: index, position: "center center" };
               const slotInfo = getBannerSlotInfo(templateId, index);
               const currentPosition = banner.position || "center center";
               const aspectRatio = getBannerAspectRatio(templateId, index);
-              const hasImage = banner.imageUrl !== "/placeholder.svg";
+              const shownImage = deviceImage(banner, deviceMode);
+              const hasImage = shownImage !== "/placeholder.svg";
+              const ownForDevice = deviceHasOwn(banner, deviceMode);
+              const inherited = hasImage && !ownForDevice; // showing desktop image on tablet/mobile
 
               return <React.Fragment key={banner.id}>
                 <div className="space-y-4 border rounded-xl p-4 bg-card">
                   {/* Slot header */}
                   <div>
-                    <h4 className="font-semibold text-sm">{slotInfo.label}</h4>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-semibold text-sm">{slotInfo.label}</h4>
+                      <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-primary/10 text-primary">{DEVICE_LABEL[deviceMode]}</span>
+                    </div>
                     {slotInfo.hint && (
                       <p className="text-xs text-muted-foreground mt-0.5">{slotInfo.hint}</p>
+                    )}
+                    {deviceMode !== 'desktop' && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {inherited ? 'Usando la imagen de Escritorio. Subí una aquí para que ' + DEVICE_LABEL[deviceMode] + ' tenga la suya.' : 'Imagen propia de ' + DEVICE_LABEL[deviceMode] + '.'}
+                      </p>
                     )}
                   </div>
 
@@ -506,7 +584,7 @@ export const BannersEditModal = ({
                     {hasImage ? (
                       <>
                         <img
-                          src={banner.imageUrl}
+                          src={shownImage}
                           alt={slotInfo.label}
                           className="absolute inset-0 w-full h-full object-cover"
                           style={{ objectPosition: currentPosition }}
@@ -518,12 +596,13 @@ export const BannersEditModal = ({
                             <p className="text-xs font-medium">Mover y recortar</p>
                           </div>
                         </div>
-                        {/* Delete button */}
-                        {index > 0 && (
+                        {/* Delete button — desktop: remove extra slots; tablet/mobile: clear this device's override */}
+                        {(deviceMode !== 'desktop' ? ownForDevice : index > 0) && (
                           <Button
                             variant="destructive"
                             size="sm"
                             className="absolute top-2 right-2 h-7 w-7 p-0 rounded-full z-10"
+                            title={deviceMode !== 'desktop' ? `Quitar imagen de ${DEVICE_LABEL[deviceMode]} (volver a heredar)` : 'Eliminar imagen'}
                             onClick={(e) => { e.stopPropagation(); removeBanner(index); }}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -552,12 +631,14 @@ export const BannersEditModal = ({
                     disabled={uploadingStates[index]}
                   >
                     <Upload className="w-4 h-4" />
-                    {hasImage ? "Cambiar Imagen" : "Subir Imagen"}
+                    {deviceMode !== 'desktop'
+                      ? (ownForDevice ? `Cambiar imagen de ${DEVICE_LABEL[deviceMode]}` : `Subir imagen para ${DEVICE_LABEL[deviceMode]}`)
+                      : (hasImage ? "Cambiar Imagen" : "Subir Imagen")}
                   </Button>
                 </div>
 
                 {/* Info tip after first slot */}
-                {index === 0 && slotCount > 1 && (
+                {!focused && index === 0 && slotCount > 1 && (
                   <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
                     <p className="text-sm text-blue-800 dark:text-blue-200">
                       💡 Esta plantilla usa {slotCount} espacios de imagen. Súbelas todas para el mejor resultado.

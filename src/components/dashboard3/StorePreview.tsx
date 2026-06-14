@@ -10,7 +10,7 @@ import { ContactSection } from "@/components/ui/ContactSection";
 import { ProductCard } from "@/components/ui/ProductCard";
 import { AutoCarousel } from "@/components/ui/AutoCarousel";
 import { CardStyleContext } from "@/contexts/CardStyleContext";
-import { pickFontSize, pickEnabled } from "@/hooks/useDeviceType";
+import { pickFontSize, pickEnabled, pickImage, pickPosition } from "@/hooks/useDeviceType";
 import {
   ShoppingCart,
   Heart,
@@ -144,11 +144,20 @@ export const StorePreview = ({
   const footColor = footerBgColor || settings?.footer_bg_color || '#1a1a1a';
   // Use banners from data, fallback to default banner if empty
   const banners = data.banners && data.banners.length > 0
-    ? data.banners.sort((a, b) => a.sort - b.sort).map(banner => ({
-      id: banner.id,
-      image: banner.imageUrl,
-      position: (banner as any).position || 'center center',
-    }))
+    ? (() => {
+      // Reindex by real slot (`sort`) WITHOUT compressing, so slot N maps to the
+      // same image the template reads as banners[N] (e.g. banner editorial = [3]).
+      const out: any[] = [];
+      (data.banners as any[]).forEach((banner: any) => {
+        const i = typeof banner.sort === 'number' ? banner.sort : out.length;
+        out[i] = {
+          id: banner.id,
+          image: pickImage(banner, deviceMode) || (banner as any).imageUrl,
+          position: pickPosition(banner, deviceMode) || 'center center',
+        };
+      });
+      return out;
+    })()
     : [
       {
         id: "default-banner-1",
@@ -466,22 +475,22 @@ export const StorePreview = ({
       </header>
       </EditableElement>
 
-      {/* Banner Slider */}
+      {/* Banner Slider — edits the currently-visible slide */}
       <EditableElement
         type="banners"
         isEditorMode={isEditorMode}
-        onEdit={() => onEditElement('banners')}
+        onEdit={() => onEditElement('banners', currentBanner)}
       >
         <section id="banners" className="relative w-full aspect-[16/9] sm:aspect-[16/10] lg:aspect-[8/3] overflow-hidden">
           <div className="relative w-full h-full">
             {banners.map((banner, index) => (
               <div
                 key={banner.id}
-                className={`absolute inset-0 transition-opacity duration-500 ${index === currentBanner ? "opacity-100" : "opacity-0"
+                className={`absolute inset-0 transition-opacity duration-500 bg-no-repeat ${index === currentBanner ? "opacity-100" : "opacity-0"
                   }`}
                 style={{
                   backgroundImage: `url(${banner.image})`,
-                  backgroundSize: "cover",
+                  backgroundSize: deviceMode === 'desktop' ? "cover" : "contain",
                   backgroundPosition: banner.position || "center"
                 }}
               >
@@ -633,7 +642,7 @@ export const StorePreview = ({
 
         {/* Hero — photo opens banners editor; title/message/button each editable */}
         <div className="relative w-full aspect-[4/3] md:aspect-[21/9] bg-gray-200 overflow-hidden">
-          <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className="absolute inset-0">
+          <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners', 0)} className="absolute inset-0">
             {banners.length > 0 ? (
               <img src={banners[0].image} className="w-full h-full object-cover" style={{ objectPosition: banners[0].position || 'center center' }} />
             ) : (
@@ -961,9 +970,9 @@ export const StorePreview = ({
       {/* Hero — photo opens banners editor; title/message/button each editable */}
       <section className="mb-12 px-4 md:px-6">
         <div className="relative aspect-[16/9] md:aspect-[21/9] overflow-hidden bg-gray-100">
-          <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className="absolute inset-0">
+          <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners', 0)} className="absolute inset-0">
             {banners[0]?.image ? (
-              <img src={banners[0].image} className="w-full h-full object-cover" style={{ objectPosition: banners[0].position || 'center center' }} alt="Banner" />
+              <img src={banners[0].image} className={`w-full h-full ${deviceMode === 'desktop' ? 'object-cover' : 'object-contain'}`} style={{ objectPosition: banners[0].position || 'center center' }} alt="Banner" />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-300">
                 <span className="text-5xl font-serif italic opacity-30">Nueva Colección</span>
@@ -1025,11 +1034,11 @@ export const StorePreview = ({
 
       {/* Editorial banner (banners[1]) — placeholder visible in editor mode */}
       {(banners[1]?.image || isEditorMode) && (
-        <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
+        <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners', 1)}>
           <section className="mb-16 px-4 md:px-6">
             <div className="relative aspect-[16/9] md:aspect-[21/9] overflow-hidden bg-gray-100">
               {banners[1]?.image ? (
-                <img src={banners[1].image} className="w-full h-full object-cover" style={{ objectPosition: banners[1].position || 'center center' }} alt="Banner editorial" />
+                <img src={banners[1].image} className={`w-full h-full ${deviceMode === 'desktop' ? 'object-cover' : 'object-contain'}`} style={{ objectPosition: banners[1].position || 'center center' }} alt="Banner editorial" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm italic">
                   Banner editorial — sube la "Foto 2" en Imágenes de la Plantilla
@@ -1228,7 +1237,7 @@ export const StorePreview = ({
               {/* Organic shaped image — click opens the 3-photo carousel editor;
                   the shape/size modal gets its own button below. */}
               <div className="relative w-64 h-80 lg:w-72 lg:h-96 flex items-center justify-center">
-                <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className="w-full h-full">
+                <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners', heroIdx)} className="w-full h-full">
                   <div
                     className="w-full h-full overflow-hidden shadow-xl transition-transform duration-300"
                     style={{
@@ -1449,7 +1458,7 @@ export const StorePreview = ({
 
         {/* Hero — photos open the banners editor; each text element opens its own modal */}
         <div className={`flex w-full bg-white relative ${deviceMode === 'mobile' ? 'flex-col' : 'flex-col lg:flex-row'}`}>
-          <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className={`w-full ${deviceMode === 'mobile' ? 'order-2' : 'lg:w-1/2'}`}>
+          <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners', 0)} className={`w-full ${deviceMode === 'mobile' ? 'order-2' : 'lg:w-1/2'}`}>
             <div className="w-full h-full md:aspect-[4/5] lg:aspect-auto lg:h-[80vh] bg-gray-100">
               <img src={banners[0]?.image || "/placeholder.svg"} className="w-full h-full object-cover" style={{ objectPosition: banners[0]?.position || 'center center' }} alt="Hero Main" />
             </div>
@@ -1457,7 +1466,7 @@ export const StorePreview = ({
 
           <EditableElement type="fondo sección" isEditorMode={isEditorMode} onEdit={() => onEditElement('section_bg', 'hero')} className={`w-full ${deviceMode === 'mobile' ? 'order-1' : 'lg:w-1/2'}`}>
           <div className="bg-white flex flex-col justify-center px-8 lg:px-20 py-16 relative h-full" style={{ backgroundColor: data.hero?.sectionBg?.hero || undefined }}>
-            <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className="hidden lg:block absolute top-12 right-20 z-10">
+            <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners', 1)} className="hidden lg:block absolute top-12 right-20 z-10">
               <div className="w-32 h-32 bg-gray-100">
                 <img src={banners[1]?.image || "/placeholder.svg"} className="w-full h-full object-cover" style={{ objectPosition: banners[1]?.position || 'center center' }} alt="Hero Small Top" />
               </div>
@@ -1497,7 +1506,7 @@ export const StorePreview = ({
               </div>
             </div>
 
-            <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className="hidden lg:block absolute bottom-0 right-12 z-10">
+            <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners', 2)} className="hidden lg:block absolute bottom-0 right-12 z-10">
               <div className="w-48 h-64 bg-gray-100">
                 <img src={banners[2]?.image || "/placeholder.svg"} className="w-full h-full object-cover" style={{ objectPosition: banners[2]?.position || 'center center' }} alt="Hero Small Bottom" />
               </div>
@@ -1591,10 +1600,10 @@ export const StorePreview = ({
 
         {/* Editorial banner (banners[3]) — placeholder visible in editor mode so it's discoverable */}
         {(banners[3]?.image || isEditorMode) && (
-          <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
+          <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners', 3)}>
             <section className="relative w-full h-[40vh] overflow-hidden bg-gray-100">
               {banners[3]?.image ? (
-                <img src={banners[3].image} alt="Banner editorial" className="w-full h-full object-cover" style={{ objectPosition: banners[3]?.position || 'center center' }} />
+                <img src={banners[3].image} alt="Banner editorial" className={`w-full h-full ${deviceMode === 'desktop' ? 'object-cover' : 'object-contain'}`} style={{ objectPosition: banners[3]?.position || 'center center' }} />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm italic">
                   Banner editorial — sube la "Foto 4" en Imágenes de la Plantilla
@@ -1655,7 +1664,7 @@ export const StorePreview = ({
               <div className="w-full h-64 md:h-80 bg-gray-900 relative overflow-hidden flex flex-col items-center justify-center gap-4">
                 {data.textBanner?.imageUrl ? (
                   <>
-                    <img src={data.textBanner.imageUrl} className="w-full h-full object-cover absolute inset-0" style={{ objectPosition: (data.textBanner as any).imagePosition || 'center center' }} alt="Banner" />
+                    <img src={data.textBanner.imageUrl} className={`w-full h-full absolute inset-0 ${deviceMode === 'desktop' ? 'object-cover' : 'object-contain'}`} style={{ objectPosition: (data.textBanner as any).imagePosition || 'center center' }} alt="Banner" />
                     <div className="absolute inset-0 bg-black/40" />
                   </>
                 ) : null}
@@ -1858,7 +1867,7 @@ export const StorePreview = ({
         >
           {/* Photo Side — still routes to the banners modal */}
           <div className={`relative w-full ${deviceMode === 'desktop' ? 'w-3/5' : ''}`}>
-            <EditableElement type="banner" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
+            <EditableElement type="banner" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners', 0)}>
               <div className={`relative w-full overflow-hidden bg-gray-100 ${deviceMode === 'desktop' ? 'aspect-auto h-[78vh]' : 'aspect-[4/5]'}`}>
                 {mainHeroImage ? (
                   <img src={mainHeroImage} alt="Hero" className="w-full h-full object-cover" style={{ objectPosition: banners[0]?.position || 'center center' }} />
@@ -2092,7 +2101,7 @@ export const StorePreview = ({
               <div className="w-full h-64 bg-gray-900 relative flex items-center justify-center overflow-hidden">
                 {data.textBanner?.imageUrl ? (
                   <>
-                    <img src={data.textBanner.imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-80" style={{ objectPosition: (data.textBanner as any).imagePosition || 'center center' }} alt="Banner Background" />
+                    <img src={data.textBanner.imageUrl} className={`absolute inset-0 w-full h-full opacity-80 ${deviceMode === 'desktop' ? 'object-cover' : 'object-contain'}`} style={{ objectPosition: (data.textBanner as any).imagePosition || 'center center' }} alt="Banner Background" />
                     <div className="absolute inset-0 bg-black/40" />
                   </>
                 ) : null}
@@ -2329,7 +2338,7 @@ export const StorePreview = ({
 
         {/* Hero Section — photo opens banners; texts/buttons each editable */}
         <section className="relative w-full h-[300px] md:h-[500px] flex items-end md:items-center bg-gray-200 overflow-hidden">
-          <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className="absolute inset-0">
+          <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners', 0)} className="absolute inset-0">
             {banners?.[0] ? (
               <img src={banners[0].image} alt="Hero" className="w-full h-full object-cover" style={{ objectPosition: banners[0].position || 'center center' }} />
             ) : (<div className="w-full h-full bg-[#8c9485]"></div>)}
@@ -2457,23 +2466,24 @@ export const StorePreview = ({
                   </EditableElement>
                 </div>
               </div>
-              <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className={`relative h-[300px] md:h-[500px] w-full ${deviceMode === 'mobile' ? 'order-2' : 'lg:w-1/2 order-1 lg:order-2'}`}>
+              <div className={`relative h-[300px] md:h-[500px] w-full ${deviceMode === 'mobile' ? 'order-2' : 'lg:w-1/2 order-1 lg:order-2'}`}>
                 <div className="relative h-full w-full">
                   {[
-                    { img: banners?.[1], cls: 'absolute top-0 right-10 w-[70%] h-[60%] z-10 shadow-lg' },
-                    { img: banners?.[2], cls: 'absolute bottom-10 right-0 w-[55%] h-[80%] z-20 shadow-lg' },
-                    { img: banners?.[3], cls: 'absolute bottom-0 left-10 w-[60%] h-[50%] z-30 shadow-lg' },
-                  ].map(({ img, cls }, i) => (
-                    <div
-                      key={i}
-                      className={`${cls} ${img?.image ? '' : 'bg-[#dfe3da] flex items-center justify-center'}`}
-                      style={img?.image ? { backgroundImage: `url('${img.image}')`, backgroundSize: 'cover', backgroundPosition: img.position || 'center' } : undefined}
-                    >
-                      {!img?.image && <span className="text-[#9aa392] text-[10px] font-medium px-2 text-center">Foto {i + 2}</span>}
-                    </div>
+                    { img: banners?.[1], cls: 'absolute top-0 right-10 w-[70%] h-[60%] z-10 shadow-lg', slot: 1 },
+                    { img: banners?.[2], cls: 'absolute bottom-10 right-0 w-[55%] h-[80%] z-20 shadow-lg', slot: 2 },
+                    { img: banners?.[3], cls: 'absolute bottom-0 left-10 w-[60%] h-[50%] z-30 shadow-lg', slot: 3 },
+                  ].map(({ img, cls, slot }, i) => (
+                    <EditableElement key={i} type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners', slot)} className={cls}>
+                      <div
+                        className={`w-full h-full ${img?.image ? '' : 'bg-[#dfe3da] flex items-center justify-center'}`}
+                        style={img?.image ? { backgroundImage: `url('${img.image}')`, backgroundSize: 'cover', backgroundPosition: img.position || 'center' } : undefined}
+                      >
+                        {!img?.image && <span className="text-[#9aa392] text-[10px] font-medium px-2 text-center">Foto {i + 2}</span>}
+                      </div>
+                    </EditableElement>
                   ))}
                 </div>
-              </EditableElement>
+              </div>
             </div>
           </div>
           </section>
@@ -2669,10 +2679,10 @@ export const StorePreview = ({
         </EditableElement>
 
         {/* Hero Section */}
-        <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')}>
+        <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners', 0)}>
           <section className="relative w-full min-h-[500px] lg:h-[70vh] flex items-center">
             {banners?.[0] ? (
-              <img src={banners[0].image} alt="Hero" className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: banners[0].position || 'center' }} />
+              <img src={banners[0].image} alt="Hero" className={`absolute inset-0 w-full h-full ${deviceMode === 'desktop' ? 'object-cover' : 'object-contain'}`} style={{ objectPosition: banners[0].position || 'center' }} />
             ) : (
               <div className="absolute inset-0 w-full h-full bg-gray-200"></div>
             )}
@@ -2971,7 +2981,7 @@ export const StorePreview = ({
                   )}
                 </EditableElement>
               </div>
-              <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className={`col-span-12 md:col-span-4 relative ${deviceMode === 'mobile' ? 'order-2' : ''}`}>
+              <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners', 0)} className={`col-span-12 md:col-span-4 relative ${deviceMode === 'mobile' ? 'order-2' : ''}`}>
                 <div className="absolute inset-0 translate-x-3 translate-y-3" style={{ backgroundColor: yellow }} />
                 <div className="relative aspect-[3/4] overflow-hidden">
                   {banners?.[0]?.image ? (
@@ -3024,7 +3034,7 @@ export const StorePreview = ({
           <div className="container mx-auto px-6 py-12 md:py-16">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
               {[{ bg: blue, num: '03 — Manifiesto', key: 'manifesto1', def: 'Menos pero mejor', bannerIdx: 1 }, { bg: red, num: '04 — Filosofía', key: 'manifesto2', def: 'Diseño honesto', bannerIdx: 2 }].map((m) => (
-                <EditableElement key={m.key} type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className="aspect-[4/5] relative overflow-hidden">
+                <EditableElement key={m.key} type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners', m.bannerIdx)} className="aspect-[4/5] relative overflow-hidden">
                   <div className="w-full h-full" style={{ backgroundColor: m.bg }}>
                     {banners?.[m.bannerIdx]?.image && <img src={banners[m.bannerIdx].image} alt="Banner" className="w-full h-full object-cover" />}
                   </div>
@@ -3191,11 +3201,11 @@ export const StorePreview = ({
                     </div>
                   )}
                 </div>
-                <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners')} className="relative">
+                <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners', 0)} className="relative">
                   <div className="absolute inset-0 rounded-2xl blur-2xl opacity-40" style={{ background: `linear-gradient(135deg, ${neon} 0%, ${magenta} 100%)` }} />
                   <div className="relative aspect-video rounded-2xl overflow-hidden border-2" style={{ borderColor: border, backgroundColor: surface }}>
                     {banners?.[0]?.image ? (
-                      <img src={banners[0].image} alt="Hero" className="w-full h-full object-cover" style={{ objectPosition: banners[0].position || 'center' }} />
+                      <img src={banners[0].image} alt="Hero" className={`w-full h-full ${deviceMode === 'desktop' ? 'object-cover' : 'object-contain'}`} style={{ objectPosition: banners[0].position || 'center' }} />
                     ) : (<div className="w-full h-full flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${cBg} 0%, ${surface} 100%)` }}><p className="text-xs tracking-widest uppercase" style={{ color: muted }}>Hero Banner</p></div>)}
                   </div>
                 </EditableElement>
@@ -3244,7 +3254,7 @@ export const StorePreview = ({
             <div className="container mx-auto px-6 py-16">
               <EditableElement type="banner" isEditorMode={isEditorMode} onEdit={() => onEditElement('text_banner')}>
               <div
-                className="relative overflow-hidden rounded-2xl p-8 md:p-16 border text-center bg-cover bg-center"
+                className={`relative overflow-hidden rounded-2xl p-8 md:p-16 border text-center bg-center bg-no-repeat ${deviceMode === 'desktop' ? 'bg-cover' : 'bg-contain'}`}
                 style={{
                   borderColor: border,
                   backgroundColor: surface,

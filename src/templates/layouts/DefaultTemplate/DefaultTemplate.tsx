@@ -238,9 +238,9 @@ export const DefaultTemplate = (props: any) => {
                 </Button>
             </div>
 
-            {banners && banners.length > 0 && <section className="relative w-full aspect-[16/9] sm:aspect-[16/10] lg:aspect-[8/3] overflow-hidden">
+            {banners && banners.length > 0 && <section className="relative w-full aspect-[16/9] sm:aspect-[16/10] lg:aspect-[8/3] overflow-hidden bg-gray-100">
                 <div className="relative w-full h-full">
-                    {banners.map((banner: any, index: number) => <div key={banner.id} className={`absolute inset-0 transition-opacity duration-500 ${index === currentBanner ? "opacity-100" : "opacity-0"}`} style={{ backgroundImage: `url(${banner.image})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />)}
+                    {banners.map((banner: any, index: number) => <div key={banner.id} className={`absolute inset-0 transition-opacity duration-500 bg-no-repeat bg-center bg-contain lg:bg-cover ${index === currentBanner ? "opacity-100" : "opacity-0"}`} style={{ backgroundImage: `url(${banner.image})`, backgroundPosition: banner.position || 'center' }} />)}
                 </div>
                 {banners.length > 1 && <>
                     <Button variant="ghost" size="icon" className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white" onClick={prevBanner}><ChevronLeft className="w-6 h-6" /></Button>

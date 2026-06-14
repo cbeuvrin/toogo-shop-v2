@@ -241,9 +241,9 @@ export const PremiumBrandTemplate = (props: any) => {
 
             {/* Hero Section */}
             {!isCatalog && (
-                <section className="relative w-full min-h-[500px] lg:h-[70vh] flex items-center">
+                <section className="relative w-full min-h-[500px] lg:h-[70vh] flex items-center bg-gray-100">
                     {banners?.[0] ? (
-                        <img src={banners[0].imageUrl || banners[0].image} alt="Hero" className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: banners[0].position || 'center' }} />
+                        <img src={banners[0].imageUrl || banners[0].image} alt="Hero" className="absolute inset-0 w-full h-full object-contain lg:object-cover" style={{ objectPosition: banners[0].position || 'center' }} />
                     ) : (
                         <div className="absolute inset-0 w-full h-full bg-gray-200"></div>
                     )}

@@ -13,7 +13,7 @@ import { StoreNotFound } from "./StoreNotFound";
 import { ProductDetailModal } from "@/templates/productDetail/ProductDetailModal";
 import { CardStyleContext } from "@/contexts/CardStyleContext";
 import { heroFontFamily } from "@/lib/heroFonts";
-import { useDeviceType, pickFontSize, pickEnabled } from "@/hooks/useDeviceType";
+import { useDeviceType, pickFontSize, pickEnabled, pickImage, pickPosition } from "@/hooks/useDeviceType";
 import { useState } from "react";
 
 // Template Switcher Component — 10 templates available
@@ -30,6 +30,12 @@ const TemplateRenderer = (props: any) => {
   for (const k in rawStyles) {
     resolvedStyles[k] = { ...rawStyles[k], fontSize: pickFontSize(rawStyles[k], device), enabled: pickEnabled(rawStyles[k], device) };
   }
+  // Per-device banner image + crop: resolve each banner's image/position for the
+  // current device (with desktop fallback), so templates keep reading the same fields.
+  const resolvedBanners = (props.banners || []).map((b: any) => {
+    const img = pickImage(b, device);
+    return { ...b, image: img, imageUrl: img, position: pickPosition(b, device) };
+  });
 
   // Indico-level editing plumbing, shared by EVERY template: per-element text
   // styles (hero.styles[key]) and per-section backgrounds (hero.sectionBg[key]).
@@ -42,6 +48,7 @@ const TemplateRenderer = (props: any) => {
     cta2Label: props.hero?.cta2Label,
     eyebrowText: props.hero?.eyebrowText,
     heroStyles: resolvedStyles,
+    banners: resolvedBanners,
     sectionBg: props.hero?.sectionBg,
     hamburgerCount: props.hero?.hamburgerCount,
     hamburgerThickness: props.hero?.hamburgerThickness,
@@ -63,17 +70,17 @@ const TemplateRenderer = (props: any) => {
     case 'fashion_hero':
       return <FashionHeroTemplate {...props} {...editable} hamburgerCount={props.hero?.hamburgerCount} hamburgerThickness={props.hero?.hamburgerThickness} hamburgerSize={props.hero?.hamburgerSize} featuredProducts={props.featuredProducts} />;
     case 'trendy_fashion':
-      return <TrendyFashionTemplate {...props} {...editable} heroShape={props.hero?.shape} heroShapeScale={props.hero?.scale} banners={props.banners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} />;
+      return <TrendyFashionTemplate {...props} {...editable} heroShape={props.hero?.shape} heroShapeScale={props.hero?.scale} banners={resolvedBanners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} />;
     case 'fashion':
-      return <FashionTemplate {...props} {...editable} banners={props.banners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} textBanner={props.textBanner} />;
+      return <FashionTemplate {...props} {...editable} banners={resolvedBanners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} textBanner={props.textBanner} />;
     case 'nature':
       return <NatureTemplate {...props} {...editable} featuredProducts={props.featuredProducts} />;
     case 'premium_brand':
-      return <PremiumBrandTemplate {...props} {...editable} banners={props.banners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} testimonials={props.testimonials} />;
+      return <PremiumBrandTemplate {...props} {...editable} banners={resolvedBanners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} testimonials={props.testimonials} />;
     case 'bauhaus':
-      return <BauhausTemplate {...props} {...editable} banners={props.banners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} />;
+      return <BauhausTemplate {...props} {...editable} banners={resolvedBanners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} />;
     case 'cyber':
-      return <CyberTemplate {...props} {...editable} banners={props.banners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} textBanner={props.textBanner} featuredProducts={props.featuredProducts} featuredProducts2={props.featuredProducts2} />;
+      return <CyberTemplate {...props} {...editable} banners={resolvedBanners} contactData={props.contact} announcement={props.announcement} ticker={props.ticker} textBanner={props.textBanner} featuredProducts={props.featuredProducts} featuredProducts2={props.featuredProducts2} />;
     default:
       return <DefaultTemplate {...props} {...editable} />;
   }

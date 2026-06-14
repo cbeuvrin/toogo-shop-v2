@@ -263,7 +263,7 @@ export const CyberTemplate = (props: any) => {
                                 }} />
                                 <div className="relative aspect-video rounded-2xl overflow-hidden border-2" style={{ borderColor: cyberBorder, backgroundColor: cyberSurface }}>
                                     {heroBanner ? (
-                                        <img src={heroBanner.imageUrl || heroBanner.image} alt="Hero" className="w-full h-full object-cover" />
+                                        <img src={heroBanner.imageUrl || heroBanner.image} alt="Hero" className="w-full h-full object-contain lg:object-cover" />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center" style={{
                                             background: `linear-gradient(135deg, ${cyberBg} 0%, ${cyberSurface} 100%)`
@@ -379,7 +379,7 @@ export const CyberTemplate = (props: any) => {
                 <section style={{ backgroundColor: props.sectionBg?.section2 || undefined }}>
                 <div className="container mx-auto px-6 py-16">
                     <div
-                        className="relative overflow-hidden rounded-2xl p-8 md:p-16 border bg-cover bg-center"
+                        className="relative overflow-hidden rounded-2xl p-8 md:p-16 border bg-contain lg:bg-cover bg-center bg-no-repeat"
                         style={{
                             borderColor: cyberBorder,
                             backgroundColor: cyberSurface,

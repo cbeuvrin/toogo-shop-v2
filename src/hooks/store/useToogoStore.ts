@@ -194,11 +194,25 @@ export const useToogoStore = () => {
             .map((item: any) => ({
               id: item.data?.id || item.element_id,
               image: item.data?.imageUrl || item.data?.image,
+              imageTablet: item.data?.imageUrlTablet,
+              imageMobile: item.data?.imageUrlMobile,
               title: item.data?.title,
               linkUrl: item.data?.linkUrl,
-              position: item.data?.position
+              position: item.data?.position,
+              positionTablet: item.data?.positionTablet,
+              positionMobile: item.data?.positionMobile,
+              sort: item.data?.sort,
             }));
-          setBanners(sorted);
+          // Place each banner at its real slot index (`sort`) so templates that
+          // read fixed slots (e.g. banners[3] = banner editorial) keep working even
+          // when middle slots are empty — otherwise the array compresses and a
+          // later banner is read as an earlier slot.
+          const byIndex: any[] = [];
+          sorted.forEach((b: any) => {
+            const i = typeof b.sort === 'number' ? b.sort : byIndex.length;
+            byIndex[i] = b;
+          });
+          setBanners(byIndex);
         }
 
         const announcementData = visualData.find((item: any) => item.element_type === 'announcement' && item.element_id === 'top_bar');

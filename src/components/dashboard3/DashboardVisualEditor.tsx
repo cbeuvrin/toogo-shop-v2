@@ -378,12 +378,23 @@ export const DashboardVisualEditor = () => {
         const featuredProducts2Item = visualData.find(item => item.element_type === 'featured_products' && item.element_id === 'featured_grid_2');
         const testimonialsItem = visualData.find(item => item.element_type === 'testimonials' && item.element_id === 'main_testimonials');
 
-        const validBanners = bannerItems.map(item => ({
+        const mappedBanners = bannerItems.map(item => ({
           id: item.element_id,
           imageUrl: withCacheBuster((item.data as any).imageUrl),
+          imageUrlTablet: (item.data as any).imageUrlTablet ? withCacheBuster((item.data as any).imageUrlTablet) : undefined,
+          imageUrlMobile: (item.data as any).imageUrlMobile ? withCacheBuster((item.data as any).imageUrlMobile) : undefined,
           sort: (item.data as any).sort,
           position: (item.data as any).position || 'center center',
+          positionTablet: (item.data as any).positionTablet,
+          positionMobile: (item.data as any).positionMobile,
         }));
+        // Reindex by real slot (`sort`) so the editor's banner slots line up with
+        // the template (e.g. slot 3 = banner editorial) even when middle slots are empty.
+        const validBanners: any[] = [];
+        mappedBanners.forEach((b: any) => {
+          const i = typeof b.sort === 'number' ? b.sort : validBanners.length;
+          validBanners[i] = b;
+        });
 
         setEditorData(prev => ({
           ...prev,
@@ -671,8 +682,12 @@ export const DashboardVisualEditor = () => {
         element_id: banner.id,
         data: {
           imageUrl: banner.imageUrl,
+          imageUrlTablet: (banner as any).imageUrlTablet || undefined,
+          imageUrlMobile: (banner as any).imageUrlMobile || undefined,
           sort: banner.sort,
           position: (banner as any).position || 'center center',
+          positionTablet: (banner as any).positionTablet || undefined,
+          positionMobile: (banner as any).positionMobile || undefined,
         }
       }));
       await Promise.all(promises);
@@ -1050,6 +1065,8 @@ export const DashboardVisualEditor = () => {
         isOpen={activeModal === 'banners'}
         onClose={() => setActiveModal(null)}
         onSave={(banners, text, shape) => handleSaveBanners(banners, text, shape)}
+        deviceMode={deviceMode}
+        focusSlot={typeof editingItem === 'number' ? editingItem : undefined}
         initialData={editorData.banners}
         initialHeroText={{
           title: editorData.hero?.title || settings?.welcome_title || "",

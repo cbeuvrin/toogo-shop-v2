@@ -461,11 +461,11 @@ export const FashionTemplate = (props: any) => {
 
             {/* ─── EDITORIAL BANNER (banners[3], after Recién Llegados) ─── */}
             {!isCatalog && editorialBannerImg && (
-                <section className="relative w-full h-[45vh] md:h-[55vh] overflow-hidden">
+                <section className="relative w-full h-[45vh] md:h-[55vh] overflow-hidden bg-gray-100">
                     <img
                         src={editorialBannerImg}
                         alt="Banner editorial"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain lg:object-cover"
                         style={{ objectPosition: banners?.[3]?.position || 'center center' }}
                     />
                     <div className="absolute inset-0 bg-black/25 flex items-center justify-center px-6">
@@ -505,7 +505,7 @@ export const FashionTemplate = (props: any) => {
                     <div className="w-full h-[55vh] md:h-[70vh] bg-gray-900 relative overflow-hidden">
                         {textBanner?.imageUrl ? (
                             <>
-                                <img src={textBanner.imageUrl} className="w-full h-full object-cover absolute inset-0" style={{ objectPosition: textBanner.imagePosition || 'center center' }} alt="Banner" />
+                                <img src={textBanner.imageUrl} className="w-full h-full object-contain lg:object-cover absolute inset-0" style={{ objectPosition: textBanner.imagePosition || 'center center' }} alt="Banner" />
                                 <div className="absolute inset-0 bg-black/40" />
                             </>
                         ) : (

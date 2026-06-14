@@ -481,13 +481,13 @@ export const SimpleLiveTemplate = (props: any) => {
                                             <>
                                                 <img
                                                     src={textBanner.imageUrl}
-                                                    className="w-full h-full object-cover opacity-80 absolute inset-0"
+                                                    className="w-full h-full object-contain lg:object-cover opacity-80 absolute inset-0"
                                                     alt="Banner Background"
                                                 />
                                                 <div className="absolute inset-0 bg-black/40" />
                                             </>
                                         ) : secondaryBanner ? (
-                                            <img src={secondaryBanner.imageUrl || secondaryBanner.image} className="w-full h-full object-cover opacity-80" />
+                                            <img src={secondaryBanner.imageUrl || secondaryBanner.image} className="w-full h-full object-contain lg:object-cover opacity-80" />
                                         ) : (
                                             <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
                                                 <span className="text-zinc-600 font-bold text-4xl uppercase">Área de Banner</span>

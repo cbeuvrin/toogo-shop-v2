@@ -54,3 +54,30 @@ export function pickEnabled(
   if (device === 'tablet') return e.enabledTablet ?? e.enabled;
   return e.enabled;
 }
+
+/**
+ * Resolve the per-device banner image URL. A device override wins; otherwise it
+ * inherits the desktop image. Accepts both store shape (`image`) and editor
+ * shape (`imageUrl`).
+ */
+export function pickImage(
+  b: { image?: string; imageUrl?: string; imageTablet?: string; imageMobile?: string; imageUrlTablet?: string; imageUrlMobile?: string } | undefined | null,
+  device: DeviceType
+): string | undefined {
+  if (!b) return undefined;
+  const base = b.imageUrl ?? b.image;
+  if (device === 'mobile') return b.imageUrlMobile ?? b.imageMobile ?? base;
+  if (device === 'tablet') return b.imageUrlTablet ?? b.imageTablet ?? base;
+  return base;
+}
+
+/** Resolve the per-device banner crop position (objectPosition). Inherits desktop. */
+export function pickPosition(
+  b: { position?: string; positionTablet?: string; positionMobile?: string } | undefined | null,
+  device: DeviceType
+): string | undefined {
+  if (!b) return undefined;
+  if (device === 'mobile') return b.positionMobile ?? b.position;
+  if (device === 'tablet') return b.positionTablet ?? b.position;
+  return b.position;
+}
