@@ -277,6 +277,84 @@ serve(async (req) => {
       }
     }
 
+    // Handle recurring subscription charges. MercadoPago notifies the automatic
+    // charges of an auto_recurring preapproval as `subscription_authorized_payment`
+    // (NOT always as `payment`), so without this the annual domain auto-renewal
+    // charge would never trigger the renewal.
+    if (body.type === 'subscription_authorized_payment') {
+      const authPaymentId = body.data?.id;
+      const mpAccessToken = Deno.env.get('MERCADOPAGO_ACCESS_TOKEN');
+      if (!authPaymentId || !mpAccessToken) {
+        if (!mpAccessToken) console.error('MERCADOPAGO_ACCESS_TOKEN not configured');
+        return new Response(JSON.stringify({ received: true }), { headers: { 'Content-Type': 'application/json', ...corsHeaders }, status: 200 });
+      }
+
+      let authPayment: any = null;
+      try {
+        const resp = await fetch(`https://api.mercadopago.com/authorized_payments/${authPaymentId}`, {
+          headers: { Authorization: `Bearer ${mpAccessToken}` },
+        });
+        authPayment = await resp.json();
+      } catch (err) {
+        console.error('Failed to fetch authorized_payment:', err);
+        return new Response(JSON.stringify({ received: true }), { headers: { 'Content-Type': 'application/json', ...corsHeaders }, status: 200 });
+      }
+
+      const preapprovalId = authPayment?.preapproval_id;
+      const charged = authPayment?.status === 'processed' || authPayment?.payment?.status === 'approved';
+      console.log('subscription_authorized_payment:', { authPaymentId, preapprovalId, status: authPayment?.status, paymentStatus: authPayment?.payment?.status });
+
+      if (charged && preapprovalId) {
+        // (1) ¿Es cobro recurrente de renovación de dominio?
+        const { data: domainRenewal } = await supabase
+          .from('domain_renewals')
+          .select('id, domain')
+          .eq('mercadopago_preapproval_id', preapprovalId)
+          .eq('status', 'scheduled')
+          .maybeSingle();
+
+        if (domainRenewal) {
+          console.log('🔄 [auth_payment] Auto-renovación de dominio:', domainRenewal.domain);
+          try {
+            await supabase.functions.invoke('renew-domain-manually', {
+              body: {
+                renewalId: domainRenewal.id,
+                paymentRef: (authPayment?.payment?.id || authPaymentId)?.toString(),
+                source: 'mp_subscription_authorized_payment',
+              },
+            });
+          } catch (err) {
+            console.error('❌ [auth_payment] renew-domain-manually falló:', err);
+          }
+          return new Response(JSON.stringify({ received: true, action: 'domain_auto_renewal_triggered' }), { headers: { 'Content-Type': 'application/json', ...corsHeaders }, status: 200 });
+        }
+
+        // (2) ¿Es cobro recurrente de suscripción de plan?
+        const { data: subscription } = await supabase
+          .from('subscriptions')
+          .select('id, amount_mxn, next_billing_date')
+          .eq('mercadopago_subscription_id', preapprovalId)
+          .maybeSingle();
+
+        if (subscription) {
+          const nextBilling = new Date(subscription.next_billing_date);
+          const isAnnual = subscription.amount_mxn >= 3000;
+          if (isAnnual) nextBilling.setFullYear(nextBilling.getFullYear() + 1);
+          else nextBilling.setMonth(nextBilling.getMonth() + 1);
+          await supabase.from('subscriptions').update({
+            status: 'active',
+            next_billing_date: nextBilling.toISOString(),
+            failed_payment_attempts: 0,
+            last_payment_failure_at: null,
+            updated_at: new Date().toISOString(),
+          }).eq('id', subscription.id);
+          console.log('✅ [auth_payment] Suscripción renovada hasta:', nextBilling.toISOString());
+        }
+      }
+
+      return new Response(JSON.stringify({ received: true, action: 'subscription_authorized_payment_processed' }), { headers: { 'Content-Type': 'application/json', ...corsHeaders }, status: 200 });
+    }
+
     // Handle payment notifications (including recurring payments from preapprovals)
     if (body.type === 'payment') {
       const paymentId = body.data.id;

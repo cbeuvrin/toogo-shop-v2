@@ -72,17 +72,23 @@ serve(async (req) => {
     console.log(`[Renewals] ${renewal.domain}: ${daysLeft} días restantes (status=${renewal.status}, auto=${renewal.auto_renew})`);
 
     // ─────────────────────────────────────────────
-    // CASO 1: Auto-renovación habilitada y faltan ≤ 7 días → intentar cobro
-    // (Fase 4 — por ahora solo logueamos, no cobramos todavía)
+    // CASO 1: Auto-renovación habilitada. El cobro lo hace MercadoPago solo
+    // (preapproval auto_recurring) y la renovación la dispara el webhook
+    // `mercadopago-webhook` al recibir el cobro. Aquí solo monitoreamos:
+    // si el dominio YA venció y sigue "scheduled", el cobro automático no se
+    // ejecutó → lo dejamos logueado como alerta (no cobramos desde el cron).
     // ─────────────────────────────────────────────
-    if (renewal.auto_renew && renewal.mercadopago_preapproval_id && daysLeft <= 7 && daysLeft >= 0) {
-      console.log(`[Renewals] ${renewal.domain}: AUTO-RENEW elegible — pendiente implementar cobro (Fase 4)`);
-      actions.push({
-        domain: renewal.domain,
-        action: "auto_renew_pending_phase4",
-        result: { daysLeft, preapprovalId: renewal.mercadopago_preapproval_id },
-      });
-      continue;
+    if (renewal.auto_renew && renewal.mercadopago_preapproval_id) {
+      if (daysLeft <= 7 && daysLeft >= 0) {
+        console.log(`[Renewals] ${renewal.domain}: auto-renew activo — MP cobrará y el webhook renovará (faltan ${daysLeft}d)`);
+        actions.push({ domain: renewal.domain, action: "auto_renew_handled_by_mp_webhook", result: { daysLeft } });
+        continue;
+      }
+      if (daysLeft < 0) {
+        console.warn(`[Renewals] ⚠️ ${renewal.domain}: auto-renew activo pero venció hace ${-daysLeft}d y sigue scheduled — el cobro automático NO se ejecutó, revisar preapproval ${renewal.mercadopago_preapproval_id}`);
+        actions.push({ domain: renewal.domain, action: "auto_renew_charge_missed", result: { daysLeft, preapprovalId: renewal.mercadopago_preapproval_id } });
+        // no continuamos: dejamos que siga el flujo de recordatorios/expiración abajo
+      }
     }
 
     // ─────────────────────────────────────────────
