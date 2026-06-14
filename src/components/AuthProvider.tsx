@@ -47,6 +47,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           console.warn('⚠️ User signed out - clearing role cache');
           if (session?.user?.id) {
             localStorage.removeItem(`user_role_${session.user.id}`);
+            // Don't leave the Toogi chat transcript behind on a shared device.
+            localStorage.removeItem(`toogo-chat-history:${session.user.id}`);
           }
         }
         
