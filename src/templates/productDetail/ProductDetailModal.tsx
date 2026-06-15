@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ProductImageGallery } from "@/components/ui/product-image-gallery";
 import { ProductVariationSelector } from "@/components/ui/ProductVariationSelector";
 import { getProductDetailTheme } from "./themes";
+import { processWhatsAppMessage, DEFAULT_WHATSAPP_MESSAGE } from "@/utils/whatsappMessage";
 
 /**
  * Themed product detail modal used by all 10 storefront templates.
@@ -108,23 +109,18 @@ export const ProductDetailModal = ({
   const handleWhatsApp = () => {
     const number = effectiveSettings?.whatsapp_number;
     if (!number) return;
-    const tpl: string | undefined = effectiveSettings?.whatsapp_message;
-    let text: string;
-    if (isService) {
-      const priceLine = isQuoteOnly
-        ? 'Precio: A cotizar'
-        : pricingMode === 'starting_from'
-          ? `Precio: Desde $${(product.price_mxn || 0).toFixed(2)} MXN`
-          : `Precio: $${(product.price_mxn || 0).toFixed(2)} MXN`;
-      text = tpl && tpl.trim()
-        ? tpl
-            .replace(/{producto}/gi, product.title)
-            .replace(/{precio}/gi, priceLine.replace(/^Precio:\s*/, ''))
-        : `Hola 👋, me interesa este servicio:\n\n*${product.title}*\n${priceLine}\n\n¿Podemos coordinar?`;
-    } else {
-      const finalPrice = currentPrice || product.price_mxn;
-      text = `Hola 👋, me interesa este producto:\n\n*${product.title}*\nPrecio: $${finalPrice.toFixed(2)} MXN\n\n¿Está disponible?`;
-    }
+    // Use the shared template processor so the placeholders match what the admin
+    // editor uses ({product_name}, {sku}, {price}). The previous service branch
+    // replaced {producto}/{precio} (Spanish), which never matched the saved
+    // template → placeholders showed up raw in the message.
+    const tpl = effectiveSettings?.whatsapp_message?.trim() || DEFAULT_WHATSAPP_MESSAGE;
+    // For non-service products use the effective price (sale/variation); for
+    // services use the configured base price (the template author adds "Desde"
+    // or "A cotizar" wording as they wish).
+    const priceForMsg = isService
+      ? (product.price_mxn || 0)
+      : (currentPrice || product.price_mxn || 0);
+    const text = processWhatsAppMessage(tpl, { ...product, price_mxn: priceForMsg });
     window.open(`https://wa.me/${number}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
