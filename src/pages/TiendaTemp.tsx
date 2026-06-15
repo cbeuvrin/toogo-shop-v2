@@ -11,10 +11,9 @@ import {
   ShoppingCart, 
   Heart, 
   Search, 
-  Menu, 
-  User, 
-  Star, 
-  ChevronLeft, 
+  Menu,
+  User,
+  ChevronLeft,
   ChevronRight,
   ArrowLeft,
   ArrowRight,
@@ -612,19 +611,12 @@ const Demo = () => {
                         </span>
                       )}
                     </div>
-                    
-                    <div className="flex items-center space-x-1">
-                      <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                      <span className="text-gray-600">
-                        {selectedProduct.rating} ({selectedProduct.reviews} reseñas)
-                      </span>
-                    </div>
                   </div>
                   
                   {/* Description */}
                   <div className="space-y-2">
                     <h3 className="font-semibold text-gray-900">Descripción</h3>
-                    <p className="text-gray-600 leading-relaxed">
+                    <p className="text-gray-600 leading-relaxed whitespace-pre-line">
                       {selectedProduct.description || "Este es un producto de alta calidad que cumple con los más altos estándares. Perfecto para aquellos que buscan excelencia y durabilidad."}
                     </p>
                   </div>

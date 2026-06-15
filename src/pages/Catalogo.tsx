@@ -13,7 +13,6 @@ import {
   Search,
   ShoppingCart,
   Heart,
-  Star,
   MessageCircle,
   Home,
   ArrowLeft,
@@ -761,13 +760,6 @@ const Catalogo = () => {
               </>
             )}
           </div>
-
-          <div className="flex items-center gap-1">
-            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-            <span className="text-xs text-gray-600 group-hover:text-gray-300 transition-colors duration-300">
-              4.5
-            </span>
-          </div>
         </div>
       </div>
     </Card>
@@ -1251,7 +1243,7 @@ const Catalogo = () => {
                       </h3>
 
                       <div>
-                        <p className="text-gray-600 leading-relaxed text-sm">
+                        <p className="text-gray-600 leading-relaxed text-sm whitespace-pre-line">
                           {selectedProduct.description}
                         </p>
                       </div>

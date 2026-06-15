@@ -17,7 +17,6 @@ import {
   Search,
   Menu,
   User,
-  Star,
   ChevronLeft,
   ChevronRight,
   ArrowLeft,
@@ -3420,31 +3419,13 @@ export const StorePreview = ({
                       )}
                     </div>
 
-                    {selectedProduct.rating && (
-                      <div className="flex items-center space-x-2 mb-4">
-                        <div className="flex items-center">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-5 h-5 ${i < Math.floor(selectedProduct.rating)
-                                ? "text-yellow-400 fill-current"
-                                : "text-gray-300"
-                                }`}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-sm text-gray-600">
-                          {selectedProduct.rating} ({selectedProduct.reviews} reseñas)
-                        </span>
-                      </div>
-                    )}
                   </div>
 
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">
                       Descripción
                     </h3>
-                    <p className="text-gray-700 leading-relaxed">
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
                       {selectedProduct.description}
                     </p>
                   </div>
