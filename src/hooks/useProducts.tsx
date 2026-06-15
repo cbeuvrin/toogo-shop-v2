@@ -219,8 +219,10 @@ export const useProducts = (publicTenantId?: string) => {
       await retryWithAuth(async () => {
         const productId = editingProductId || crypto.randomUUID();
         
-        // Generar SKU automático si está vacío (solo para productos simples)
-        let finalSKU = productData.sku?.trim() || '';
+        // SKU vacío → NULL (no '' ), porque UNIQUE(tenant_id, sku) trata cada '' como
+        // duplicado pero permite múltiples NULL. Antes, dos servicios sin SKU chocaban
+        // ("ese SKU ya está en uso"). Los productos simples siguen recibiendo SKU auto.
+        let finalSKU: string | null = productData.sku?.trim() || null;
         if (productData.product_type === 'simple' && !finalSKU) {
           finalSKU = `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
           console.log('[saveProduct] SKU automático generado:', finalSKU);
