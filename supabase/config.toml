@@ -82,6 +82,10 @@ verify_jwt = false
 verify_jwt = false
 # Note: CRON job to check DNS status every 6 hours
 
+[functions.process-domain-renewals]
+verify_jwt = false
+# Note: CRON diario; protegido con x-cron-secret dentro de la función
+
 [functions.vercel-token-diagnostics]
 verify_jwt = false
 # Note: Public diagnostics endpoint for validating Vercel credentials

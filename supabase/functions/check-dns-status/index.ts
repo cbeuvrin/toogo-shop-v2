@@ -12,6 +12,15 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // SECURITY: cron-only. Require the shared secret so an anonymous caller can't
+  // trigger DNS re-verification at will.
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  if (!cronSecret || req.headers.get("x-cron-secret") !== cronSecret) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { "Content-Type": "application/json", ...corsHeaders }
+    });
+  }
+
   try {
     console.log("Starting DNS verification check...");
     console.log("Production mode: All domains require real DNS verification");

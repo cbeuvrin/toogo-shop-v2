@@ -12,6 +12,32 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // SECURITY: admin-only. This triggers paid LLM generation and publishes posts,
+  // so a random anonymous caller must not be able to run it (cost abuse / spam).
+  // It is invoked only from the admin panel, so require a super-admin JWT.
+  {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const sbUrl = Deno.env.get('SUPABASE_URL')!;
+    const anon = createClient(sbUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      auth: { persistSession: false }, global: { headers: { Authorization: authHeader } }
+    });
+    const { data: { user } } = await anon.auth.getUser();
+    const adminClient = createClient(sbUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const { data: isSuperAdmin } = user
+      ? await adminClient.rpc('has_role', { _user_id: user.id, _role: 'superadmin' })
+      : { data: false };
+    if (!user || !isSuperAdmin) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+  }
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
