@@ -362,7 +362,7 @@ export const FashionTemplate = (props: any) => {
                     {/* Category filter */}
                     <div className="flex flex-wrap justify-center gap-4 mb-8">
                         {topCategories.map((cat: any) => {
-                            const isActive = activeCategory === cat.name.toLowerCase();
+                            const isActive = !!activeCategory && (activeCategory === cat.slug || activeCategory === cat.id || activeCategory === cat.name?.toLowerCase());
                             return (
                                 <button
                                     key={cat.id}

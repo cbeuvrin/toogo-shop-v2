@@ -419,7 +419,7 @@ export const FashionHeroTemplate = (props: any) => {
                 <div className="container mx-auto px-6 py-8">
                     <div className="flex flex-wrap justify-center gap-4 mb-8">
                         {categories?.filter((cat: any) => !cat.parent_id && cat.show_on_home !== false).map((cat: any) => {
-                            const isActive = activeCategory === cat.name.toLowerCase();
+                            const isActive = !!activeCategory && (activeCategory === cat.slug || activeCategory === cat.id || activeCategory === cat.name?.toLowerCase());
                             return (
                                 <Button
                                     key={cat.id}

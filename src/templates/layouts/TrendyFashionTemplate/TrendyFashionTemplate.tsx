@@ -30,6 +30,7 @@ export const TrendyFashionTemplate = (props: any) => {
     const settings = effectiveSettings || storeData?.settings || {};
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const activeCategory = searchParams.get('category');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [heroIndex, setHeroIndex] = useState(0);
     const hideNav = useHideOnScroll();
@@ -396,18 +397,21 @@ export const TrendyFashionTemplate = (props: any) => {
                 <div style={{ backgroundColor: props.sectionBg?.section1 || undefined }}>
                 <div className="container mx-auto px-6 pt-8 pb-4">
                     <div className="flex flex-wrap justify-center gap-3">
-                        {topCategories.map((cat: any) => (
+                        {topCategories.map((cat: any) => {
+                            const isActive = !!activeCategory && (activeCategory === cat.slug || activeCategory === cat.id || activeCategory === cat.name?.toLowerCase());
+                            return (
                             <button
                                 key={cat.id}
                                 onClick={() => handleNavigate('/catalogo', { category: cat.name.toLowerCase() })}
-                                className="bg-gray-900 text-white text-xs font-semibold px-5 py-2 rounded-full hover:bg-gray-700 transition-colors"
+                                className={`${isActive ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-900 hover:bg-gray-300'} text-xs font-semibold px-5 py-2 rounded-full transition-colors`}
                             >
                                 {cat.name}
                             </button>
-                        ))}
+                            );
+                        })}
                         <button
                             onClick={() => handleNavigate('/catalogo')}
-                            className="border border-gray-900 text-gray-900 text-xs font-semibold px-5 py-2 rounded-full hover:bg-gray-900 hover:text-white transition-colors"
+                            className={`${!activeCategory ? 'bg-gray-900 text-white border border-gray-900' : 'border border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white'} text-xs font-semibold px-5 py-2 rounded-full transition-colors`}
                         >
                             Todos
                         </button>
