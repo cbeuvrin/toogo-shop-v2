@@ -159,7 +159,7 @@ export const TrendyFashionTemplate = (props: any) => {
                 ) : isService ? (
                     <span className="font-bold text-gray-900 text-sm">${displayPrice} MXN</span>
                 ) : (
-                    <span className="font-bold text-gray-900 text-sm">${displayPrice}</span>
+                    <span className="font-bold text-gray-900 text-sm">{product.priceVaries ? 'Desde ' : ''}${displayPrice}</span>
                 )}
             </div>
         </div>

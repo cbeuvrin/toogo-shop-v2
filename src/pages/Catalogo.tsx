@@ -257,6 +257,8 @@ const Catalogo = () => {
         const rawProducts = result.data.products || [];
         const normalizedProducts = rawProducts.map((product: any) => {
           let finalPrice = product.price_mxn;
+          // priceVaries = the variable options have DIFFERENT prices → show "Desde".
+          let priceVaries = false;
 
           if (product.product_type === 'variable' && Array.isArray(product.variations) && product.variations.length > 0) {
             const prices = product.variations
@@ -264,12 +266,14 @@ const Catalogo = () => {
               .filter((p: number) => Number.isFinite(p) && p > 0);
             if (prices.length > 0) {
               finalPrice = Math.min(...prices);
+              priceVaries = Math.max(...prices) !== Math.min(...prices);
             }
           }
 
           return {
             ...product,
             price_mxn: Number(finalPrice) || 0,
+            priceVaries,
             images: Array.isArray(product.images) ? product.images.map((img: any) => typeof img === 'string' ? img : img.url) : [],
             variations: Array.isArray(product.variations) ? product.variations : []
           };
@@ -309,7 +313,8 @@ const Catalogo = () => {
             if (Array.isArray(v) && v.length > 0) {
               const prices = v.map((x: any) => Number(x.price_modifier)).filter((n: number) => Number.isFinite(n) && n > 0);
               const minPrice = prices.length > 0 ? Math.min(...prices) : Number(p.price_mxn) || 0;
-              return { ...p, variations: v, price_mxn: minPrice };
+              const priceVaries = prices.length > 0 && Math.max(...prices) !== Math.min(...prices);
+              return { ...p, variations: v, price_mxn: minPrice, priceVaries };
             }
             return p;
           });

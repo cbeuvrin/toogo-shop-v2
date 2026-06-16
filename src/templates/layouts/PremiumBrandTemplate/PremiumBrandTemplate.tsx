@@ -324,7 +324,7 @@ export const PremiumBrandTemplate = (props: any) => {
                                                     const p = !isService ? (product.sale_price_mxn || product.price_mxn || product.price) : (product.price_mxn || product.price);
                                                     if (isService && pricingMode === 'starting_from') return <span className="font-bold text-[#e98063] text-xl">Desde ${p} MXN</span>;
                                                     if (isService) return <span className="font-bold text-[#e98063] text-xl">${p} MXN</span>;
-                                                    return <span className="font-bold text-[#e98063] text-xl">${p}</span>;
+                                                    return <span className="font-bold text-[#e98063] text-xl">{product.priceVaries ? 'Desde ' : ''}${p}</span>;
                                                 })()}
                                             </div>
                                         </div>
@@ -353,7 +353,7 @@ export const PremiumBrandTemplate = (props: any) => {
                                               if (isService && pMode === 'quote') return <span className="font-bold text-[#e98063] text-xl italic">A cotizar</span>;
                                               if (isService && pMode === 'starting_from') return <span className="font-bold text-[#e98063] text-xl">Desde ${disp} MXN</span>;
                                               if (isService) return <span className="font-bold text-[#e98063] text-xl">${disp} MXN</span>;
-                                              return <span className="font-bold text-[#e98063] text-xl">${disp}</span>;
+                                              return <span className="font-bold text-[#e98063] text-xl">{product.priceVaries ? 'Desde ' : ''}${disp}</span>;
                                             })()}
                                         </div>
                                     </div>

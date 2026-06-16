@@ -148,7 +148,7 @@ export const SimpleLiveTemplate = (props: any) => {
                 ) : isService ? (
                     <span className="font-bold">${displayPrice} MXN</span>
                 ) : (
-                    <span className="font-bold">${displayPrice}</span>
+                    <span className="font-bold">{product.priceVaries ? 'Desde ' : ''}${displayPrice}</span>
                 )}
             </div>
         </div>
@@ -470,7 +470,7 @@ export const SimpleLiveTemplate = (props: any) => {
                                                   if (isService && pMode === 'quote') return <span className="font-bold italic">A cotizar</span>;
                                                   if (isService && pMode === 'starting_from') return <span className="font-bold">Desde ${disp} MXN</span>;
                                                   if (isService) return <span className="font-bold">${disp} MXN</span>;
-                                                  return <span className="font-bold">${disp}</span>;
+                                                  return <span className="font-bold">{product.priceVaries ? 'Desde ' : ''}${disp}</span>;
                                                 })()}
                                             </div>
                                         </div>

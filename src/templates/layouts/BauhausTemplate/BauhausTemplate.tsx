@@ -259,7 +259,7 @@ export const BauhausTemplate = (props: any) => {
                                         ) : isService ? (
                                             <span className="text-base font-black" style={{ color: accentColor }}>${Number(price).toFixed(0)} MXN</span>
                                         ) : (
-                                            <span className="text-base font-black" style={{ color: accentColor }}>${Number(price).toFixed(0)}</span>
+                                            <span className="text-base font-black" style={{ color: accentColor }}>{product.priceVaries ? 'Desde ' : ''}${Number(price).toFixed(0)}</span>
                                         )}
                                     </div>
                                     {!isService && (

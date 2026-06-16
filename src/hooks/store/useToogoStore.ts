@@ -180,13 +180,19 @@ export const useToogoStore = () => {
         // price so the home shows it instead of "Desde $0" (mirrors Catalogo).
         const normalizedProducts = rawProducts.map((product: any) => {
           let finalPrice = product.price_mxn;
+          // priceVaries = the variable product's options have DIFFERENT prices, so
+          // "Desde" makes sense. If every option costs the same we show a flat price.
+          let priceVaries = false;
           if (product.product_type === 'variable' && Array.isArray(product.variations) && product.variations.length > 0) {
             const prices = product.variations
               .map((v: any) => Number(v.price_modifier))
               .filter((p: number) => Number.isFinite(p) && p > 0);
-            if (prices.length > 0) finalPrice = Math.min(...prices);
+            if (prices.length > 0) {
+              finalPrice = Math.min(...prices);
+              priceVaries = Math.max(...prices) !== Math.min(...prices);
+            }
           }
-          return { ...product, price_mxn: Number(finalPrice) || 0 };
+          return { ...product, price_mxn: Number(finalPrice) || 0, priceVaries };
         });
         setProducts(normalizedProducts);
         // ----------------------------------------------

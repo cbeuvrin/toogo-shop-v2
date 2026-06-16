@@ -154,7 +154,7 @@ export const NatureTemplate = (props: any) => {
                                 </span>
                             </>
                         ) : (
-                            <span className="text-gray-900">${Number(salePrice).toFixed(2)}</span>
+                            <span className="text-gray-900">{product.priceVaries ? 'Desde ' : ''}${Number(salePrice).toFixed(2)}</span>
                         )}
                     </div>
                 </div>

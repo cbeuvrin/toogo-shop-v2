@@ -150,7 +150,7 @@ export const FashionTemplate = (props: any) => {
                 ) : isService ? (
                     <span className="text-gray-500 font-light">${displayPrice} MXN</span>
                 ) : (
-                    <span className="text-gray-500 font-light">${displayPrice}</span>
+                    <span className="text-gray-500 font-light">{product.priceVaries ? 'Desde ' : ''}${displayPrice}</span>
                 )}
             </div>
         </div>
@@ -459,7 +459,7 @@ export const FashionTemplate = (props: any) => {
                                           if (isService && pMode === 'quote') return <span className="text-sm font-bold text-gray-600 italic">A cotizar</span>;
                                           if (isService && pMode === 'starting_from') return <span className="text-sm font-bold text-gray-600">Desde ${disp} MXN</span>;
                                           if (isService) return <span className="text-sm font-bold text-gray-600">${disp} MXN</span>;
-                                          return <span className="text-sm font-bold text-gray-600">${disp}</span>;
+                                          return <span className="text-sm font-bold text-gray-600">{product.priceVaries ? 'Desde ' : ''}${disp}</span>;
                                         })()}
                                     </div>
                                 </div>

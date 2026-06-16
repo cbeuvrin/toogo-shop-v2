@@ -344,7 +344,7 @@ export const CyberTemplate = (props: any) => {
                                             ) : isService ? (
                                                 <span className="text-base font-black" style={{ color: cyberNeon }}>${Number(price).toFixed(0)} MXN</span>
                                             ) : (
-                                                <span className="text-base font-black" style={{ color: cyberNeon }}>${Number(price).toFixed(0)}</span>
+                                                <span className="text-base font-black" style={{ color: cyberNeon }}>{product.priceVaries ? 'Desde ' : ''}${Number(price).toFixed(0)}</span>
                                             )}
                                             {!isService && (
                                                 <button
@@ -448,7 +448,7 @@ export const CyberTemplate = (props: any) => {
                                             ) : isService ? (
                                                 <span className="text-base font-black" style={{ color: cyberNeon }}>${Number(price).toFixed(0)} MXN</span>
                                             ) : (
-                                                <span className="text-base font-black" style={{ color: cyberNeon }}>${Number(price).toFixed(0)}</span>
+                                                <span className="text-base font-black" style={{ color: cyberNeon }}>{product.priceVaries ? 'Desde ' : ''}${Number(price).toFixed(0)}</span>
                                             )}
                                             {!isService && (
                                                 <button

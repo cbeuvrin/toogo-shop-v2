@@ -216,7 +216,7 @@ export const ProductDetailModal = ({
                   </span>
                 ) : isVariable ? (
                   <span className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${theme.textPrimary}`}>
-                    Desde ${product.price_mxn.toFixed(2)} <span className="text-sm sm:text-base font-normal opacity-60">MXN</span>
+                    {product.priceVaries ? 'Desde ' : ''}${product.price_mxn.toFixed(2)} <span className="text-sm sm:text-base font-normal opacity-60">MXN</span>
                   </span>
                 ) : (
                   <span className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${theme.textPrimary}`}>

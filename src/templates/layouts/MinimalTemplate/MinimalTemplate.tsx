@@ -100,7 +100,7 @@ const ProductCard = ({ product, addToCart, toggleFavorite, isFavorite, onOpenDet
                     ) : isService ? (
                         <span className="text-gray-500 font-light">${Number(basePrice).toFixed(2)} MXN</span>
                     ) : (
-                        <span className="text-gray-500 font-light">${Number(displayPrice).toFixed(2)}</span>
+                        <span className="text-gray-500 font-light">{product.priceVaries ? 'Desde ' : ''}${Number(displayPrice).toFixed(2)}</span>
                     )}
                     {hasSale && (
                         <span className="text-gray-300 line-through font-light">${Number(basePrice).toFixed(2)}</span>
