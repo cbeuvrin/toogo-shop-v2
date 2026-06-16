@@ -235,7 +235,15 @@ const Catalogo = () => {
         if (previewTenantId) {
           result = await supabase.rpc('get_public_store_data_demo', { p_tenant_id: previewTenantId });
         } else {
-          const effectiveHost = hostOverride || hostname;
+          let effectiveHost = hostOverride || hostname;
+          // Match the homepage's host normalization (useToogoStore): a store
+          // registered on the apex domain (sudominio.com) must still resolve when
+          // the visitor lands on www.sudominio.com. Without this the RPC returns
+          // tenant_not_found, `settings` stays null, and the catalog falls back to
+          // the generic/default style instead of the store's template.
+          if (effectiveHost.startsWith('www.') && !effectiveHost.includes('toogo.store')) {
+            effectiveHost = effectiveHost.replace('www.', '');
+          }
           result = await supabase.rpc('get_public_store_data', { p_host: effectiveHost });
         }
 
