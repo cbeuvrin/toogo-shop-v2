@@ -48,6 +48,8 @@ import { NatureTemplate } from "@/templates/layouts/NatureTemplate/NatureTemplat
 import { PremiumBrandTemplate } from "@/templates/layouts/PremiumBrandTemplate/PremiumBrandTemplate";
 import { FashionTemplate } from "@/templates/layouts/FashionTemplate/FashionTemplate";
 import { MinimalTemplate } from "@/templates/layouts/MinimalTemplate/MinimalTemplate";
+import { CyberTemplate } from "@/templates/layouts/CyberTemplate/CyberTemplate";
+import { BauhausTemplate } from "@/templates/layouts/BauhausTemplate/BauhausTemplate";
 
 interface Product {
   id: string;
@@ -895,6 +897,44 @@ const Catalogo = () => {
   if (templateId === 'fashion') {
     return (
       <FashionTemplate
+        storeData={{ settings, tenant: { id: tenantId } }}
+        products={filteredProducts}
+        categories={categories}
+        favorites={[]}
+        toggleFavorite={() => { }}
+        addToCart={addToCart}
+        view="catalog"
+        effectiveSettings={settings}
+        banners={banners}
+        contactData={null}
+        welcomeTitle={heroData?.title}
+        welcomeMessage={heroData?.message}
+      />
+    );
+  }
+
+  if (templateId === 'cyber') {
+    return (
+      <CyberTemplate
+        storeData={{ settings, tenant: { id: tenantId } }}
+        products={filteredProducts}
+        categories={categories}
+        favorites={[]}
+        toggleFavorite={() => { }}
+        addToCart={addToCart}
+        view="catalog"
+        effectiveSettings={settings}
+        banners={banners}
+        contactData={null}
+        welcomeTitle={heroData?.title}
+        welcomeMessage={heroData?.message}
+      />
+    );
+  }
+
+  if (templateId === 'bauhaus') {
+    return (
+      <BauhausTemplate
         storeData={{ settings, tenant: { id: tenantId } }}
         products={filteredProducts}
         categories={categories}
