@@ -11,13 +11,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Max wrong tries per code before it's invalidated (forces requesting a new one).
+const MAX_ATTEMPTS = 5;
+
 interface VerifyRequest {
   email: string;
   code: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -28,61 +30,64 @@ const handler = async (req: Request): Promise<Response> => {
     if (!email || !code) {
       return new Response(
         JSON.stringify({ error: "Email y código son requeridos" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log(`Verifying code for ${email}: ${code}`);
-
-    // Find the verification code
-    const { data: verificationRecord, error: fetchError } = await supabase
+    // SECURITY: fetch the latest unused code for this email BY EMAIL (not by code),
+    // so we can count attempts and rate-limit. Looking it up by code would let an
+    // attacker brute-force the 6-digit code with unlimited tries.
+    const { data: record } = await supabase
       .from('verification_codes')
       .select('*')
       .eq('email', email)
-      .eq('code', code)
       .eq('used', false)
-      .single();
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (fetchError || !verificationRecord) {
-      console.log('Verification code not found or already used');
+    if (!record) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Código de verificación inválido o expirado" 
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        JSON.stringify({ success: false, error: "Código de verificación inválido o expirado" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Check if code has expired
-    const now = new Date();
-    const expiresAt = new Date(verificationRecord.expires_at);
-    
-    if (now > expiresAt) {
-      console.log('Verification code has expired');
+    // Expired?
+    if (new Date() > new Date(record.expires_at)) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "El código de verificación ha expirado" 
-        }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        JSON.stringify({ success: false, error: "El código de verificación ha expirado" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // Mark code as used
+    // Too many wrong tries → invalidate and force a new code.
+    if ((record.attempts ?? 0) >= MAX_ATTEMPTS) {
+      await supabase.from('verification_codes').update({ used: true }).eq('id', record.id);
+      return new Response(
+        JSON.stringify({ success: false, error: "Demasiados intentos. Solicita un código nuevo." }),
+        { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Wrong code → count the failed attempt (and invalidate if it hits the cap).
+    if (record.code !== code) {
+      const newAttempts = (record.attempts ?? 0) + 1;
+      await supabase
+        .from('verification_codes')
+        .update({ attempts: newAttempts, ...(newAttempts >= MAX_ATTEMPTS ? { used: true } : {}) })
+        .eq('id', record.id);
+      return new Response(
+        JSON.stringify({ success: false, error: "Código de verificación inválido o expirado" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Correct code → consume it.
     const { error: updateError } = await supabase
       .from('verification_codes')
       .update({ used: true })
-      .eq('id', verificationRecord.id);
+      .eq('id', record.id);
 
     if (updateError) {
       console.error('Error marking code as used:', updateError);
@@ -90,30 +95,15 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log(`Verification successful for ${email}`);
-
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "Código verificado correctamente" 
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      JSON.stringify({ success: true, message: "Código verificado correctamente" }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
-
   } catch (error: any) {
     console.error("Error in verify-code function:", error);
     return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: "Error interno del servidor",
-        details: error.message 
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      JSON.stringify({ success: false, error: "Error interno del servidor", details: error.message }),
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 };
