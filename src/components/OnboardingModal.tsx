@@ -591,7 +591,10 @@ export const OnboardingModal = ({
                 error: confirmError
               } = await supabase.functions.invoke('admin-confirm-user', {
                 body: {
-                  email: formData.email
+                  email: formData.email,
+                  // Required: proves account ownership so the function won't
+                  // confirm arbitrary accounts (it validates these credentials).
+                  password: savedState.password || formData.password
                 }
               });
               if (confirmError || !confirmData?.success) {

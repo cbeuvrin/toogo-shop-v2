@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -13,6 +14,7 @@ const corsHeaders = {
 
 interface ConfirmRequest {
   email: string;
+  password: string;
 }
 
 serve(async (req: Request) => {
@@ -21,18 +23,48 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { email }: ConfirmRequest = await req.json();
+    const { email, password }: ConfirmRequest = await req.json();
 
-    if (!email) {
+    if (!email || !password) {
       return new Response(
-        JSON.stringify({ success: false, error: "El email es requerido" }),
+        JSON.stringify({ success: false, error: "Email y contraseña son requeridos" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log(`[admin-confirm-user] Looking up user by email: ${email}`);
+    // SECURITY: this endpoint auto-confirms an email, so it MUST prove the caller
+    // owns the account. The user has no session yet (that's precisely why the
+    // onboarding flow calls this — their sign-in failed with "email not confirmed"),
+    // so we can't verify a JWT. Instead we validate the PASSWORD: only the owner,
+    // who just set it during sign-up, knows it. Without this, anyone could confirm
+    // (and hijack) an arbitrary account, bypassing email verification entirely.
+    const anon = createClient(supabaseUrl, supabaseAnonKey);
+    const { error: signInError } = await anon.auth.signInWithPassword({ email, password });
 
-    // List users and find by email (GoTrue Admin API)
+    if (!signInError) {
+      // Correct password AND already confirmed → nothing to do.
+      return new Response(
+        JSON.stringify({ success: true, alreadyConfirmed: true }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // GoTrue checks the password before the "email confirmed" gate, so a
+    // "not confirmed" error means the password is correct and the account is just
+    // pending confirmation. Any other error (invalid credentials) → reject.
+    const msg = (signInError.message || "").toLowerCase();
+    const passwordIsValidButUnconfirmed = msg.includes("confirm");
+    if (!passwordIsValidButUnconfirmed) {
+      console.warn(`[admin-confirm-user] Rejected: invalid credentials for ${email}`);
+      return new Response(
+        JSON.stringify({ success: false, error: "Credenciales inválidas" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log(`[admin-confirm-user] Password verified, confirming: ${email}`);
+
+    // Look up the user (service role) and confirm the email.
     const { data: list, error: listError } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
     if (listError) {
       console.error("listUsers error", listError);
@@ -52,14 +84,12 @@ serve(async (req: Request) => {
     }
 
     if (user.email_confirmed_at) {
-      console.log(`[admin-confirm-user] User already confirmed: ${user.id}`);
       return new Response(
         JSON.stringify({ success: true, alreadyConfirmed: true }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log(`[admin-confirm-user] Confirming user id: ${user.id}`);
     const { data: updated, error: updateError } = await supabase.auth.admin.updateUserById(user.id, { email_confirm: true });
     if (updateError) {
       console.error("updateUserById error", updateError);

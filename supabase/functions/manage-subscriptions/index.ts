@@ -11,6 +11,19 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // SECURITY: cron-only endpoint. It runs with the service role and can downgrade
+  // plans / complete cancellations, so a shared secret must match. Without this,
+  // any anonymous caller could trigger it (verify_jwt is false for cron access).
+  const cronSecret = Deno.env.get('CRON_SECRET');
+  const provided = req.headers.get('x-cron-secret');
+  if (!cronSecret || provided !== cronSecret) {
+    console.warn('[manage-subscriptions] Rejected: missing/invalid cron secret');
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+    );
+  }
+
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
