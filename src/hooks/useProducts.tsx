@@ -145,6 +145,10 @@ export const useProducts = (publicTenantId?: string) => {
           sku: product.sku || '',
           features: product.features || [],
           product_type: (product.product_type as 'simple' | 'variable') || 'simple',
+          // Service fields — must be carried through or the editor/list lose the
+          // saved pricing mode ("Desde $X") and custom button text on reload.
+          pricing_mode: product.pricing_mode ?? null,
+          cta_label: product.cta_label ?? null,
           category_id: undefined, // Will be loaded from product_categories table
           tenant_id: product.tenant_id,
           created_at: product.created_at,
@@ -242,7 +246,12 @@ export const useProducts = (publicTenantId?: string) => {
           status: productData.status,
           sku: productData.product_type === 'variable' ? null : finalSKU,
           features: productData.features,
-          product_type: productData.product_type
+          product_type: productData.product_type,
+          // Service-only fields. Without these the upsert never persisted the
+          // pricing mode ("Desde $X") nor the custom WhatsApp button text, so the
+          // DB kept its default ('fixed') and the form appeared to revert.
+          pricing_mode: productData.product_type === 'service' ? (productData.pricing_mode || 'fixed') : null,
+          cta_label: productData.product_type === 'service' ? (productData.cta_label?.trim() || null) : null
         });
 
       if (productError) throw productError;
