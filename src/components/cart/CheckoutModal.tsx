@@ -564,7 +564,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       </DialogHeader>
 
       <ScrollArea className="max-h-[calc(95vh-120px)]">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Horizontal padding so the content (cards, inputs, "Aplicar"/buttons)
+            isn't flush to the edges; extra on the right clears the scrollbar. */}
+        <form onSubmit={handleSubmit} className="space-y-6 px-2 pr-5 sm:px-4 sm:pr-7">
           <div className="grid grid-cols-1 gap-6">
             {/* Left Column - Order Summary & Customer Info */}
             <div className="space-y-6">
