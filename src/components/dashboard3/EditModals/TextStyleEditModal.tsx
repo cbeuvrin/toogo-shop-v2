@@ -109,6 +109,10 @@ export const TextStyleEditModal = ({
   // What the slider shows: this device's override, or the desktop value as baseline.
   const sliderSize = activeSize > 0 ? activeSize : fontSize;
   // Per-device visibility: a device override wins, otherwise inherits desktop.
+  // NOTE: `enabled` must be declared before `effectiveEnabled`/`setActiveEnabled`
+  // below read it — otherwise it's referenced in the temporal dead zone and the
+  // modal throws "Cannot access 'enabled' before initialization" on open.
+  const [enabled, setEnabled] = useState(true);
   const [enabledTablet, setEnabledTablet] = useState<boolean | undefined>(undefined);
   const [enabledMobile, setEnabledMobile] = useState<boolean | undefined>(undefined);
   const effectiveEnabled = deviceMode === 'mobile' ? (enabledMobile ?? enabled) : deviceMode === 'tablet' ? (enabledTablet ?? enabled) : enabled;
@@ -122,7 +126,6 @@ export const TextStyleEditModal = ({
   // (#000000) on purpose is saved instead of being treated as "untouched".
   const [colorTouched, setColorTouched] = useState(false);
   const [bgColor, setBgColor] = useState<string>("");
-  const [enabled, setEnabled] = useState(true);
   const [action, setAction] = useState<'catalog' | 'category' | 'link'>('catalog');
   const [categorySlug, setCategorySlug] = useState<string>("");
   const [customUrl, setCustomUrl] = useState<string>("");
