@@ -134,18 +134,32 @@ serve(async (req) => {
       resourceId_preview: resourceId ? resourceId.toString().substring(0, 15) + "..." : 'none'
     });
     
-    // Only verify signature if secret is configured
-    if (webhookSecret && signature) {
-      const isValid = await verifyWebhookSignature(body, signature, requestId, resourceId, webhookSecret);
-      if (!isValid) {
-        console.error('Invalid webhook signature');
-        return new Response(JSON.stringify({ error: 'Invalid signature' }), {
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-          status: 401
-        });
-      }
-    } else if (webhookSecret && !signature) {
-      console.warn('Webhook secret configured but no signature received');
+    // SECURITY (fail-closed): this endpoint can update subscriptions, domain
+    // renewals and orders, so every request MUST carry a valid MercadoPago
+    // signature. We never process unsigned or unverified requests. Legit MP
+    // notifications are always signed (the webhook secret is configured), so this
+    // only blocks forged/unsigned calls — it does not affect real webhooks.
+    if (!webhookSecret) {
+      console.error('CRITICAL: MERCADOPAGO_WEBHOOK_SECRET not configured — rejecting webhook');
+      return new Response(JSON.stringify({ error: 'Webhook not configured' }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        status: 503
+      });
+    }
+    if (!signature) {
+      console.warn('Rejected webhook: missing x-signature header');
+      return new Response(JSON.stringify({ error: 'Missing signature' }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        status: 401
+      });
+    }
+    const isValidSignature = await verifyWebhookSignature(body, signature, requestId, resourceId, webhookSecret);
+    if (!isValidSignature) {
+      console.error('Invalid webhook signature — rejected');
+      return new Response(JSON.stringify({ error: 'Invalid signature' }), {
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        status: 401
+      });
     }
 
     // Handle preapproval notifications (recurring subscriptions)
