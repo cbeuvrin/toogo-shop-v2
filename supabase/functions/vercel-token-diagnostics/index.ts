@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,6 +9,35 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // SECURITY: this is an admin diagnostic that leaks infra info (Vercel team/
+  // project IDs, token validity). Require the caller to be a super-admin.
+  // It is only invoked from the admin panel (AdminDomainPurchases).
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) {
+    return new Response(JSON.stringify({ error: 'Authentication required' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const anonClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    auth: { persistSession: false }, global: { headers: { Authorization: authHeader } }
+  });
+  const { data: { user } } = await anonClient.auth.getUser();
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'Invalid token' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+  const adminClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  const { data: isSuperAdmin } = await adminClient.rpc('has_role', {
+    _user_id: user.id, _role: 'superadmin'
+  });
+  if (!isSuperAdmin) {
+    return new Response(JSON.stringify({ error: 'Forbidden' }), {
+      status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 
   try {
