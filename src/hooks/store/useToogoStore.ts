@@ -173,10 +173,22 @@ export const useToogoStore = () => {
         // ... (Product normalization logic would go here - simplified for this hook extraction)
         // For this refactor, we assume data.products is usable or we copy the normalization logic
 
-        // --- SIMPLIFIED NORMALIZATION FOR THIS STEP ---
+        // --- PRODUCT NORMALIZATION ---
         const rawProducts = data.products || [];
-        // (Insert the full normalization logic here if needed, or use raw for now if structure matches)
-        setProducts(rawProducts);
+        // Variable products store price_mxn = 0 (base); the real prices live in the
+        // variations' price_modifier. Compute the "Desde" price = lowest variation
+        // price so the home shows it instead of "Desde $0" (mirrors Catalogo).
+        const normalizedProducts = rawProducts.map((product: any) => {
+          let finalPrice = product.price_mxn;
+          if (product.product_type === 'variable' && Array.isArray(product.variations) && product.variations.length > 0) {
+            const prices = product.variations
+              .map((v: any) => Number(v.price_modifier))
+              .filter((p: number) => Number.isFinite(p) && p > 0);
+            if (prices.length > 0) finalPrice = Math.min(...prices);
+          }
+          return { ...product, price_mxn: Number(finalPrice) || 0 };
+        });
+        setProducts(normalizedProducts);
         // ----------------------------------------------
 
         setCategories(data.categories || []);
