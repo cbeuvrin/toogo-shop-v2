@@ -542,19 +542,23 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   return <>
   <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="w-[95vw] sm:w-[90vw] md:w-[768px] max-w-[768px] max-h-[90vh] overflow-hidden p-4 sm:p-6">
-      <DialogHeader className="relative">
-        <DialogTitle className="flex items-center gap-2">
-          {isWhatsAppOnly || isWhatsAppSelected ? <MessageCircle className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
-          {getModalTitle()}
-        </DialogTitle>
-        {/* Logo in top-right corner */}
-        <div className="absolute top-0 right-0">
+      <DialogHeader>
+        {/* Title left, logo right — in one row so the logo never overlaps the
+            order summary below. The logo is capped (height + width) because the
+            store's configured logo_size is meant for the storefront header and
+            is too large for a modal; pr-8 keeps it clear of the dialog close (X). */}
+        <div className="flex items-start justify-between gap-3 pr-8">
+          <DialogTitle className="flex items-center gap-2">
+            {isWhatsAppOnly || isWhatsAppSelected ? <MessageCircle className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
+            {getModalTitle()}
+          </DialogTitle>
           <LogoDisplay
-            size="md"
+            size="sm"
             fallbackText="Logo"
+            disableFetch
             tenantId={preloadedConfig?.tenant_id || currentTenantId}
             logoUrl={preloadedConfig?.logoUrl || preloadedConfig?.logo_url || storeLogo.url || undefined}
-            logoSize={preloadedConfig?.logoSize || preloadedConfig?.logo_size || storeLogo.size || undefined}
+            className="max-h-9 max-w-[120px] w-auto object-contain shrink-0"
           />
         </div>
       </DialogHeader>
