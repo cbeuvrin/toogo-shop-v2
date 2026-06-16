@@ -65,6 +65,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo | null>(null);
   const [shippingCost, setShippingCost] = useState(0);
+  // Logo resolved from the public RPC (so it shows for anonymous buyers too).
+  const [storeLogo, setStoreLogo] = useState<{ url?: string | null; size?: number | null }>({});
 
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -88,8 +90,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (preloadedConfig) {
       loadPreloadedConfig();
     } else if (open && currentTenantId) {
+      // loadPaymentMethods now reads payment methods, logo AND shipping from the
+      // public RPC in one shot (works for anonymous buyers; RLS-safe).
       loadPaymentMethods();
-      loadShippingSettings();
     }
   }, [open, currentTenantId, preloadedConfig]);
 
@@ -107,69 +110,50 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
     try {
-      // 1. Check OAuth integrations first (preferred source of truth)
-      const { data: integrations } = await (supabase as any)
-        .from('tenant_payment_integrations')
-        .select('provider, public_key, status')
-        .eq('tenant_id', currentTenantId)
-        .eq('status', 'active');
-
-      const activeProviders = new Map<string, string | null>();
-      (integrations || []).forEach((row: any) => {
-        activeProviders.set(row.provider, row.public_key);
+      // Read the store config through the public SECURITY DEFINER RPC. Direct table
+      // reads (tenant_payment_integrations / tenant_settings) are blocked by RLS for
+      // anonymous buyers, which is exactly who is checking out — so a store that
+      // connected MercadoPago via OAuth used to see "No hay métodos de pago".
+      const { data, error } = await (supabase as any).rpc('get_public_store_data_demo', {
+        p_tenant_id: currentTenantId
       });
-
-      // 2. Legacy fallback: tenant_settings (used before OAuth migration + still needed for paypal/whatsapp)
-      const {
-        data: settings,
-        error
-      } = await supabase.from('tenant_settings').select('mercadopago_public_key, paypal_client_id, whatsapp_number').eq('tenant_id', currentTenantId as any).maybeSingle();
-      if (error) {
-        console.error('Error loading payment methods:', error);
+      if (error || !data?.ok) {
+        console.error('Error loading storefront config:', error || data?.error);
         return;
       }
+      const settings = data.settings || {};
+      const providers: string[] = Array.isArray(settings.payment_providers) ? settings.payment_providers : [];
       const methods: PaymentMethod[] = [];
 
-      // MercadoPago: prefer OAuth integration, fall back to legacy tenant_settings key
-      const mpFromOAuth = activeProviders.get('mercadopago');
-      if (mpFromOAuth || settings?.mercadopago_public_key) {
-        methods.push({
-          id: 'mercadopago',
-          name: 'MercadoPago',
-          enabled: true,
-          icon: <CreditCard className="w-5 h-5" />
-        });
+      // MercadoPago: active OAuth integration OR a legacy public key.
+      if (providers.includes('mercadopago') || settings.mercadopago_public_key) {
+        methods.push({ id: 'mercadopago', name: 'MercadoPago', enabled: true, icon: <CreditCard className="w-5 h-5" /> });
       }
-      // PayPal: OAuth (future) or legacy client_id
-      if (activeProviders.has('paypal') || settings?.paypal_client_id) {
-        methods.push({
-          id: 'paypal',
-          name: 'PayPal',
-          enabled: true,
-          icon: <CreditCard className="w-5 h-5" />
-        });
+      // PayPal: active OAuth integration OR legacy client id.
+      if (providers.includes('paypal') || settings.paypal_client_id) {
+        methods.push({ id: 'paypal', name: 'PayPal', enabled: true, icon: <CreditCard className="w-5 h-5" /> });
       }
-      if (settings?.whatsapp_number) {
-        console.log('WhatsApp configured with number:', settings.whatsapp_number);
-        methods.push({
-          id: 'whatsapp',
-          name: 'WhatsApp (Pago manual)',
-          enabled: true,
-          icon: <Phone className="w-5 h-5" />
-        });
-      } else {
-        console.log('WhatsApp not configured - no whatsapp_number found');
+      if (settings.whatsapp_number) {
+        methods.push({ id: 'whatsapp', name: 'WhatsApp (Pago manual)', enabled: true, icon: <Phone className="w-5 h-5" /> });
       }
       console.log('Available payment methods:', methods);
       setPaymentMethods(methods);
       if (methods.length > 0) {
         // Auto-select WhatsApp if it's the only option
-        if (methods.length === 1 && methods[0].id === 'whatsapp') {
-          setSelectedPaymentMethod('whatsapp');
-        } else {
-          setSelectedPaymentMethod(methods[0].id);
-        }
+        setSelectedPaymentMethod(methods.length === 1 && methods[0].id === 'whatsapp' ? 'whatsapp' : methods[0].id);
       }
+
+      // Logo (so it shows for anonymous buyers, not the "LOGO" placeholder).
+      setStoreLogo({ url: settings.logo_url, size: settings.logo_size });
+
+      // Shipping (same RLS reason — read it from the RPC instead of the table).
+      setShippingInfo({
+        enabled: settings.shipping_enabled || false,
+        type: (settings.shipping_type as 'free_minimum' | 'flat_rate' | 'zone_based') || 'free_minimum',
+        minimumAmount: settings.shipping_minimum_amount,
+        flatRate: settings.shipping_flat_rate,
+        zonesConfig: settings.shipping_zones_config
+      });
     } catch (error) {
       console.error('Error loading payment methods:', error);
       toast({
@@ -569,8 +553,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             size="md"
             fallbackText="Logo"
             tenantId={preloadedConfig?.tenant_id || currentTenantId}
-            logoUrl={preloadedConfig?.logoUrl || preloadedConfig?.logo_url}
-            logoSize={preloadedConfig?.logoSize || preloadedConfig?.logo_size}
+            logoUrl={preloadedConfig?.logoUrl || preloadedConfig?.logo_url || storeLogo.url || undefined}
+            logoSize={preloadedConfig?.logoSize || preloadedConfig?.logo_size || storeLogo.size || undefined}
           />
         </div>
       </DialogHeader>
