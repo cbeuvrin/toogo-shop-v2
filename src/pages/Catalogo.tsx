@@ -50,6 +50,7 @@ import { FashionTemplate } from "@/templates/layouts/FashionTemplate/FashionTemp
 import { MinimalTemplate } from "@/templates/layouts/MinimalTemplate/MinimalTemplate";
 import { CyberTemplate } from "@/templates/layouts/CyberTemplate/CyberTemplate";
 import { BauhausTemplate } from "@/templates/layouts/BauhausTemplate/BauhausTemplate";
+import { ProductDetailModal } from "@/templates/productDetail/ProductDetailModal";
 
 interface Product {
   id: string;
@@ -798,40 +799,42 @@ const Catalogo = () => {
   // Check for Simple Live Template
   const templateId = settings?.template_id || 'default';
 
+  // Every catalog template opens the SAME product popup as the home
+  // (ProductDetailModal), routing card clicks through onProductClick → selectedProduct,
+  // so the experience is identical to the storefront.
+  const catalogModal = (
+    <ProductDetailModal
+      open={!!selectedProduct}
+      onOpenChange={(open) => { if (!open) setSelectedProduct(null); }}
+      product={selectedProduct}
+      effectiveSettings={settings}
+    />
+  );
+  const commonTemplateProps: any = {
+    storeData: { settings, tenant: { id: tenantId } },
+    products: filteredProducts,
+    categories,
+    favorites: [],
+    toggleFavorite: () => { },
+    addToCart,
+    view: "catalog",
+    effectiveSettings: settings,
+    banners,
+    contactData: null,
+    welcomeTitle: heroData?.title,
+    welcomeMessage: heroData?.message,
+    onProductClick: setSelectedProduct,
+  };
+
   if (templateId === 'simple_live') {
-    return (
-      <SimpleLiveTemplate
-        storeData={{ settings, tenant: { id: tenantId } }}
-        products={filteredProducts}
-        categories={categories}
-        featuredProducts={[]} // Not needed for catalog view
-        favorites={[]} // TODO: Add favorites logic if needed, or pass from context
-        toggleFavorite={() => { }} // Placeholder
-        addToCart={addToCart} // Reuse Catalogo's addToCart
-        view="catalog"
-        effectiveSettings={settings}
-        banners={banners}
-        welcomeTitle={heroData?.title}
-        welcomeMessage={heroData?.message}
-      />
-    );
+    return (<><SimpleLiveTemplate {...commonTemplateProps} featuredProducts={[]} />{catalogModal}</>);
   }
 
   if (templateId === 'fashion_hero') {
-    return (
+    return (<>
       <FashionHeroTemplate
-        storeData={{ settings, tenant: { id: tenantId } }}
-        products={filteredProducts}
-        categories={categories}
+        {...commonTemplateProps}
         featuredProducts={[]}
-        favorites={[]}
-        toggleFavorite={() => { }}
-        addToCart={addToCart}
-        view="catalog"
-        effectiveSettings={settings}
-        banners={banners}
-        welcomeTitle={heroData?.title}
-        welcomeMessage={heroData?.message}
         cta1Label={heroData?.cta1Label}
         cta2Label={heroData?.cta2Label}
         eyebrowText={heroData?.eyebrowText}
@@ -841,142 +844,36 @@ const Catalogo = () => {
         hamburgerThickness={heroData?.hamburgerThickness}
         hamburgerSize={heroData?.hamburgerSize}
       />
-    );
+      {catalogModal}
+    </>);
   }
 
   if (templateId === 'trendy_fashion') {
-    return (
-      <TrendyFashionTemplate
-        storeData={{ settings, tenant: { id: tenantId } }}
-        products={filteredProducts}
-        categories={categories}
-        favorites={[]}
-        toggleFavorite={() => { }}
-        addToCart={addToCart}
-        view="catalog"
-        effectiveSettings={settings}
-        banners={banners}
-        contactData={null}
-        welcomeTitle={heroData?.title}
-        welcomeMessage={heroData?.message}
-        heroShape={heroData?.shape}
-        heroShapeScale={heroData?.scale}
-      />
-    );
+    return (<><TrendyFashionTemplate {...commonTemplateProps} heroShape={heroData?.shape} heroShapeScale={heroData?.scale} />{catalogModal}</>);
   }
 
   if (templateId === 'nature') {
-    return (
-      <NatureTemplate
-        storeData={{ settings, tenant: { id: tenantId } }}
-        products={filteredProducts}
-        categories={categories}
-        favorites={[]}
-        toggleFavorite={() => { }}
-        addToCart={addToCart}
-        view="catalog"
-        effectiveSettings={settings}
-        banners={banners}
-        contactData={null}
-        welcomeTitle={heroData?.title}
-        welcomeMessage={heroData?.message}
-      />
-    );
+    return (<><NatureTemplate {...commonTemplateProps} />{catalogModal}</>);
   }
 
   if (templateId === 'premium_brand') {
-    return (
-      <PremiumBrandTemplate
-        storeData={{ settings, tenant: { id: tenantId } }}
-        products={filteredProducts}
-        categories={categories}
-        favorites={[]}
-        toggleFavorite={() => { }}
-        addToCart={addToCart}
-        view="catalog"
-        effectiveSettings={settings}
-        banners={banners}
-        contactData={null}
-        welcomeTitle={heroData?.title}
-        welcomeMessage={heroData?.message}
-      />
-    );
+    return (<><PremiumBrandTemplate {...commonTemplateProps} />{catalogModal}</>);
   }
 
   if (templateId === 'fashion') {
-    return (
-      <FashionTemplate
-        storeData={{ settings, tenant: { id: tenantId } }}
-        products={filteredProducts}
-        categories={categories}
-        favorites={[]}
-        toggleFavorite={() => { }}
-        addToCart={addToCart}
-        view="catalog"
-        effectiveSettings={settings}
-        banners={banners}
-        contactData={null}
-        welcomeTitle={heroData?.title}
-        welcomeMessage={heroData?.message}
-      />
-    );
+    return (<><FashionTemplate {...commonTemplateProps} />{catalogModal}</>);
   }
 
   if (templateId === 'cyber') {
-    return (
-      <CyberTemplate
-        storeData={{ settings, tenant: { id: tenantId } }}
-        products={filteredProducts}
-        categories={categories}
-        favorites={[]}
-        toggleFavorite={() => { }}
-        addToCart={addToCart}
-        view="catalog"
-        effectiveSettings={settings}
-        banners={banners}
-        contactData={null}
-        welcomeTitle={heroData?.title}
-        welcomeMessage={heroData?.message}
-      />
-    );
+    return (<><CyberTemplate {...commonTemplateProps} />{catalogModal}</>);
   }
 
   if (templateId === 'bauhaus') {
-    return (
-      <BauhausTemplate
-        storeData={{ settings, tenant: { id: tenantId } }}
-        products={filteredProducts}
-        categories={categories}
-        favorites={[]}
-        toggleFavorite={() => { }}
-        addToCart={addToCart}
-        view="catalog"
-        effectiveSettings={settings}
-        banners={banners}
-        contactData={null}
-        welcomeTitle={heroData?.title}
-        welcomeMessage={heroData?.message}
-      />
-    );
+    return (<><BauhausTemplate {...commonTemplateProps} />{catalogModal}</>);
   }
 
   if (templateId === 'minimal') {
-    return (
-      <MinimalTemplate
-        storeData={{ settings, tenant: { id: tenantId } }}
-        products={filteredProducts}
-        categories={categories}
-        favorites={[]}
-        toggleFavorite={() => { }}
-        addToCart={addToCart}
-        view="catalog"
-        effectiveSettings={settings}
-        banners={banners}
-        contactData={null}
-        welcomeTitle={heroData?.title}
-        welcomeMessage={heroData?.message}
-      />
-    );
+    return (<><MinimalTemplate {...commonTemplateProps} />{catalogModal}</>);
   }
 
   return (
@@ -1250,6 +1147,10 @@ const Catalogo = () => {
       </div>
 
       {/* Product Detail Modal */}
+      {/* Generic catalog (default template) now uses the SAME shared popup as the
+          home and the other templates, instead of its own bespoke dialog. */}
+      {catalogModal}
+      {false && (
       <Dialog open={!!selectedProduct} onOpenChange={(open) => { if (!open) { setSelectedProduct(null); setCurrentPrice(0); setCurrentStock(0); setCanAddToCart(false); setModalVariations([]); } }}>
         <DialogContent className="w-[80%] sm:w-[80%] lg:max-w-4xl max-h-[90vh] overflow-y-auto rounded-[15px]">
           {selectedProduct && (
@@ -1441,6 +1342,7 @@ const Catalogo = () => {
           )}
         </DialogContent>
       </Dialog>
+      )}
 
       {/* Bottom Navigation - Mobile Only */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 shadow-lg">
