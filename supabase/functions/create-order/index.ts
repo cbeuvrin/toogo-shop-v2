@@ -270,25 +270,12 @@ serve(async (req) => {
       }
     }
 
-    // SECURITY FIX: Use atomic stock update via database function
-    // This prevents race conditions where multiple orders could oversell the same product
-    for (const item of items) {
-      try {
-        const { error: stockError } = await supabaseClient.rpc('decrement_product_stock_safe', {
-          p_product_id: item.product_id,
-          p_quantity: item.quantity
-        });
-
-        if (stockError) {
-          logStep("Stock update warning", { product_id: item.product_id, error: stockError.message });
-        } else {
-          logStep("Stock decremented atomically", { product_id: item.product_id, quantity: item.quantity });
-        }
-      } catch (error) {
-        logStep("Stock update error", { product_id: item.product_id, error: error.message });
-        // Don't fail the order for stock update issues
-      }
-    }
+    // SECURITY: stock is NOT decremented here. These are WhatsApp (manual-payment)
+    // orders created as "pending" by anonymous buyers — decrementing on creation
+    // let anyone deplete a store's inventory without ever paying. Stock is applied
+    // when the store owner marks the order as "paid" (apply_order_stock RPC),
+    // idempotently and only once.
+    logStep("Stock not decremented (applied on payment confirmation)");
 
     logStep("Order completed successfully", { order_id: order.id });
 

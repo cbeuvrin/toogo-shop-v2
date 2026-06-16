@@ -175,6 +175,13 @@ export const DashboardOrders: React.FC = () => {
 
       if (error) throw error;
 
+      // Apply stock once when the order is confirmed as paid. Orders no longer
+      // decrement stock at creation (that allowed inventory abuse on unpaid
+      // WhatsApp orders); this RPC is atomic and idempotent.
+      if (newStatus === 'paid') {
+        await supabase.rpc('apply_order_stock' as any, { p_order_id: orderId } as any);
+      }
+
       // Update local state
       setOrders(prev => 
         prev.map(order => 
