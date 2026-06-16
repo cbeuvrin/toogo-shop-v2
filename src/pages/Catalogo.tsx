@@ -449,18 +449,27 @@ const Catalogo = () => {
   const filterProducts = () => {
     let filtered = enrichedProducts && enrichedProducts.length > 0 ? [...enrichedProducts] : [...products];
 
-    // Filter by category
+    // Filter by category. The `category` URL param may arrive as a slug (banner /
+    // CTA buttons send categorySlug), a lowercased name (nav menu) or an id, so we
+    // match against all three — otherwise e.g. slug "papeleria" never equals the
+    // name "papelería" and the catalog wrongly shows "no se encontraron productos".
     if (selectedCategory !== "all") {
+      const matchesSelected = (cat: any) => {
+        if (!cat) return false;
+        return cat.slug === selectedCategory
+          || cat.id === selectedCategory
+          || cat.name?.toLowerCase() === selectedCategory;
+      };
       filtered = filtered.filter(product => {
         // Check both category_id and categories array for compatibility
         if (product.category_id) {
           const category = categories.find(cat => cat.id === product.category_id);
-          return category?.name.toLowerCase() === selectedCategory;
+          if (matchesSelected(category)) return true;
         }
 
         // Also check categories array if available
         if (product.categories && product.categories.length > 0) {
-          return product.categories.some(cat => cat.name.toLowerCase() === selectedCategory);
+          return product.categories.some(cat => matchesSelected(cat));
         }
 
         // Products without categories should NOT appear in specific category filters
