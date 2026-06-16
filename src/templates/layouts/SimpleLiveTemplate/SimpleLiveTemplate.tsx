@@ -461,7 +461,17 @@ export const SimpleLiveTemplate = (props: any) => {
                                             </div>
                                             <div>
                                                 <h3 className="font-bold text-gray-900 leading-tight mb-1">{product.title || product.name}</h3>
-                                                <span className="font-bold">${product.sale_price_mxn || product.price_mxn || product.price}</span>
+                                                {(() => {
+                                                  // Service-aware price so the home shows "Desde $X" / "A cotizar".
+                                                  const isService = product.product_type === 'service';
+                                                  const pMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
+                                                  const base = product.price_mxn || product.price;
+                                                  const disp = !isService ? (product.sale_price_mxn || base) : base;
+                                                  if (isService && pMode === 'quote') return <span className="font-bold italic">A cotizar</span>;
+                                                  if (isService && pMode === 'starting_from') return <span className="font-bold">Desde ${disp} MXN</span>;
+                                                  if (isService) return <span className="font-bold">${disp} MXN</span>;
+                                                  return <span className="font-bold">${disp}</span>;
+                                                })()}
                                             </div>
                                         </div>
                                         );

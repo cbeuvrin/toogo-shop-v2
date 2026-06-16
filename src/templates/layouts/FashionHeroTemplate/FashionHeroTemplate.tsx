@@ -566,7 +566,18 @@ export const FashionHeroTemplate = (props: any) => {
                                             </div>
                                         </div>
                                         <h3 className="font-semibold text-gray-900 leading-tight mb-1 text-sm">{product.title || product.name}</h3>
-                                        <span className="font-bold text-sm">${product.sale_price_mxn || product.price_mxn || product.price}</span>
+                                        {(() => {
+                                          // Service-aware price, mirroring ProductCard so the home shows
+                                          // "Desde $X" / "A cotizar" instead of a raw price for services.
+                                          const isService = product.product_type === 'service';
+                                          const pMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
+                                          const base = product.price_mxn || product.price;
+                                          const disp = !isService ? (product.sale_price_mxn || base) : base;
+                                          if (isService && pMode === 'quote') return <span className="font-bold text-sm italic">A cotizar</span>;
+                                          if (isService && pMode === 'starting_from') return <span className="font-bold text-sm">Desde ${disp} MXN</span>;
+                                          if (isService) return <span className="font-bold text-sm">${disp} MXN</span>;
+                                          return <span className="font-bold text-sm">${disp}</span>;
+                                        })()}
                                     </div>
                                 ));
                             })()}

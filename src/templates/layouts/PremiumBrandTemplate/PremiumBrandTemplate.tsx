@@ -344,7 +344,17 @@ export const PremiumBrandTemplate = (props: any) => {
                                         </div>
                                         <div className="p-6 text-center">
                                             <h3 className="font-bold text-[#023f66] text-lg mb-2 line-clamp-2">{product.title || product.name}</h3>
-                                            <span className="font-bold text-[#e98063] text-xl">${product.sale_price_mxn || product.price_mxn || product.price}</span>
+                                            {(() => {
+                                              // Service-aware price so the home shows "Desde $X" / "A cotizar".
+                                              const isService = product.product_type === 'service';
+                                              const pMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
+                                              const base = product.price_mxn || product.price;
+                                              const disp = !isService ? (product.sale_price_mxn || base) : base;
+                                              if (isService && pMode === 'quote') return <span className="font-bold text-[#e98063] text-xl italic">A cotizar</span>;
+                                              if (isService && pMode === 'starting_from') return <span className="font-bold text-[#e98063] text-xl">Desde ${disp} MXN</span>;
+                                              if (isService) return <span className="font-bold text-[#e98063] text-xl">${disp} MXN</span>;
+                                              return <span className="font-bold text-[#e98063] text-xl">${disp}</span>;
+                                            })()}
                                         </div>
                                     </div>
                                 ))
@@ -382,7 +392,17 @@ export const PremiumBrandTemplate = (props: any) => {
                                 <div className="p-6 text-center">
                                     <h3 className="font-bold text-[#023f66] text-lg mb-2 line-clamp-2">{product.title || product.name}</h3>
                                     {product.description && <p className="text-[#023f66] opacity-60 text-sm mb-4 line-clamp-2">{product.description}</p>}
-                                    <span className="font-bold text-[#e98063] text-xl">${product.sale_price_mxn || product.price_mxn || product.price}</span>
+                                    {(() => {
+                                      // Service-aware price so the home shows "Desde $X" / "A cotizar".
+                                      const isService = product.product_type === 'service';
+                                      const pMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
+                                      const base = product.price_mxn || product.price;
+                                      const disp = !isService ? (product.sale_price_mxn || base) : base;
+                                      if (isService && pMode === 'quote') return <span className="font-bold text-[#e98063] text-xl italic">A cotizar</span>;
+                                      if (isService && pMode === 'starting_from') return <span className="font-bold text-[#e98063] text-xl">Desde ${disp} MXN</span>;
+                                      if (isService) return <span className="font-bold text-[#e98063] text-xl">${disp} MXN</span>;
+                                      return <span className="font-bold text-[#e98063] text-xl">${disp}</span>;
+                                    })()}
                                 </div>
                             </div>
                         ))}

@@ -450,7 +450,17 @@ export const FashionTemplate = (props: any) => {
                                     <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1 mt-1">{settings?.store_name || "Marca"}</p>
                                     <h3 className="text-sm font-medium text-black mb-3 line-clamp-2 md:line-clamp-1">{product.title || product.name}</h3>
                                     <div className="flex gap-3 items-center">
-                                        <span className="text-sm font-bold text-gray-600">${product.sale_price_mxn || product.price_mxn || product.price}</span>
+                                        {(() => {
+                                          // Service-aware price so the home shows "Desde $X" / "A cotizar".
+                                          const isService = product.product_type === 'service';
+                                          const pMode = isService ? (product.pricing_mode || 'fixed') : 'fixed';
+                                          const base = product.price_mxn || product.price;
+                                          const disp = !isService ? (product.sale_price_mxn || base) : base;
+                                          if (isService && pMode === 'quote') return <span className="text-sm font-bold text-gray-600 italic">A cotizar</span>;
+                                          if (isService && pMode === 'starting_from') return <span className="text-sm font-bold text-gray-600">Desde ${disp} MXN</span>;
+                                          if (isService) return <span className="text-sm font-bold text-gray-600">${disp} MXN</span>;
+                                          return <span className="text-sm font-bold text-gray-600">${disp}</span>;
+                                        })()}
                                     </div>
                                 </div>
                             </div>
