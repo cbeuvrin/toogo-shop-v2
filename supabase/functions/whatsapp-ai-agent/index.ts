@@ -15,6 +15,45 @@ function convertToolsToGoogle(openAITools: any[]) {
   }));
 }
 
+// Convertir tools de formato OpenAI a formato Anthropic (Claude)
+function convertToolsToAnthropic(openAITools: any[]) {
+  return openAITools.map(t => ({
+    name: t.function.name,
+    description: t.function.description,
+    input_schema: t.function.parameters,
+  }));
+}
+
+// El "cerebro" del asistente corre en Claude (Anthropic). La generación de
+// imágenes sigue en Gemini (ver llamadas a generativelanguage más abajo).
+const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
+async function callClaude(apiKey: string, systemPrompt: string, messages: any[], tools?: any[] | null) {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 2048,
+      system: systemPrompt,
+      messages,
+      ...(tools && tools.length ? { tools } : {}),
+    }),
+  });
+  if (!resp.ok) {
+    const err = await resp.text();
+    console.error('❌ Anthropic error:', err);
+    if (resp.status === 429) {
+      throw new Error('Rate limit de Anthropic excedido. Intenta de nuevo en unos segundos.');
+    }
+    throw new Error(`Anthropic error: ${err}`);
+  }
+  return resp.json();
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -29,10 +68,14 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const googleApiKey = Deno.env.get('GOOGLE_AI_API_KEY')!;
+    const googleApiKey = Deno.env.get('GOOGLE_AI_API_KEY')!; // imágenes (Gemini)
+    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')!; // cerebro (Claude)
 
     if (!googleApiKey) {
       throw new Error('GOOGLE_AI_API_KEY is required');
+    }
+    if (!anthropicKey) {
+      throw new Error('ANTHROPIC_API_KEY is required');
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -743,51 +786,25 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
       }
     ];
 
-    // Convertir tools al formato de Google
-    const googleTools = convertToolsToGoogle(tools);
+    // Convertir tools al formato de Anthropic (Claude)
+    const anthropicTools = convertToolsToAnthropic(tools);
 
-    // Llamar a Google AI (Gemini 3 Pro) directamente
-    console.log('📤 Calling Google AI API (Gemini 3 Pro)...');
-    const aiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${googleApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: 'user', parts: [{ text: message }] }],
-          tools: [{ functionDeclarations: googleTools }]
-        })
-      }
-    );
+    // Llamar a Claude (Anthropic) — el "cerebro" del asistente
+    console.log('📤 Calling Anthropic (Claude)...');
+    const aiData = await callClaude(anthropicKey, systemPrompt, [
+      { role: 'user', content: message }
+    ], anthropicTools);
+    console.log('📥 Claude response received');
 
-    if (!aiResponse.ok) {
-      const error = await aiResponse.text();
-      console.error('❌ Google AI error:', error);
-      if (aiResponse.status === 429) {
-        throw new Error('Rate limit de Google AI excedido. Intenta de nuevo en unos segundos.');
-      }
-      throw new Error(`Google AI error: ${error}`);
-    }
+    const contentBlocks = aiData.content || [];
+    const textPart = contentBlocks.find((b: any) => b.type === 'text');
+    const toolUseBlock = contentBlocks.find((b: any) => b.type === 'tool_use');
 
-    const aiData = await aiResponse.json();
-    console.log('📥 Google AI response received');
-
-    // Parsear respuesta de Google
-    const candidate = aiData.candidates?.[0];
-    if (!candidate?.content?.parts) {
-      throw new Error('Invalid Google AI response structure');
-    }
-
-    const parts = candidate.content.parts;
-    const textPart = parts.find((p: any) => p.text);
-    const functionCallPart = parts.find((p: any) => p.functionCall);
-
-    // Si hay function call, ejecutarlo
-    if (functionCallPart) {
-      const functionCall = functionCallPart.functionCall;
-      const functionName = functionCall.name;
-      const args = functionCall.args || {};
+    // Si hay tool call, ejecutarlo
+    if (toolUseBlock) {
+      const functionName = toolUseBlock.name;
+      const args = toolUseBlock.input || {};
+      const toolUseId = toolUseBlock.id;
 
       console.log('🔧 Executing function:', functionName, 'with args:', JSON.stringify(args));
 
@@ -1402,39 +1419,18 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
 
       console.log('🔧 Function result:', JSON.stringify(result));
 
-      // Segunda llamada con resultados de function call (formato Google)
-      console.log('🔧 Making final AI call with function result...');
+      // Segunda llamada a Claude con el resultado de la herramienta (sin tools,
+      // para forzar una respuesta de texto final para el usuario).
+      console.log('🔧 Making final Claude call with tool result...');
 
-      const finalResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${googleApiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            contents: [
-              { role: 'user', parts: [{ text: message }] },
-              { role: 'model', parts: [{ functionCall: { name: functionName, args } }] },
-              { role: 'function', parts: [{ functionResponse: { name: functionName, response: { content: result } } }] }
-            ]
-          })
-        }
-      );
+      const finalData = await callClaude(anthropicKey, systemPrompt, [
+        { role: 'user', content: message },
+        { role: 'assistant', content: [{ type: 'tool_use', id: toolUseId, name: functionName, input: args }] },
+        { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUseId, content: JSON.stringify(result ?? {}) }] }
+      ], null);
 
-      console.log('📥 Final AI Response status:', finalResponse.status);
-
-      if (!finalResponse.ok) {
-        const errorText = await finalResponse.text();
-        console.error('❌ Final AI error:', errorText);
-        throw new Error(`Final AI response failed: ${errorText}`);
-      }
-
-      const finalData = await finalResponse.json();
-
-      // Parsear respuesta final de Google
-      const finalCandidate = finalData.candidates?.[0];
-      const finalParts = finalCandidate?.content?.parts || [];
-      let responseText = finalParts.find((p: any) => p.text)?.text;
+      // Parsear respuesta final de Claude
+      let responseText = (finalData.content || []).find((b: any) => b.type === 'text')?.text;
 
       if (!responseText) {
         console.warn('⚠️ AI returned empty content, using fallback');
