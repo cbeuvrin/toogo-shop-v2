@@ -8,6 +8,7 @@ import { LogoDisplay } from "@/components/ui/LogoDisplay";
 import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { heroFontFamily } from "@/lib/heroFonts";
+import { footerTextColors } from "@/utils/contrastColor";
 
 export const BauhausTemplate = (props: any) => {
     const {
@@ -61,6 +62,7 @@ export const BauhausTemplate = (props: any) => {
     const bauhausBlue = '#003049';
     const bauhausBg = settings?.store_background_color || '#FAF6EE';
     const bauhausBlack = '#0A0A0A';
+    const footerCol = footerTextColors(props.sectionBg?.footer || bauhausBg);
 
     const heroTitle = props.welcomeTitle || settings?.welcome_title || 'FORMA\nSIGUE\nFUNCIÓN';
     const heroMessage = props.welcomeMessage || settings?.welcome_message || 'Una colección curada de piezas esenciales. Geometría, color, propósito.';
@@ -328,7 +330,7 @@ export const BauhausTemplate = (props: any) => {
             )}
 
             {/* Footer */}
-            <footer className="border-t-[3px] mt-12" style={{ borderColor: bauhausBlack, backgroundColor: props.sectionBg?.footer || bauhausBg }}>
+            <footer className="border-t-[3px] mt-12" style={{ borderColor: bauhausBlack, backgroundColor: props.sectionBg?.footer || bauhausBg, color: footerCol.text }}>
                 <div className="container mx-auto px-6 py-12">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
                         <div>

@@ -8,6 +8,7 @@ import { LogoDisplay } from "@/components/ui/LogoDisplay";
 import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { heroFontFamily } from "@/lib/heroFonts";
+import { footerTextColors } from "@/utils/contrastColor";
 
 export const PremiumBrandTemplate = (props: any) => {
     const {
@@ -56,6 +57,7 @@ export const PremiumBrandTemplate = (props: any) => {
     const bg = settings?.store_background_color || '#023f66';
     const navbarBgColor = settings?.navbar_bg_color || '#f6f5f0';
     const footColor = settings?.footer_bg_color || '#023f66';
+    const footerCol = footerTextColors(props.sectionBg?.footer || footColor);
     const headerIconColor = settings?.header_icon_color || '#023f66';
     const headerIconScale = settings?.header_icon_scale || 1.0;
     const prodBgColor = settings?.product_card_bg_color || '#f0f0f0';
@@ -416,7 +418,7 @@ export const PremiumBrandTemplate = (props: any) => {
             {testimonialsPos === 'above_footer' && !isCatalog && renderTestimonials()}
 
             {/* Footer */}
-            <footer className="relative pt-24 pb-10 overflow-hidden" style={{ backgroundColor: props.sectionBg?.footer || footColor, color: '#fff' }}>
+            <footer className="relative pt-24 pb-10 overflow-hidden" style={{ backgroundColor: props.sectionBg?.footer || footColor, color: footerCol.text }}>
                 {/* Olas Arriba de Footer (Wave Top) */}
                 <div className="absolute top-0 left-0 w-full overflow-hidden leading-none z-0">
                     <svg className="relative block w-full h-[40px] md:h-[60px]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
@@ -428,11 +430,11 @@ export const PremiumBrandTemplate = (props: any) => {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
                         <div className="md:col-span-1">
                             <LogoDisplay logoUrl={settings?.logo_url} fallbackText={settings?.store_name || 'LOGO'} className="text-3xl font-bold tracking-tight text-white mb-6" />
-                            <p className="text-sm text-white/70 max-w-xs leading-relaxed">{contactData?.address || <span className="italic text-white/40">Agrega tu dirección</span>}</p>
+                            <p className="text-sm max-w-xs leading-relaxed" style={{ color: footerCol.muted }}>{contactData?.address || <span className="italic opacity-70">Agrega tu dirección</span>}</p>
                         </div>
                         <div>
                             <h4 className="font-bold text-sm mb-6 uppercase tracking-widest text-[#e98063]" style={styleFor('footerHeading1')}>{els?.footerHeading1?.text || 'Tienda'}</h4>
-                            <ul className="space-y-4 text-sm text-white/80">
+                            <ul className="space-y-4 text-sm" style={{ color: footerCol.muted }}>
                                 {topCategories.map((c: any) => (
                                     <li key={c.id}><button onClick={() => handleNavigate('/catalogo', { category: c.name.toLowerCase() })} className="hover:text-white transition-colors">{c.name}</button></li>
                                 ))}
@@ -441,10 +443,10 @@ export const PremiumBrandTemplate = (props: any) => {
                         </div>
                         <div>
                             <h4 className="font-bold text-sm mb-6 uppercase tracking-widest text-[#e98063]" style={styleFor('footerHeading2')}>{els?.footerHeading2?.text || 'Soporte'}</h4>
-                            <ul className="space-y-4 text-sm text-white/80">
+                            <ul className="space-y-4 text-sm" style={{ color: footerCol.muted }}>
                                 {contactData?.whatsapp && <li><a href={`https://wa.me/${contactData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">WhatsApp: {contactData.whatsapp}</a></li>}
                                 {contactData?.email && <li><a href={`mailto:${contactData.email}`} className="hover:text-white transition-colors">Email: {contactData.email}</a></li>}
-                                {!contactData?.whatsapp && !contactData?.email && <li className="italic text-white/40">Agrega tus datos de contacto</li>}
+                                {!contactData?.whatsapp && !contactData?.email && <li className="italic opacity-70">Agrega tus datos de contacto</li>}
                             </ul>
                         </div>
                         <div>
@@ -452,11 +454,11 @@ export const PremiumBrandTemplate = (props: any) => {
                             <div className="flex gap-4">
                                 {contactData?.instagram && <a href={contactData.instagram} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors opacity-80 hover:opacity-100">Instagram</a>}
                                 {contactData?.facebook && <a href={contactData.facebook} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors opacity-80 hover:opacity-100">Facebook</a>}
-                                {!contactData?.instagram && !contactData?.facebook && <span className="italic text-white/40 text-sm">Agrega tus redes sociales</span>}
+                                {!contactData?.instagram && !contactData?.facebook && <span className="italic opacity-70 text-sm">Agrega tus redes sociales</span>}
                             </div>
                         </div>
                     </div>
-                    <div className="border-t border-white/20 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-white/50 text-xs uppercase tracking-widest">
+                    <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs uppercase tracking-widest" style={{ borderColor: footerCol.border, color: footerCol.muted }}>
                         <p>© {new Date().getFullYear()} {settings?.store_name || 'Tu Tienda'}. Todos los derechos reservados.</p>
                         <p>Powered by Toogo</p>
                     </div>

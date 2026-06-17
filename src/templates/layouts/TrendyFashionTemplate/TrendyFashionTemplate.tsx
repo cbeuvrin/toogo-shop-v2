@@ -8,6 +8,7 @@ import { LogoDisplay } from "@/components/ui/LogoDisplay";
 import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { heroFontFamily } from "@/lib/heroFonts";
+import { footerTextColors } from "@/utils/contrastColor";
 import { getHeroShapeRadius } from "@/lib/heroShapes";
 
 export const TrendyFashionTemplate = (props: any) => {
@@ -65,6 +66,7 @@ export const TrendyFashionTemplate = (props: any) => {
     const headerIconColor = settings?.header_icon_color || '#1a3a3a';
     const headerIconScale = settings?.header_icon_scale || 1;
     const footerBgColor = settings?.footer_bg_color || '#1a3a3a';
+    const footerCol = footerTextColors(props.sectionBg?.footer || footerBgColor);
     const footerIconColor = settings?.footer_icon_color || '#ffffff';
     const footerIconScale = settings?.footer_icon_scale || 1;
     const cardBgColor = settings?.product_card_bg_color || '#f8f8f8';
@@ -457,7 +459,7 @@ export const TrendyFashionTemplate = (props: any) => {
             </section>
 
             {/* Footer */}
-            <footer className="text-white pt-16 pb-8" style={{ backgroundColor: props.sectionBg?.footer || footerBgColor }}>
+            <footer className="pt-16 pb-8" style={{ backgroundColor: props.sectionBg?.footer || footerBgColor, color: footerCol.text }}>
                 <div className="container mx-auto px-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
                         <div>
@@ -466,14 +468,14 @@ export const TrendyFashionTemplate = (props: any) => {
                                 {contactData?.whatsapp && (
                                     <li className="flex items-center gap-3">
                                         <a href={`https://wa.me/${contactData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
-                                            <span className="text-gray-300">WhatsApp:</span> {contactData.whatsapp}
+                                            <span style={{ color: footerCol.muted }}>WhatsApp:</span> {contactData.whatsapp}
                                         </a>
                                     </li>
                                 )}
                                 {contactData?.email && (
                                     <li className="flex items-center gap-3">
                                         <a href={`mailto:${contactData.email}`} className="hover:text-white transition-colors">
-                                            <span className="text-gray-300">Email:</span> {contactData.email}
+                                            <span style={{ color: footerCol.muted }}>Email:</span> {contactData.email}
                                         </a>
                                     </li>
                                 )}
@@ -484,8 +486,8 @@ export const TrendyFashionTemplate = (props: any) => {
                         </div>
                         <div>
                             <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500" style={styleFor('footerHeading2')}>{els?.footerHeading2?.text || 'Ubicación'}</h4>
-                            <p className="text-sm font-medium leading-relaxed max-w-xs text-gray-300">
-                                {contactData?.address || <span className="text-zinc-600 italic">Configura tu dirección</span>}
+                            <p className="text-sm font-medium leading-relaxed max-w-xs" style={{ color: footerCol.muted }}>
+                                {contactData?.address || <span className="italic opacity-70">Configura tu dirección</span>}
                             </p>
                         </div>
                         <div>
@@ -503,7 +505,7 @@ export const TrendyFashionTemplate = (props: any) => {
                             </div>
                         </div>
                     </div>
-                    <div className="border-t border-zinc-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-zinc-600 text-[10px] uppercase tracking-wider">
+                    <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] uppercase tracking-wider" style={{ borderColor: footerCol.border, color: footerCol.muted }}>
                         <p>© {new Date().getFullYear()} {settings?.store_name || 'Tu Tienda'}. Todos los derechos reservados.</p>
                         <p>Powered by Toogo</p>
                     </div>

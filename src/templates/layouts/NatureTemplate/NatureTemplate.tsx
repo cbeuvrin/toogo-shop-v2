@@ -7,6 +7,7 @@ import { LogoDisplay } from "@/components/ui/LogoDisplay";
 import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { heroFontFamily } from "@/lib/heroFonts";
+import { footerTextColors } from "@/utils/contrastColor";
 
 export const NatureTemplate = (props: any) => {
     const {
@@ -68,6 +69,7 @@ export const NatureTemplate = (props: any) => {
     const headerIconColor = settings?.header_icon_color || brandTextDark;
     const headerIconScale = settings?.header_icon_scale || 1;
     const footerBgColor = settings?.footer_bg_color || brandLightBg;
+    const footerCol = footerTextColors(props.sectionBg?.footer || footerBgColor);
     const footerIconColor = settings?.footer_icon_color || brandTextDark;
     const footerIconScale = settings?.footer_icon_scale || 1;
     const cardBgColor = settings?.product_card_bg_color || '#e2e2e2';
@@ -372,7 +374,7 @@ export const NatureTemplate = (props: any) => {
             )}
 
             {/* Footer */}
-            <footer className="pt-16 pb-8 border-t border-gray-200 mt-12" style={{ backgroundColor: props.sectionBg?.footer || footerBgColor }}>
+            <footer className="pt-16 pb-8 border-t mt-12" style={{ backgroundColor: props.sectionBg?.footer || footerBgColor, color: footerCol.text, borderColor: footerCol.border }}>
                 <div className="container mx-auto px-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
                         <div className="md:col-span-1">
@@ -382,13 +384,13 @@ export const NatureTemplate = (props: any) => {
                             disableFetch={true}
                                 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold tracking-tight text-gray-900 mb-4"
                             />
-                            <p className="text-sm text-gray-600 mb-6 max-w-xs leading-relaxed">
-                                {contactData?.address || <span className="text-gray-400 italic">Agrega tu dirección</span>}
+                            <p className="text-sm mb-6 max-w-xs leading-relaxed" style={{ color: footerCol.muted }}>
+                                {contactData?.address || <span className="italic opacity-70">Agrega tu dirección</span>}
                             </p>
                         </div>
                         <div>
                             <h4 className="font-bold uppercase mb-6 text-xs tracking-widest text-[#142642]" style={styleFor('footerHeading1')}>{els?.footerHeading1?.text || 'Tienda'}</h4>
-                            <ul className="space-y-4 text-sm font-medium text-gray-600">
+                            <ul className="space-y-4 text-sm font-medium" style={{ color: footerCol.muted }}>
                                 {topCategories.slice(0, 4).map((cat: any) => (
                                     <li key={cat.id}><button onClick={() => handleNavigate('/catalogo', { category: cat.name.toLowerCase() })} className="hover:text-gray-900">{cat.name}</button></li>
                                 ))}
@@ -397,7 +399,7 @@ export const NatureTemplate = (props: any) => {
                         </div>
                         <div>
                             <h4 className="font-bold uppercase mb-6 text-xs tracking-widest text-[#142642]" style={styleFor('footerHeading2')}>{els?.footerHeading2?.text || 'Soporte'}</h4>
-                            <ul className="space-y-4 text-sm font-medium text-gray-600">
+                            <ul className="space-y-4 text-sm font-medium" style={{ color: footerCol.muted }}>
                                 {contactData?.whatsapp && (
                                     <li><a href={`https://wa.me/${contactData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-gray-900 flex items-center gap-2">WhatsApp: {contactData.whatsapp}</a></li>
                                 )}
@@ -405,12 +407,12 @@ export const NatureTemplate = (props: any) => {
                                     <li><a href={`mailto:${contactData.email}`} className="hover:text-gray-900 flex items-center gap-2">Email: {contactData.email}</a></li>
                                 )}
                                 {!contactData?.whatsapp && !contactData?.email && (
-                                    <li className="text-gray-400 italic">Agrega tus datos de contacto</li>
+                                    <li className="italic opacity-70">Agrega tus datos de contacto</li>
                                 )}
                             </ul>
                         </div>
                     </div>
-                    <div className="border-t border-gray-300 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-gray-500 text-[10px] uppercase tracking-widest font-semibold">
+                    <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] uppercase tracking-widest font-semibold" style={{ borderColor: footerCol.border, color: footerCol.muted }}>
                         <p>© {new Date().getFullYear()} {settings?.store_name || 'Tu Tienda'}. Todos los derechos reservados.</p>
                         <div className="flex gap-4">
                             <a href="/terminos-condiciones" target="_blank" rel="noopener noreferrer" className="hover:text-gray-900">Términos</a>
