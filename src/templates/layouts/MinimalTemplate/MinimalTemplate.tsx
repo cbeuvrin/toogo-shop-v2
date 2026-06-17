@@ -11,6 +11,7 @@ import { LogoDisplay } from "@/components/ui/LogoDisplay";
 import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { heroFontFamily } from "@/lib/heroFonts";
+import { storeDisplayName } from "@/utils/storeDisplayName";
 
 // --- Components (Internal to this template for cohesion) ---
 
@@ -470,7 +471,7 @@ export const MinimalTemplate = (props: any) => {
                     </div>
                 </div>
                 <div className="mt-20 text-center text-xs text-gray-300">
-                    &copy; {new Date().getFullYear()} {settings?.store_name}. Todos los derechos reservados. Powered by TOOGO.
+                    &copy; {new Date().getFullYear()} {storeDisplayName(settings)}. Todos los derechos reservados. Powered by TOOGO.
                 </div>
             </footer>
 

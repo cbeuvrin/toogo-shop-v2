@@ -8,6 +8,7 @@ import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { heroFontFamily } from "@/lib/heroFonts";
 import { footerTextColors } from "@/utils/contrastColor";
+import { storeDisplayName } from "@/utils/storeDisplayName";
 
 export const SimpleLiveTemplate = (props: any) => {
     const {
@@ -623,7 +624,7 @@ export const SimpleLiveTemplate = (props: any) => {
                     </div>
 
                     <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] uppercase tracking-wider" style={{ borderColor: footerCol.border, color: footerCol.muted }}>
-                        <p>© {new Date().getFullYear()} {settings?.store_name || "Tu Tienda"}. Todos los derechos reservados.</p>
+                        <p>© {new Date().getFullYear()} {storeDisplayName(settings)}. Todos los derechos reservados.</p>
                         <p>Powered by Toogo</p>
                     </div>
                 </div>

@@ -8,6 +8,7 @@ import { LogoDisplay } from "@/components/ui/LogoDisplay";
 import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { heroFontFamily } from "@/lib/heroFonts";
+import { storeDisplayName } from "@/utils/storeDisplayName";
 
 export const CyberTemplate = (props: any) => {
     const {
@@ -520,7 +521,7 @@ export const CyberTemplate = (props: any) => {
                         </div>
                     </div>
                     <div className="border-t pt-6 flex flex-col md:flex-row justify-between items-center gap-2 text-xs tracking-[0.2em] uppercase" style={{ borderColor: cyberBorder, color: cyberMuted }}>
-                        <span>© {new Date().getFullYear()} {settings?.store_name || 'Tu Tienda'}</span>
+                        <span>© {new Date().getFullYear()} {storeDisplayName(settings)}</span>
                         <span>// Powered by Toogo</span>
                     </div>
                 </div>

@@ -8,6 +8,7 @@ import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { heroFontFamily } from "@/lib/heroFonts";
 import { footerTextColors } from "@/utils/contrastColor";
+import { storeDisplayName } from "@/utils/storeDisplayName";
 
 export const NatureTemplate = (props: any) => {
     const {
@@ -413,7 +414,7 @@ export const NatureTemplate = (props: any) => {
                         </div>
                     </div>
                     <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] uppercase tracking-widest font-semibold" style={{ borderColor: footerCol.border, color: footerCol.muted }}>
-                        <p>© {new Date().getFullYear()} {settings?.store_name || 'Tu Tienda'}. Todos los derechos reservados.</p>
+                        <p>© {new Date().getFullYear()} {storeDisplayName(settings)}. Todos los derechos reservados.</p>
                         <div className="flex gap-4">
                             <a href="/terminos-condiciones" target="_blank" rel="noopener noreferrer" className="hover:text-gray-900">Términos</a>
                             <a href="/politica-privacidad" target="_blank" rel="noopener noreferrer" className="hover:text-gray-900">Privacidad</a>

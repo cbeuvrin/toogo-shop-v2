@@ -9,6 +9,7 @@ import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { heroFontFamily } from "@/lib/heroFonts";
 import { footerTextColors } from "@/utils/contrastColor";
+import { storeDisplayName } from "@/utils/storeDisplayName";
 
 export const BauhausTemplate = (props: any) => {
     const {
@@ -373,7 +374,7 @@ export const BauhausTemplate = (props: any) => {
                         </div>
                     </div>
                     <div className="border-t-2 pt-4 flex flex-col md:flex-row justify-between items-center gap-2 text-xs font-bold tracking-widest uppercase" style={{ borderColor: bauhausBlack }}>
-                        <span>© {new Date().getFullYear()} {settings?.store_name || 'Tu Tienda'}</span>
+                        <span>© {new Date().getFullYear()} {storeDisplayName(settings)}</span>
                         <span>Powered by Toogo</span>
                     </div>
                 </div>
