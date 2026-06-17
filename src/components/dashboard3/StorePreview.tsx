@@ -2111,7 +2111,13 @@ export const StorePreview = ({
                     </span>
                   )}
                   {(data.textBanner as any)?.buttonEnabled !== false && (
-                    <Button className="bg-white text-black text-xs px-6 py-3 font-bold uppercase tracking-widest rounded-none">
+                    <Button
+                      className="text-xs px-6 py-3 font-bold uppercase tracking-widest rounded-none"
+                      style={{
+                        backgroundColor: (data.textBanner as any)?.buttonBgColor || '#ffffff',
+                        color: (data.textBanner as any)?.buttonTextColor || '#000000',
+                      }}
+                    >
                       {(data.textBanner as any)?.buttonLabel || "Explorar Colección"}
                     </Button>
                   )}

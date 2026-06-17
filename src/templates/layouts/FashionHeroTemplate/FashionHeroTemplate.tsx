@@ -38,6 +38,8 @@ export const FashionHeroTemplate = (props: any) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [showMobileSearch, setShowMobileSearch] = useState(false);
+    // Hover state for the mid-banner button so its colors (incl. hover) are editable.
+    const [midBtnHover, setMidBtnHover] = useState(false);
 
     const handleNavigate = (path: string, params: Record<string, string> = {}) => {
         const newParams = new URLSearchParams();
@@ -593,7 +595,8 @@ export const FashionHeroTemplate = (props: any) => {
                                     <>
                                         <img
                                             src={textBanner.imageUrl}
-                                            className="w-full h-full object-contain lg:object-cover opacity-80 absolute inset-0"
+                                            className="w-full h-full object-cover opacity-80 absolute inset-0"
+                                            style={{ objectPosition: (textBanner as any)?.imagePosition || 'center' }}
                                             alt="Banner Background"
                                         />
                                         <div className="absolute inset-0 bg-black/40" />
@@ -613,7 +616,17 @@ export const FashionHeroTemplate = (props: any) => {
                                     )}
                                     {textBanner?.buttonEnabled !== false && (
                                       <Button
-                                        className="bg-white text-black text-xs md:text-base px-10 py-5 md:py-7 font-bold uppercase tracking-widest hover:scale-105 transition-transform rounded-none"
+                                        className="text-xs md:text-base px-10 py-5 md:py-7 font-bold uppercase tracking-widest hover:scale-105 transition-all rounded-none"
+                                        style={{
+                                          backgroundColor: midBtnHover
+                                            ? ((textBanner as any)?.buttonHoverBgColor || (textBanner as any)?.buttonBgColor || '#ffffff')
+                                            : ((textBanner as any)?.buttonBgColor || '#ffffff'),
+                                          color: midBtnHover
+                                            ? ((textBanner as any)?.buttonHoverTextColor || (textBanner as any)?.buttonTextColor || '#000000')
+                                            : ((textBanner as any)?.buttonTextColor || '#000000'),
+                                        }}
+                                        onMouseEnter={() => setMidBtnHover(true)}
+                                        onMouseLeave={() => setMidBtnHover(false)}
                                         onClick={() => {
                                           const action = (textBanner as any)?.buttonAction || 'catalog';
                                           if (action === 'link' && (textBanner as any)?.buttonCustomUrl) {

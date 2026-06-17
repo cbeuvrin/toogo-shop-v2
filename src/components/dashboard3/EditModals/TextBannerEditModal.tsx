@@ -13,7 +13,6 @@ import { useTenantContext } from "@/contexts/TenantContext";
 import { DEMO_STORE_ID } from "@/lib/constants";
 import { ImageCropperModal } from "@/components/ui/ImageCropperModal";
 import { fileToDataUrl } from "@/utils/cropImage";
-import { FocalPointPicker } from "@/components/ui/FocalPointPicker";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const BANNER_ASPECT_RATIO = 12 / 5;
@@ -29,6 +28,10 @@ interface TextBannerData {
     buttonAction?: 'catalog' | 'category' | 'link';
     buttonCategorySlug?: string;
     buttonCustomUrl?: string;
+    buttonBgColor?: string;
+    buttonTextColor?: string;
+    buttonHoverBgColor?: string;
+    buttonHoverTextColor?: string;
 }
 
 interface TextBannerEditModalProps {
@@ -52,6 +55,10 @@ export const TextBannerEditModal = ({ isOpen, onClose, onSave, initialData, cate
         buttonAction: 'catalog',
         buttonCategorySlug: "",
         buttonCustomUrl: "",
+        buttonBgColor: "#ffffff",
+        buttonTextColor: "#000000",
+        buttonHoverBgColor: "",
+        buttonHoverTextColor: "",
     });
 
     const [uploading, setUploading] = useState(false);
@@ -76,6 +83,10 @@ export const TextBannerEditModal = ({ isOpen, onClose, onSave, initialData, cate
                 buttonAction: initialData.buttonAction || 'catalog',
                 buttonCategorySlug: initialData.buttonCategorySlug || "",
                 buttonCustomUrl: initialData.buttonCustomUrl || "",
+                buttonBgColor: initialData.buttonBgColor || "#ffffff",
+                buttonTextColor: initialData.buttonTextColor || "#000000",
+                buttonHoverBgColor: initialData.buttonHoverBgColor || "",
+                buttonHoverTextColor: initialData.buttonHoverTextColor || "",
             });
         }
     }, [initialData, isOpen]);
@@ -290,6 +301,30 @@ export const TextBannerEditModal = ({ isOpen, onClose, onSave, initialData, cate
                                         <p className="text-[10px] text-muted-foreground">Se abrirá en nueva pestaña.</p>
                                     </div>
                                 )}
+
+                                {/* Button colors (incl. hover/cursor) */}
+                                <div className="space-y-2 pt-1">
+                                    <Label className="text-xs">Colores del botón</Label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] text-muted-foreground block">Fondo</span>
+                                            <input type="color" value={formData.buttonBgColor || "#ffffff"} onChange={(e) => setFormData(prev => ({ ...prev, buttonBgColor: e.target.value }))} className="h-9 w-full rounded border cursor-pointer" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] text-muted-foreground block">Texto</span>
+                                            <input type="color" value={formData.buttonTextColor || "#000000"} onChange={(e) => setFormData(prev => ({ ...prev, buttonTextColor: e.target.value }))} className="h-9 w-full rounded border cursor-pointer" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] text-muted-foreground block">Fondo (cursor encima)</span>
+                                            <input type="color" value={formData.buttonHoverBgColor || formData.buttonBgColor || "#ffffff"} onChange={(e) => setFormData(prev => ({ ...prev, buttonHoverBgColor: e.target.value }))} className="h-9 w-full rounded border cursor-pointer" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] text-muted-foreground block">Texto (cursor encima)</span>
+                                            <input type="color" value={formData.buttonHoverTextColor || formData.buttonTextColor || "#000000"} onChange={(e) => setFormData(prev => ({ ...prev, buttonHoverTextColor: e.target.value }))} className="h-9 w-full rounded border cursor-pointer" />
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground">El de "cursor encima" es el color cuando el cliente pasa el mouse por el botón.</p>
+                                </div>
                             </>
                         )}
                     </div>
@@ -342,15 +377,6 @@ export const TextBannerEditModal = ({ isOpen, onClose, onSave, initialData, cate
                                 </div>
                             )}
                         </div>
-
-                        {/* Focal Point Picker — shown when image is loaded */}
-                        {formData.imageUrl && (
-                            <FocalPointPicker
-                                imageUrl={formData.imageUrl}
-                                value={formData.imagePosition || "50% 50%"}
-                                onChange={(pos) => setFormData(prev => ({ ...prev, imagePosition: pos }))}
-                            />
-                        )}
 
                         {/* Upload button */}
                         <div className="flex justify-end">
