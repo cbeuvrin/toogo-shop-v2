@@ -15,6 +15,23 @@ function convertToolsToGoogle(openAITools: any[]) {
   }));
 }
 
+// Reemplaza cualquier data URL en base64 (ej. imágenes guardadas como
+// "data:image/png;base64,...") por un marcador corto, para no inflar el prompt
+// del modelo con megabytes de bytes de imagen. El modelo solo necesita saber que
+// hay una imagen, no sus bytes.
+function stripBase64(value: any): any {
+  if (typeof value === 'string') {
+    return value.startsWith('data:') && value.length > 200 ? '(imagen)' : value;
+  }
+  if (Array.isArray(value)) return value.map(stripBase64);
+  if (value && typeof value === 'object') {
+    const out: any = {};
+    for (const k of Object.keys(value)) out[k] = stripBase64(value[k]);
+    return out;
+  }
+  return value;
+}
+
 // Convertir tools de formato OpenAI a formato Anthropic (Claude)
 function convertToolsToAnthropic(openAITools: any[]) {
   return openAITools.map(t => ({
@@ -1422,7 +1439,7 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
       // para forzar una respuesta de texto final para el usuario).
       // SAFETY: el resultado se acota — un chat no necesita megabytes de datos y
       // Claude tiene un límite de 1M tokens (Gemini soportaba 2M, por eso no fallaba).
-      let toolResultStr = JSON.stringify(result ?? {});
+      let toolResultStr = JSON.stringify(stripBase64(result ?? {}));
       console.log('🔧 Function result size (chars):', toolResultStr.length);
       const MAX_RESULT_CHARS = 30000;
       if (toolResultStr.length > MAX_RESULT_CHARS) {
