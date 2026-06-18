@@ -1185,7 +1185,7 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
           try {
             // Usar Google Gemini 3 Pro Image directamente
             const imageResponse = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${googleApiKey}`,
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${googleApiKey}`,
               {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1280,7 +1280,7 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
 
             // 2. Enviar a Google AI con el prompt de edición
             const editResponse = await fetch(
-              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${googleApiKey}`,
+              `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${googleApiKey}`,
               {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
