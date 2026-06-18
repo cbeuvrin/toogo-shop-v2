@@ -43,7 +43,10 @@ function convertToolsToAnthropic(openAITools: any[]) {
 
 // El "cerebro" del asistente corre en Claude (Anthropic). La generación de
 // imágenes sigue en Gemini (ver llamadas a generativelanguage más abajo).
-const ANTHROPIC_MODEL = 'claude-sonnet-4-6';
+// Haiku 4.5: el más rápido y económico de Claude — ideal para un asistente de
+// chat con herramientas definidas. Si en peticiones complejas se equivoca, se
+// puede volver a 'claude-sonnet-4-6'.
+const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
 async function callClaude(apiKey: string, systemPrompt: string, messages: any[], tools?: any[] | null) {
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
