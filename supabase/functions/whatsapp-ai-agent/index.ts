@@ -278,11 +278,13 @@ NUNCA subas un banner sin confirmar primero la posición con el vendedor.
 - Consultar información detallada de pedidos
 
 🔍 **BÚSQUEDA Y MODIFICACIÓN DE PRODUCTOS - CRÍTICO:**
-- Cuando el vendedor mencione un producto por NOMBRE (ej: "toogi", "camiseta azul"), PRIMERO búscalo con list_products usando searchByName
-- Si encuentras UN solo producto, confirma: "Encontré el producto '[nombre]' (ID: abc123, SKU: X, $Y MXN). ¿Es este el que quieres modificar?"
-- Si encuentras VARIOS productos, muéstralos CON SUS IDs y pregunta cuál quiere modificar
-- Si NO encuentras ninguno, dile: "No encontré productos con ese nombre. ¿Puedes verificar el nombre o darme el SKU?"
-- **NUNCA pidas el SKU si el usuario ya te dio el nombre - ¡Búscalo primero!**
+- Cuando el vendedor mencione un producto por NOMBRE (ej: "toogi", "camiseta azul"), PRIMERO búscalo con list_products usando searchByName.
+- Puedes usar VARIAS herramientas seguidas en el mismo mensaje: busca el producto y LUEGO actualízalo, sin parar a pedir confirmación extra.
+- Si el comando es CLARO y hay UN SOLO producto que coincide (ej: "sube el precio de toogi a 150", "ponle 20 de stock a la camiseta"), APLICA el cambio directo con update_product usando ese ID y DESPUÉS confirma en una frase lo que hiciste (ej: "Listo, Toogi quedó en $150 💪"). NO preguntes "¿es este?" cuando ya está claro.
+- Si hay VARIOS productos que coinciden, muéstralos con sus IDs y pregunta cuál.
+- Si NO encuentras ninguno, dilo y pide que verifique el nombre o te dé el SKU.
+- **NUNCA pidas el SKU si el usuario ya te dio el nombre — ¡búscalo primero!**
+- IMPORTANTE: nunca digas que hiciste un cambio si no llamaste a la herramienta correspondiente. Si dices "ya lo cambié", es porque update_product (u otra) se ejecutó de verdad.
 
 🎫 **GESTIÓN DE CUPONES DE DESCUENTO:**
 - Puedes CREAR cupones nuevos (tipo porcentaje o monto fijo).
@@ -337,8 +339,14 @@ Siempre verifica que tienes AMBOS: el ID del producto Y la URL de la imagen.
 IMPORTANTE:
 - Sé conciso, directo y amigable
 - Usa las herramientas disponibles cuando el vendedor lo pida
-- Responde en español de forma profesional y conversacional
-- Si no tienes información o no puedes hacer algo, explícalo claramente
+🗣️ **TONO Y ESTILO (MUY IMPORTANTE — esto es WhatsApp, no un correo):**
+- Habla como una persona real y cercana, NO como un robot. Cálido, natural y con buena onda.
+- Sé BREVE: 1-3 frases por mensaje. Nada de párrafos largos, listas enormes ni lenguaje acartonado/formal.
+- Usa "tú", lenguaje sencillo y directo. Ve al grano.
+- Emojis con mesura (1-2 máximo, solo si suman; no en cada línea).
+- Cuando completes una acción, confírmala corto y concreto (ej: "Listo ✅ Toogi quedó en $150").
+- Si vas a hacer algo, hazlo (usa las herramientas) en vez de solo describirlo.
+- Si no tienes información o no puedes hacer algo, dilo claro y breve.
 
 🖼️ **PARA MOSTRAR UNA IMAGEN AL USUARIO:**
 Si los resultados de \`list_products\` (u otra herramienta) incluyen una URL de imagen (\`imageUrl\`) y quieres que el usuario la vea visualmente en WhatsApp:
@@ -802,29 +810,15 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
       }
     ];
 
-    // Convertir tools al formato de Anthropic (Claude)
     const anthropicTools = convertToolsToAnthropic(tools);
 
-    // Llamar a Claude (Anthropic) — el "cerebro" del asistente
-    console.log('📤 Calling Anthropic (Claude)...');
-    const aiData = await callClaude(anthropicKey, systemPrompt, [
-      { role: 'user', content: message }
-    ], anthropicTools);
-    console.log('📥 Claude response received');
-
-    const contentBlocks = aiData.content || [];
-    const textPart = contentBlocks.find((b: any) => b.type === 'text');
-    const toolUseBlock = contentBlocks.find((b: any) => b.type === 'tool_use');
-
-    // Si hay tool call, ejecutarlo
-    if (toolUseBlock) {
-      const functionName = toolUseBlock.name;
-      const args = toolUseBlock.input || {};
-      const toolUseId = toolUseBlock.id;
-
+    // Ejecuta una herramienta y devuelve su resultado. Lo usa el ciclo agéntico
+    // de abajo, que permite encadenar varios pasos (ej. buscar el producto y
+    // LUEGO actualizarlo) — antes solo se hacía un paso, por eso "decía que sí"
+    // pero no aplicaba el cambio.
+    const executeTool = async (functionName: string, args: any): Promise<any> => {
+      let result: any;
       console.log('🔧 Executing function:', functionName, 'with args:', JSON.stringify(args));
-
-      let result;
 
       switch (functionName) {
         case 'get_store_stats': {
@@ -1433,93 +1427,81 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
           result = { error: 'Unknown function' };
       }
 
-      console.log('🔧 Function result:', JSON.stringify(result));
+      return result;
+    };
 
-      // Segunda llamada a Claude con el resultado de la herramienta (sin tools,
-      // para forzar una respuesta de texto final para el usuario).
-      // SAFETY: el resultado se acota — un chat no necesita megabytes de datos y
-      // Claude tiene un límite de 1M tokens (Gemini soportaba 2M, por eso no fallaba).
-      let toolResultStr = JSON.stringify(stripBase64(result ?? {}));
-      console.log('🔧 Function result size (chars):', toolResultStr.length);
-      const MAX_RESULT_CHARS = 30000;
-      if (toolResultStr.length > MAX_RESULT_CHARS) {
-        console.warn('⚠️ Tool result too large, truncating from', toolResultStr.length, 'chars');
-        toolResultStr = toolResultStr.slice(0, MAX_RESULT_CHARS) + ' …(resultado recortado por tamaño)';
+    // ── Ciclo agéntico (multi-paso) ───────────────────────────────────────────
+    // Llamamos a Claude con las herramientas; si pide una o varias, las
+    // ejecutamos, le devolvemos los resultados y repetimos, hasta que responda
+    // con texto. Esto permite encadenar pasos (buscar producto → actualizarlo),
+    // que es lo que faltaba para que los cambios se apliquen de verdad.
+    const convo: any[] = [{ role: 'user', content: message }];
+    let generatedImageUrl: string | null = null;
+    let responseText = '';
+    const MAX_ROUNDS = 6;
+    const MAX_RESULT_CHARS = 30000;
+
+    for (let round = 0; round < MAX_ROUNDS; round++) {
+      console.log(`📤 Calling Claude (round ${round + 1})...`);
+      const aiData = await callClaude(anthropicKey, systemPrompt, convo, anthropicTools);
+      const blocks = aiData.content || [];
+      const toolUses = blocks.filter((b: any) => b.type === 'tool_use');
+
+      if (toolUses.length === 0) {
+        responseText = blocks.find((b: any) => b.type === 'text')?.text || '';
+        break;
       }
 
-      console.log('🔧 Making final Claude call with tool result...');
+      // Registrar el turno del asistente (incluye los tool_use) en la conversación.
+      convo.push({ role: 'assistant', content: blocks });
 
-      const finalData = await callClaude(anthropicKey, systemPrompt, [
-        { role: 'user', content: message },
-        { role: 'assistant', content: [{ type: 'tool_use', id: toolUseId, name: functionName, input: args }] },
-        { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUseId, content: toolResultStr }] }
-      ], null);
-
-      // Parsear respuesta final de Claude
-      let responseText = (finalData.content || []).find((b: any) => b.type === 'text')?.text;
-
-      if (!responseText) {
-        console.warn('⚠️ AI returned empty content, using fallback');
-        responseText = 'Procesé tu solicitud correctamente. ¿Hay algo más en lo que pueda ayudarte?';
+      // Ejecutar cada herramienta pedida y devolver sus resultados a Claude.
+      const toolResults: any[] = [];
+      for (const tu of toolUses) {
+        const result = await executeTool(tu.name, tu.input || {});
+        if (result && typeof result === 'object' && 'imageUrl' in result && (result as any).success) {
+          generatedImageUrl = (result as any).imageUrl;
+        }
+        let s = JSON.stringify(stripBase64(result ?? {}));
+        if (s.length > MAX_RESULT_CHARS) {
+          console.warn('⚠️ Tool result too large, truncating from', s.length, 'chars');
+          s = s.slice(0, MAX_RESULT_CHARS) + ' …(recortado)';
+        }
+        toolResults.push({ type: 'tool_result', tool_use_id: tu.id, content: s });
       }
+      convo.push({ role: 'user', content: toolResults });
+    }
 
-      console.log('✅ Final response text length:', responseText.length);
+    if (!responseText) {
+      responseText = 'Listo ✅ ¿Te ayudo con algo más?';
+    }
 
-      // Detectar token SENTIMENT en el texto de respuesta
-      const sentimentRegex = /SENTIMENT:\s*(positive|neutral|negative|angry|purchase_intent)/i;
-      const sentimentMatch = responseText.match(sentimentRegex);
-
-      if (sentimentMatch && messageId) {
+    // Token SENTIMENT (oculto) en el texto.
+    const sentimentRegex = /SENTIMENT:\s*(positive|neutral|negative|angry|purchase_intent)/i;
+    const sentimentMatch = responseText.match(sentimentRegex);
+    if (sentimentMatch) {
+      responseText = responseText.replace(sentimentRegex, '').trim();
+      if (messageId) {
         const sentiment = sentimentMatch[1].toLowerCase();
-        responseText = responseText.replace(sentimentRegex, '').trim(); // Limpiar el token
-        console.log('🧠 Extracted sentiment:', sentiment, 'for message:', messageId);
-
-        // Actualizar el sentimiento en la base de datos (mensaje entrante)
-        // No esperamos a que termine para no bloquear la respuesta
         supabase.from('whatsapp_messages')
           .update({ sentiment })
           .eq('id', messageId)
-          .then(({ error }) => {
-            if (error) console.error('Error updating sentiment:', error);
-          });
+          .then(({ error }: any) => { if (error) console.error('Error updating sentiment:', error); });
       }
-
-      // Detectar token IMAGE_URL en el texto de respuesta
-      let generatedImageUrl = null;
-      const imageTokenRegex = /IMAGE_URL:\s*(https?:\/\/[^\s]+)/i;
-      const imageMatch = responseText.match(imageTokenRegex);
-
-      if (imageMatch) {
-        generatedImageUrl = imageMatch[1];
-        responseText = responseText.replace(imageTokenRegex, '').trim(); // Limpiar el token del mensaje visible
-        console.log('🖼️ Extracted image URL from response text:', generatedImageUrl);
-      }
-      // Fallback a imagen generada por herramientas (ej: generate_image)
-      else if (result && typeof result === 'object' && 'imageUrl' in result && result.success) {
-        generatedImageUrl = result.imageUrl;
-      }
-
-      console.log('🎉 Returning response with image:', !!generatedImageUrl);
-
-      return new Response(
-        JSON.stringify({
-          response: responseText,
-          generatedImageUrl
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      );
     }
 
-    // Respuesta directa sin function calls
-    const directResponse = textPart?.text || 'No pude procesar tu mensaje. ¿Podrías intentarlo de nuevo?';
+    // Token IMAGE_URL en el texto.
+    const imageTokenRegex = /IMAGE_URL:\s*(https?:\/\/[^\s]+)/i;
+    const imageMatch = responseText.match(imageTokenRegex);
+    if (imageMatch) {
+      generatedImageUrl = imageMatch[1];
+      responseText = responseText.replace(imageTokenRegex, '').trim();
+    }
 
+    console.log('🎉 Returning response. Image:', !!generatedImageUrl);
     return new Response(
-      JSON.stringify({ response: directResponse }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      JSON.stringify({ response: responseText, generatedImageUrl }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
