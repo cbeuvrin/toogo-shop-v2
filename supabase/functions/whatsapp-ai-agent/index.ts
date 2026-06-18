@@ -80,31 +80,40 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // SECURITY: Verify caller identity via JWT or internal secret
+    // SECURITY: accept either (A) the internal call from the WhatsApp webhook
+    // carrying the shared secret, or (B) an authenticated user with access to this
+    // tenant. IMPORTANT: the webhook invokes this function with the service-role
+    // Authorization header (required because verify_jwt=true) AND the internal
+    // secret. The service role is NOT a "user", so we must check the internal
+    // secret FIRST — otherwise the JWT path would reject the webhook with 401.
     const authHeader = req.headers.get('Authorization');
     const internalSecret = req.headers.get('x-internal-secret');
     const INTERNAL_WEBHOOK_SECRET = Deno.env.get('INTERNAL_WEBHOOK_SECRET');
-    let callerUserId: string | null = null;
 
-    if (authHeader) {
-      const anonClient = createClient(
-        supabaseUrl,
-        Deno.env.get('SUPABASE_ANON_KEY')!,
-        { auth: { persistSession: false }, global: { headers: { Authorization: authHeader } } }
-      );
-      const { data: { user } } = await anonClient.auth.getUser();
-      callerUserId = user?.id || null;
-    }
+    const isInternalCall = !!INTERNAL_WEBHOOK_SECRET && internalSecret === INTERNAL_WEBHOOK_SECRET;
 
-    // Path 1: authenticated user — verify JWT resolved to a real user
-    if (authHeader && !callerUserId) {
-      return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
+    if (isInternalCall) {
+      console.log('🤖 Internal call from WhatsApp webhook — secret verified');
+    } else {
+      // Path B: must be an authenticated user with a role on this tenant.
+      let callerUserId: string | null = null;
+      if (authHeader) {
+        const anonClient = createClient(
+          supabaseUrl,
+          Deno.env.get('SUPABASE_ANON_KEY')!,
+          { auth: { persistSession: false }, global: { headers: { Authorization: authHeader } } }
+        );
+        const { data: { user } } = await anonClient.auth.getUser();
+        callerUserId = user?.id || null;
+      }
 
-    if (callerUserId) {
-      // Verify user has a role on this tenant (tenant_admin, owner, or superadmin)
+      if (!callerUserId) {
+        console.warn('🚫 Rejected: no valid internal secret and no authenticated user');
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
       const { data: role } = await supabase
         .from('user_roles')
         .select('role')
@@ -113,7 +122,6 @@ serve(async (req) => {
         .maybeSingle();
 
       if (!role) {
-        // Check if superadmin
         const { data: superAdminRole } = await supabase
           .from('user_roles')
           .select('role')
@@ -129,15 +137,6 @@ serve(async (req) => {
         }
       }
       console.log(`✅ Authenticated user ${callerUserId} with role ${role?.role || 'super_admin'}`);
-    } else {
-      // Path 2: no user JWT — must carry the internal webhook secret
-      if (!INTERNAL_WEBHOOK_SECRET || internalSecret !== INTERNAL_WEBHOOK_SECRET) {
-        console.warn('🚫 Rejected unauthenticated call without valid internal secret');
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-      console.log('🤖 Internal call from WhatsApp webhook — secret verified');
     }
 
     console.log('🤖 Processing AI request for tenant:', tenantId);
