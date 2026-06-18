@@ -1420,12 +1420,22 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
 
       // Segunda llamada a Claude con el resultado de la herramienta (sin tools,
       // para forzar una respuesta de texto final para el usuario).
+      // SAFETY: el resultado se acota — un chat no necesita megabytes de datos y
+      // Claude tiene un límite de 1M tokens (Gemini soportaba 2M, por eso no fallaba).
+      let toolResultStr = JSON.stringify(result ?? {});
+      console.log('🔧 Function result size (chars):', toolResultStr.length);
+      const MAX_RESULT_CHARS = 30000;
+      if (toolResultStr.length > MAX_RESULT_CHARS) {
+        console.warn('⚠️ Tool result too large, truncating from', toolResultStr.length, 'chars');
+        toolResultStr = toolResultStr.slice(0, MAX_RESULT_CHARS) + ' …(resultado recortado por tamaño)';
+      }
+
       console.log('🔧 Making final Claude call with tool result...');
 
       const finalData = await callClaude(anthropicKey, systemPrompt, [
         { role: 'user', content: message },
         { role: 'assistant', content: [{ type: 'tool_use', id: toolUseId, name: functionName, input: args }] },
-        { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUseId, content: JSON.stringify(result ?? {}) }] }
+        { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUseId, content: toolResultStr }] }
       ], null);
 
       // Parsear respuesta final de Claude
