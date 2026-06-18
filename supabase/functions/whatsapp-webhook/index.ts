@@ -61,17 +61,20 @@ serve(async (req) => {
       return normalized;
     }
 
-    const cleanPhone = normalizePhoneNumber(from);
+    // Buscar por los últimos 10 dígitos (número nacional). Así da igual cómo venga
+    // formateado el número (con/sin código de país, con el "1" extra que Twilio
+    // agrega en México, etc.) vs cómo se guardó al registrarse.
+    const last10 = from.replace(/\D/g, '').slice(-10);
 
-    console.log('🔍 Searching for user with phone:', cleanPhone, '(original:', from, ')');
+    console.log('🔍 Searching for user by last-10 digits:', last10, '(original:', from, ')');
 
-    // Buscar vendedor por número de teléfono exacto
     const { data: whatsappUser, error: userError } = await supabase
       .from('whatsapp_users')
       .select('*, tenants(*)')
-      .eq('phone_number', cleanPhone)
+      .ilike('phone_number', `%${last10}%`)
       .eq('is_active', true)
-      .single();
+      .limit(1)
+      .maybeSingle();
 
     if (userError || !whatsappUser) {
       await supabase.from('whatsapp_logs').insert({
