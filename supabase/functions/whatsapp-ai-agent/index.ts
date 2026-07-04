@@ -363,6 +363,8 @@ IMAGE_URL: https://.../tenis.jpg"
 
 El sistema detectará esta línea y enviará la imagen real por WhatsApp. Solo envía UNA imagen por mensaje (la más relevante).
 
+⛔ **PROHIBIDO mostrar URLs técnicas al usuario:** NUNCA escribas en el texto visible links de supabase.co, storage ni ninguna URL interna del sistema (ni aunque el usuario te pida "el link"). Si quiere ver una imagen, envíasela como foto con la línea IMAGE_URL. Los únicos links permitidos en el texto son los de SU propia tienda (su dominio público).
+
 **FLUJO DE GENERACIÓN DE IMÁGENES:**
 1. Vendedor pide imagen: "Genera un banner de verano"
 2. Usas generate_image con el prompt
@@ -1499,6 +1501,23 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
     if (imageMatch) {
       generatedImageUrl = imageMatch[1];
       responseText = responseText.replace(imageTokenRegex, '').trim();
+    }
+
+    // Red de seguridad: si el modelo pegó un link crudo de Supabase Storage en el
+    // texto visible, lo quitamos (es una URL interna) y lo enviamos como foto.
+    const rawStorageRegex = /\*{0,2}https?:\/\/[a-z0-9]+\.supabase\.co\/storage\/[^\s*]+\*{0,2}/gi;
+    const rawStorageMatch = responseText.match(rawStorageRegex);
+    if (rawStorageMatch) {
+      if (!generatedImageUrl) {
+        generatedImageUrl = rawStorageMatch[0].replace(/\*/g, '');
+      }
+      responseText = responseText
+        .replace(rawStorageRegex, '')
+        .replace(/[ \t]{2,}/g, ' ')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+      if (!responseText) responseText = 'Aquí tienes la imagen 👇';
+      console.log('🧹 Stripped raw storage URL from visible text, sending as image instead');
     }
 
     console.log('🎉 Returning response. Image:', !!generatedImageUrl);
