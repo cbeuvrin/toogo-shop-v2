@@ -157,7 +157,8 @@ export default {
 			'bounce-gentle': 'bounce-gentle 0.6s ease-out',
 			'wiggle': 'wiggle 0.5s ease-out',
 			'slide-right': 'slide-right 1.5s ease-in-out infinite',
-			'marquee': 'marquee 25s linear infinite'
+			'marquee': 'marquee 25s linear infinite',
+			'marquee-fast': 'marquee 12s linear infinite'
 		}
 		}
 	},

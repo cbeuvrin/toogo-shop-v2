@@ -487,7 +487,7 @@ export const FashionHeroTemplate = (props: any) => {
                                 </div>
                             ) : (
                                 <div
-                                    className="flex gap-16 justify-center font-bold uppercase tracking-widest animate-marquee"
+                                    className="flex gap-16 justify-center font-bold uppercase tracking-widest animate-marquee-fast md:animate-marquee"
                                     style={{ fontSize: `${ticker?.fontSize || 10}px` }}
                                 >
                                     <span>{ticker?.text || "Envíos en 24h · Calidad Premium · Garantía Total"}</span>
