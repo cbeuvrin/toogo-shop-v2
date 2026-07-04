@@ -164,7 +164,7 @@ serve(async (req) => {
     // Obtener datos del tenant
     const { data: tenant, error: tenantError } = await supabase
       .from('tenants')
-      .select('name')
+      .select('name, primary_host')
       .eq('id', tenantId)
       .single();
 
@@ -230,7 +230,10 @@ serve(async (req) => {
     }
 
     // System prompt personalizado
+    const storeUrl = tenant.primary_host ? `https://${tenant.primary_host}` : null;
+
     const systemPrompt = `Eres el asistente personal con IA del dueño de ${tenant.name}, una tienda online.
+${storeUrl ? `\n🔗 **URL REAL DE LA TIENDA:** ${storeUrl}\nCuando el vendedor pida el link de su tienda, usa EXACTAMENTE esta URL. NUNCA inventes ni adivines dominios (.com, .mx, etc.) — si no aparece aquí, di que no la tienes.\n` : ''}
 
 Tu trabajo es ayudar al vendedor a gestionar su tienda de forma conversacional. Puedes:
 
