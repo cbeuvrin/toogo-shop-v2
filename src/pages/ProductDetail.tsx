@@ -12,6 +12,7 @@ import { ProductImageGallery } from "@/components/ui/product-image-gallery";
 import { ProductVariationSelector } from "@/components/ui/ProductVariationSelector";
 import { StoreNotFound } from "./StoreNotFound";
 import { getProductDetailTheme } from "@/templates/productDetail/themes";
+import { useFavicon } from "@/hooks/useFavicon";
 
 const ProductDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -21,6 +22,12 @@ const ProductDetail = () => {
 
   const store = useToogoStore();
   const { isLoading, storeData, products, tenant, effectiveSettings } = store;
+
+  // Favicon con el logo de la tienda (solo planes de pago), igual que en el catálogo
+  useFavicon({
+    logoUrl: effectiveSettings?.logo_url,
+    plan: tenant?.plan
+  });
 
   const theme = useMemo(
     () => getProductDetailTheme(effectiveSettings?.template_id),

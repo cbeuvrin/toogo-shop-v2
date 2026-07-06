@@ -15,6 +15,7 @@ import { CardStyleContext } from "@/contexts/CardStyleContext";
 import { heroFontFamily } from "@/lib/heroFonts";
 import { useDeviceType, pickFontSize, pickEnabled, pickImage, pickPosition } from "@/hooks/useDeviceType";
 import { useState } from "react";
+import { useFavicon } from "@/hooks/useFavicon";
 
 // Template Switcher Component — 10 templates available
 const TemplateRenderer = (props: any) => {
@@ -91,6 +92,12 @@ const TemplateRenderer = (props: any) => {
 const Tienda = () => {
   const store = useToogoStore();
   const { isLoading, storeData, forcedTenantId, hostname, hostOverride, effectiveSettings } = store;
+
+  // Favicon con el logo de la tienda (solo planes de pago), igual que en el catálogo
+  useFavicon({
+    logoUrl: effectiveSettings?.logo_url,
+    plan: store.tenant?.plan
+  });
 
   const [modalProduct, setModalProduct] = useState<any | null>(null);
   const handleProductClick = (product: any) => setModalProduct(product);
