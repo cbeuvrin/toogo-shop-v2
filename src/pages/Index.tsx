@@ -153,8 +153,8 @@ const Index = () => {
               <span className="block leading-none">lista para vender.</span>
             </h1>
             <div className="space-y-1 leading-tight">
-              <p className="text-lg text-gray-600 leading-tight px-0 py-[9px] my-0 mx-0 lg:text-2xl">Olvídate de elegir: ya tienes
-                la mejor plantilla lista para vender. </p>
+              <p className="text-lg text-gray-600 leading-tight px-0 py-[9px] my-0 mx-0 lg:text-2xl">Plantillas premium listas para vender
+                y una IA que crea tu tienda por ti. </p>
               <p className="text-lg text-gray-600 font-semibold leading-tight lg:text-2xl">Solo entra y empieza.</p>
             </div>
             <div className="flex flex-col items-center lg:items-start gap-2">
@@ -192,12 +192,9 @@ const Index = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Sin plantilla - Purple card */}
           <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl lg:rounded-3xl p-6 lg:p-8 text-white">
-            <h3 className="text-xl lg:text-2xl font-bold mb-3 lg:mb-4">Sin plantilla</h3>
+            <h3 className="text-xl lg:text-2xl font-bold mb-3 lg:mb-4">Plantillas que enamoran</h3>
             <p className="text-purple-100 text-base lg:text-lg leading-relaxed">
-              Nada de elegir entre miles de diseños.
-            </p>
-            <p className="text-purple-100 text-base lg:text-lg leading-relaxed my-0 py-[22px]">
-              Podrás eliminar tu tienda en cualquier momento si lo deseas.
+              Elige el estilo que va con tu marca y cámbialo cuando quieras.
             </p>
           </div>
 
@@ -211,7 +208,7 @@ const Index = () => {
           <div className="bg-white rounded-2xl lg:rounded-3xl p-6 lg:p-8 shadow-lg border border-gray-100 md:col-span-2 lg:col-span-1">
             <h3 className="text-xl lg:text-2xl font-bold mb-3 lg:mb-4 text-gray-900 leading-tight">Tu tienda en minutos, sin pagar mantenimiento</h3>
             <p className="text-gray-600 text-base lg:text-lg leading-relaxed">
-              Ya está lista con todo lo que necesitas, tú la manejas y TOOGO se encarga del resto.
+              Descríbenos tu negocio y la IA te entrega la tienda lista: logo, banner, colores y productos de ejemplo. Tú la manejas y TOOGO se encarga del resto.
             </p>
           </div>
         </div>
@@ -393,9 +390,9 @@ const Index = () => {
           <div className="flex justify-center mb-6 lg:mb-8">
             <img src="/lovable-uploads/16ca1c29-687c-4e73-ac12-9edcff496a4c.png" alt="toogo mascot" className="w-32 h-32 lg:w-48 lg:h-48 object-contain animate-bounce" />
           </div>
-          <Link to="/tienda">
+          <a href="https://volta.toogo.store" target="_blank" rel="noopener noreferrer">
             <Button className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-8 lg:px-12 py-3 lg:py-4 text-base lg:text-lg font-semibold">Mira tu próxima tienda</Button>
-          </Link>
+          </a>
         </div>
       </div>
     </section >
@@ -460,6 +457,7 @@ const Index = () => {
         <div className="text-center mb-8 lg:mb-12">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 lg:mb-4">Precios simples y transparentes</h2>
           <p className="text-lg lg:text-xl text-gray-600">Comienza gratis, escala cuando lo necesites</p>
+          <p className="text-base lg:text-lg font-semibold text-green-600 mt-2">0% de comisión por venta en todos los planes</p>
           <p className="text-base lg:text-lg text-gray-500 mt-2">Precios en pesos mexicanos (MXN)</p>
         </div>
 
