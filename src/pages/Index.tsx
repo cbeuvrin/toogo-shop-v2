@@ -192,7 +192,7 @@ const Index = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Sin plantilla - Purple card */}
           <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl lg:rounded-3xl p-6 lg:p-8 text-white">
-            <h3 className="text-xl lg:text-2xl font-bold mb-3 lg:mb-4">Plantillas que enamoran</h3>
+            <h3 className="text-xl lg:text-2xl font-bold mb-3 lg:mb-4">Diseños que enamoran</h3>
             <p className="text-purple-100 text-base lg:text-lg leading-relaxed">
               Elige el estilo que va con tu marca y cámbialo cuando quieras.
             </p>
