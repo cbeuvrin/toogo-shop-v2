@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { usePlatformFacebookPixel } from "@/hooks/usePlatformFacebookPixel";
+import { TEMPLATES } from "@/lib/templatesCatalog";
 const Index = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingFlowType, setOnboardingFlowType] = useState<"subdomain" | "domain" | undefined>(undefined);
@@ -210,6 +211,42 @@ const Index = () => {
               Tu tienda se crea al instante y el asistente con IA te ayuda a dejarla lista: logo, banner, colores y productos de ejemplo. Tú la manejas y TOOGO se encarga del resto.
             </p>
           </div>
+        </div>
+      </div>
+    </section>
+
+    {/* Templates Carousel Section */}
+    <section className="py-8 lg:py-16 px-4 lg:px-6">
+      <div className="max-w-[95%] lg:max-w-[80%] mx-auto">
+        <div className="text-center mb-8 lg:mb-12">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 lg:mb-4">Un estilo para cada marca</h2>
+          <p className="text-lg lg:text-xl text-gray-600">Cambia el diseño de tu tienda con un click — y seguimos sumando nuevos estilos</p>
+        </div>
+        <div className="flex gap-4 lg:gap-6 overflow-x-auto pb-4 snap-x snap-mandatory [-webkit-overflow-scrolling:touch]">
+          {TEMPLATES.map((t) => (
+            <div key={t.id} className="snap-start flex-shrink-0 w-60 sm:w-64 lg:w-72 bg-white rounded-2xl lg:rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+              <div className="aspect-[4/5] bg-gray-50 overflow-hidden">
+                <img src={t.thumbnail} alt={`Plantilla ${t.name}`} loading="lazy" className="w-full h-full object-cover object-top" />
+              </div>
+              <div className="p-4">
+                <h3 className="font-bold text-gray-900 mb-2">{t.name}</h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {t.tags.map((tag) => (
+                    <span key={tag} className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full">{tag}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="text-center mt-6 lg:mt-8">
+          <Button onClick={() => {
+            trackLead('onboarding_started', { source: 'templates_carousel' });
+            setOnboardingFlowType('subdomain');
+            setShowOnboarding(true);
+          }} className="bg-purple-600 hover:bg-purple-700 text-white rounded-full px-6 lg:px-8 py-3 text-base lg:text-lg font-semibold">
+            Crea tu tienda y pruébalos
+          </Button>
         </div>
       </div>
     </section>
