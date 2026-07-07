@@ -486,6 +486,10 @@ const Index = () => {
               </li>
               <li className="flex items-center">
                 <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 text-green-500 mr-2 lg:mr-3 flex-shrink-0" />
+                <span className="text-gray-700 text-sm lg:text-base">Conecta tu pasarela de pago</span>
+              </li>
+              <li className="flex items-center">
+                <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 text-green-500 mr-2 lg:mr-3 flex-shrink-0" />
                 <span className="text-gray-700 text-sm lg:text-base">Soporte básico</span>
               </li>
             </ul>
@@ -527,7 +531,7 @@ const Index = () => {
               </li>
               <li className="flex items-center">
                 <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 text-green-500 mr-2 lg:mr-3 flex-shrink-0" />
-                <span className="text-gray-700 text-sm lg:text-base">Pasarelas de pago</span>
+                <span className="text-gray-700 text-sm lg:text-base">Tu logo como favicon (branding propio)</span>
               </li>
               <li className="flex items-center">
                 <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 text-green-500 mr-2 lg:mr-3 flex-shrink-0" />
