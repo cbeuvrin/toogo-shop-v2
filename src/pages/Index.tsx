@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Store, Zap, Shield, ChevronUp } from "lucide-react";
+import { CheckCircle, Store, Zap, Shield, ChevronUp, Menu, X } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Link } from "react-router-dom";
 import { OnboardingModal } from "@/components/OnboardingModal";
@@ -22,6 +22,7 @@ const Index = () => {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isVibrating, setIsVibrating] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Initialize platform Facebook Pixel
   const { trackPageView, trackLead } = usePlatformFacebookPixel();
@@ -101,14 +102,8 @@ const Index = () => {
           </Button>
         </div>
 
-        {/* Mobile menu */}
-        <div className="md:hidden flex items-center space-x-3">
-          <a href="#precios" className="text-gray-600 hover:text-gray-900 text-sm">
-            Precios
-          </a>
-          <Link to="/auth" className="text-gray-600 hover:text-gray-900 text-sm">
-            Iniciar sesión
-          </Link>
+        {/* Mobile menu: CTA siempre visible + hamburguesa */}
+        <div className="md:hidden flex items-center space-x-2">
           <Button onClick={() => {
             trackLead('onboarding_started', { source: 'mobile_nav_button' });
             setOnboardingFlowType('subdomain');
@@ -116,8 +111,35 @@ const Index = () => {
           }} className="bg-primary hover:bg-primary/90 text-white rounded-full px-4 py-2 text-sm">
             Comenzar
           </Button>
+          <button
+            aria-label={mobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 text-gray-700"
+          >
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden mt-2 bg-white rounded-3xl shadow-lg border border-gray-100 px-6 py-4">
+          <div className="flex flex-col divide-y divide-gray-100">
+            <a href="#precios" onClick={() => setMobileMenuOpen(false)} className="py-3 text-gray-700 hover:text-gray-900">
+              Precios
+            </a>
+            <a href="#testimonios" onClick={() => setMobileMenuOpen(false)} className="py-3 text-gray-700 hover:text-gray-900">
+              Testimonios
+            </a>
+            <Link to="/blog" onClick={() => setMobileMenuOpen(false)} className="py-3 text-gray-700 hover:text-gray-900">
+              Blog
+            </Link>
+            <Link to="/auth" onClick={() => setMobileMenuOpen(false)} className="py-3 text-gray-700 hover:text-gray-900">
+              Iniciar sesión
+            </Link>
+          </div>
+        </div>
+      )}
     </nav>
 
     {/* Hero Section */}
