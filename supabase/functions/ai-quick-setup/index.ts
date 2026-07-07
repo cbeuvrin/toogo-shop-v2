@@ -154,7 +154,8 @@ const IMAGE_MODELS = [
   'gemini-2.5-flash-image',
   'gemini-2.5-flash-image-preview',
   'gemini-2.0-flash-preview-image-generation',
-  'imagen-3.0-generate-002',
+  // 'imagen-3.0-generate-002' eliminado: usa el endpoint :predict, no
+  // :generateContent — con esta llamada siempre falla y solo suma latencia.
 ];
 
 async function generateAndUploadImage(
@@ -425,9 +426,12 @@ Iluminación profesional, composición elegante, alta resolución.`;
 
     let categoryIdMap: Record<string, string> = {};
     if (categoriesToInsert.length > 0) {
+      // Dedupe por slug (la IA puede repetir) y upsert para que un slug ya
+      // existente no tumbe TODO el lote (dejaba productos sin categoría).
+      const bySlug = new Map(categoriesToInsert.map(c => [c.slug, c]));
       const { data: insertedCats, error: catErr } = await supabase
         .from('categories')
-        .insert(categoriesToInsert)
+        .upsert([...bySlug.values()], { onConflict: 'tenant_id,slug' })
         .select('id, name');
       if (catErr) console.error('[AI Setup] Categories error:', catErr);
       if (insertedCats) {
@@ -502,27 +506,15 @@ Estilo: fotografía de catálogo premium, fondo BLANCO o neutro limpio, iluminac
 
     // 6. Guardar anuncio en visual_editor_data si existe
     if (aiResult.announcement) {
-      // Verificar si ya existe
-      const { data: existingAnnouncement } = await supabase
-        .from('visual_editor_data')
-        .select('id')
-        .eq('tenant_id', tenantId)
-        .eq('element_type', 'announcement')
-        .maybeSingle();
-
-      if (existingAnnouncement) {
-        await supabase
-          .from('visual_editor_data')
-          .update({ data: { text: aiResult.announcement, enabled: true } })
-          .eq('id', existingAnnouncement.id);
-      } else {
-        await supabase.from('visual_editor_data').insert({
-          tenant_id: tenantId,
-          element_type: 'announcement',
-          element_id: 'announcement_main',
-          data: { text: aiResult.announcement, enabled: true },
-        });
-      }
+      // OJO: la tienda solo lee element_id 'top_bar' (useToogoStore); antes se
+      // guardaba como 'announcement_main' y el anuncio nunca se mostraba.
+      const { error: annErr } = await supabase.from('visual_editor_data').upsert({
+        tenant_id: tenantId,
+        element_type: 'announcement',
+        element_id: 'top_bar',
+        data: { text: aiResult.announcement, enabled: true },
+      }, { onConflict: 'tenant_id,element_type,element_id' });
+      if (annErr) console.error('[AI Setup] Announcement error:', annErr);
     }
 
     // 7. Marcar todos los pasos de onboarding como completos
