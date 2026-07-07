@@ -153,7 +153,7 @@ const Index = () => {
               <span className="block leading-none">lista para vender.</span>
             </h1>
             <div className="space-y-1 leading-tight">
-              <p className="text-lg text-gray-600 leading-tight px-0 py-[9px] my-0 mx-0 lg:text-2xl">Diseños que enamoran. </p>
+              <p className="text-lg text-gray-600 leading-tight px-0 py-[9px] my-0 mx-0 lg:text-2xl">Cambia el diseño de tu tienda con un click. </p>
               <p className="text-lg text-gray-600 font-semibold leading-tight lg:text-2xl">Solo entra y empieza.</p>
             </div>
             <div className="flex flex-col items-center lg:items-start gap-2">
