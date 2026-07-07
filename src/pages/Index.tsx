@@ -208,7 +208,7 @@ const Index = () => {
           <div className="bg-white rounded-2xl lg:rounded-3xl p-6 lg:p-8 shadow-lg border border-gray-100 md:col-span-2 lg:col-span-1">
             <h3 className="text-xl lg:text-2xl font-bold mb-3 lg:mb-4 text-gray-900 leading-tight">Tu tienda en minutos, sin pagar mantenimiento</h3>
             <p className="text-gray-600 text-base lg:text-lg leading-relaxed">
-              Descríbenos tu negocio y la IA te entrega la tienda lista: logo, banner, colores y productos de ejemplo. Tú la manejas y TOOGO se encarga del resto.
+              Tu tienda se crea al instante y el asistente con IA te ayuda a dejarla lista: logo, banner, colores y productos de ejemplo. Tú la manejas y TOOGO se encarga del resto.
             </p>
           </div>
         </div>
