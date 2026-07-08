@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Store, Zap, Shield, ChevronUp, Menu, X } from "lucide-react";
+import { CheckCircle, Store, Zap, Shield, ChevronUp, ChevronLeft, ChevronRight, Menu, X } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Link } from "react-router-dom";
 import { OnboardingModal } from "@/components/OnboardingModal";
@@ -24,6 +24,10 @@ const Index = () => {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isVibrating, setIsVibrating] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const templatesCarouselRef = useRef<HTMLDivElement>(null);
+  const scrollTemplates = (dir: number) => {
+    templatesCarouselRef.current?.scrollBy({ left: dir * 320, behavior: 'smooth' });
+  };
 
   // Initialize platform Facebook Pixel
   const { trackPageView, trackLead } = usePlatformFacebookPixel();
@@ -222,10 +226,25 @@ const Index = () => {
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 lg:mb-4">Un estilo para cada marca</h2>
           <p className="text-lg lg:text-xl text-gray-600">Cambia el diseño de tu tienda con un click — y seguimos sumando nuevos estilos</p>
         </div>
-        <div className="flex gap-4 lg:gap-6 overflow-x-auto pb-4 snap-x snap-mandatory [-webkit-overflow-scrolling:touch]">
+        <div className="relative">
+          <button
+            aria-label="Anterior"
+            onClick={() => scrollTemplates(-1)}
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 bg-white shadow-lg border border-gray-200 rounded-full p-2 lg:p-3 text-gray-700 hover:bg-gray-50 hover:scale-110 transition-all"
+          >
+            <ChevronLeft className="w-5 h-5 lg:w-6 lg:h-6" />
+          </button>
+          <button
+            aria-label="Siguiente"
+            onClick={() => scrollTemplates(1)}
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 bg-white shadow-lg border border-gray-200 rounded-full p-2 lg:p-3 text-gray-700 hover:bg-gray-50 hover:scale-110 transition-all"
+          >
+            <ChevronRight className="w-5 h-5 lg:w-6 lg:h-6" />
+          </button>
+          <div ref={templatesCarouselRef} className="flex gap-4 lg:gap-6 overflow-x-auto pb-4 snap-x snap-mandatory [-webkit-overflow-scrolling:touch] scroll-smooth">
           {TEMPLATES.map((t) => (
             <div key={t.id} className="snap-start flex-shrink-0 w-60 sm:w-64 lg:w-72 bg-white rounded-2xl lg:rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-              <div className="aspect-[4/5] bg-gray-50 overflow-hidden">
+              <div className="aspect-square bg-gray-50 overflow-hidden">
                 <img src={t.thumbnail} alt={`Plantilla ${t.name}`} loading="lazy" className="w-full h-full object-cover object-top" />
               </div>
               <div className="p-4">
@@ -238,6 +257,7 @@ const Index = () => {
               </div>
             </div>
           ))}
+          </div>
         </div>
         <div className="text-center mt-6 lg:mt-8">
           <Button onClick={() => {

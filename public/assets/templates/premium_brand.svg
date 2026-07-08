@@ -1,24 +1,80 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" width="320" height="180" font-family="Arial, Helvetica, sans-serif">
-  <rect width="320" height="180" fill="#023f66"/>
-  <!-- top nav -->
-  <rect x="0" y="0" width="320" height="22" fill="#f6f5f0"/>
-  <rect x="14" y="8" width="46" height="6" rx="3" fill="#023f66"/>
-  <circle cx="276" cy="11" r="3" fill="#023f66"/>
-  <circle cx="288" cy="11" r="3" fill="#023f66"/>
-  <circle cx="300" cy="11" r="3" fill="#e98063"/>
-  <!-- hero -->
-  <text x="20" y="64" fill="#ffffff" font-size="20" font-weight="bold">Calidad</text>
-  <text x="20" y="86" fill="#ffffff" font-size="20" font-weight="bold">excepcional.</text>
-  <rect x="20" y="100" width="80" height="18" rx="9" fill="#e98063"/>
-  <rect x="108" y="100" width="70" height="18" rx="9" fill="none" stroke="#ffffff" stroke-width="1.5"/>
-  <!-- hero image frame -->
-  <rect x="210" y="40" width="92" height="78" rx="10" fill="#0c4e78"/>
-  <circle cx="256" cy="79" r="22" fill="#e98063" opacity="0.5"/>
-  <!-- product cards -->
-  <rect x="20" y="132" width="58" height="40" rx="8" fill="#ffffff"/>
-  <rect x="86" y="132" width="58" height="40" rx="8" fill="#ffffff"/>
-  <rect x="152" y="132" width="58" height="40" rx="8" fill="#ffffff"/>
-  <rect x="218" y="132" width="58" height="40" rx="8" fill="#ffffff"/>
-  <!-- wave bottom -->
-  <path d="M0,176 C60,168 110,182 160,176 C210,170 260,182 320,174 L320,180 L0,180 Z" fill="#e98063"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="640" height="640" font-family="Arial, Helvetica, sans-serif">
+  <!-- Background dark blue -->
+  <rect width="640" height="640" fill="#023f66"/>
+
+  <!-- Announcement bar -->
+  <rect x="0" y="0" width="640" height="30" fill="#e98063"/>
+  <text x="320" y="20" font-size="11" font-weight="700" text-anchor="middle" fill="#ffffff" letter-spacing="2">ENVÍO GRATIS · CALIDAD GARANTIZADA</text>
+
+  <!-- Top nav cream -->
+  <rect x="0" y="30" width="640" height="46" fill="#f6f5f0"/>
+  <rect x="30" y="46" width="90" height="13" rx="6" fill="#023f66"/>
+  <text x="330" y="59" font-size="11" font-weight="700" fill="#023f66" letter-spacing="1">TIENDA</text>
+  <text x="400" y="59" font-size="11" font-weight="700" fill="#023f66" letter-spacing="1">NOSOTROS</text>
+  <circle cx="565" cy="53" r="5" fill="#023f66"/>
+  <circle cx="590" cy="53" r="5" fill="#e98063"/>
+
+  <!-- Hero -->
+  <text x="40" y="160" font-size="44" font-weight="900" fill="#ffffff">Calidad</text>
+  <text x="40" y="208" font-size="44" font-weight="900" fill="#ffffff">excepcional.</text>
+  <text x="40" y="240" font-size="13" fill="#bcd3e2">Productos premium seleccionados para ti.</text>
+
+  <!-- CTA buttons -->
+  <rect x="40" y="262" width="140" height="36" rx="18" fill="#e98063"/>
+  <text x="110" y="285" font-size="12" font-weight="700" text-anchor="middle" fill="#ffffff">COMPRAR</text>
+  <rect x="192" y="262" width="120" height="36" rx="18" fill="none" stroke="#ffffff" stroke-width="2"/>
+  <text x="252" y="285" font-size="12" font-weight="700" text-anchor="middle" fill="#ffffff">VER MÁS</text>
+
+  <!-- Hero image frame -->
+  <rect x="400" y="110" width="200" height="200" rx="16" fill="#0c4e78"/>
+  <circle cx="500" cy="210" r="52" fill="#e98063" opacity="0.55"/>
+  <circle cx="540" cy="160" r="20" fill="#f6f5f0" opacity="0.25"/>
+
+  <!-- Features row -->
+  <g>
+    <circle cx="80" cy="368" r="18" fill="#0c4e78"/>
+    <circle cx="80" cy="368" r="7" fill="#e98063"/>
+    <rect x="110" y="356" width="90" height="9" rx="4" fill="#f6f5f0"/>
+    <rect x="110" y="372" width="60" height="7" rx="3" fill="#bcd3e2"/>
+
+    <circle cx="260" cy="368" r="18" fill="#0c4e78"/>
+    <rect x="253" y="361" width="14" height="14" rx="3" fill="#e98063"/>
+    <rect x="290" y="356" width="90" height="9" rx="4" fill="#f6f5f0"/>
+    <rect x="290" y="372" width="60" height="7" rx="3" fill="#bcd3e2"/>
+
+    <circle cx="440" cy="368" r="18" fill="#0c4e78"/>
+    <path d="M433,368 l5,6 l10,-12" stroke="#e98063" stroke-width="3" fill="none"/>
+    <rect x="470" y="356" width="90" height="9" rx="4" fill="#f6f5f0"/>
+    <rect x="470" y="372" width="60" height="7" rx="3" fill="#bcd3e2"/>
+  </g>
+
+  <!-- Products section on cream wave -->
+  <path d="M0,430 C110,414 220,442 320,430 C420,418 530,444 640,428 L640,640 L0,640 Z" fill="#f6f5f0"/>
+  <text x="40" y="482" font-size="22" font-weight="900" fill="#023f66">Recomendados</text>
+  <rect x="205" y="472" width="56" height="18" rx="9" fill="#e98063"/>
+  <text x="233" y="485" font-size="10" font-weight="700" text-anchor="middle" fill="#ffffff">TOP</text>
+
+  <!-- Product cards -->
+  <g>
+    <rect x="40" y="505" width="130" height="100" rx="10" fill="#ffffff" stroke="#e2ddd2"/>
+    <rect x="52" y="517" width="106" height="52" rx="6" fill="#dfe8ee"/>
+    <rect x="52" y="578" width="70" height="8" rx="4" fill="#023f66"/>
+    <rect x="52" y="590" width="40" height="8" rx="4" fill="#e98063"/>
+
+    <rect x="185" y="505" width="130" height="100" rx="10" fill="#ffffff" stroke="#e2ddd2"/>
+    <rect x="197" y="517" width="106" height="52" rx="6" fill="#f3e2db"/>
+    <rect x="197" y="578" width="70" height="8" rx="4" fill="#023f66"/>
+    <rect x="197" y="590" width="40" height="8" rx="4" fill="#e98063"/>
+
+    <rect x="330" y="505" width="130" height="100" rx="10" fill="#ffffff" stroke="#e2ddd2"/>
+    <rect x="342" y="517" width="106" height="52" rx="6" fill="#dfe8ee"/>
+    <rect x="342" y="578" width="70" height="8" rx="4" fill="#023f66"/>
+    <rect x="342" y="590" width="40" height="8" rx="4" fill="#e98063"/>
+
+    <rect x="475" y="505" width="130" height="100" rx="10" fill="#ffffff" stroke="#e2ddd2"/>
+    <rect x="487" y="517" width="106" height="52" rx="6" fill="#f3e2db"/>
+    <rect x="487" y="578" width="70" height="8" rx="4" fill="#023f66"/>
+    <rect x="487" y="590" width="40" height="8" rx="4" fill="#e98063"/>
+  </g>
 </svg>
