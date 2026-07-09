@@ -5,6 +5,8 @@ import { SmartHomePage } from "./components/SmartHomePage";
 
 // Lazy loading of pages for code splitting optimization
 const Index = React.lazy(() => import("./pages/Index"));
+const Landing4 = React.lazy(() => import("./pages/Landing4"));
+const LandingNueva = React.lazy(() => import("./pages/LandingNueva"));
 const Auth = React.lazy(() => import("./pages/Auth"));
 const Tienda = React.lazy(() => import("./pages/Tienda"));
 const Catalogo = React.lazy(() => import("./pages/Catalogo"));
@@ -32,6 +34,8 @@ export const AppRoutes = () => {
             <Routes>
                 {/* SmartHomePage handles redirection logic */}
                 <Route path="/" element={<SmartHomePage />} />
+                <Route path="/landing4" element={<Landing4 />} />
+                <Route path="/landing-nueva" element={<LandingNueva />} />
 
                 {/* Lazy loaded routes */}
                 <Route path="/auth" element={<Auth />} />
