@@ -18,6 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenantContext } from "@/contexts/TenantContext";
+import { useTenantSettings } from "@/hooks/useTenantSettings";
+import { getProductAspectRatio, getProductAspectLabel } from "@/lib/productAspect";
 import { ImageCropperModal } from "@/components/ui/ImageCropperModal";
 import { fileToDataUrl } from "@/utils/cropImage";
 import { Switch } from "@/components/ui/switch";
@@ -63,6 +65,8 @@ export const ProductEditModal = ({
 }: ProductEditModalProps) => {
   const isMobile = useIsMobile();
   const { currentTenantId: tenantId } = useTenantContext();
+  const { settings: tenantSettings } = useTenantSettings(tenantId || undefined);
+  const productAspect = getProductAspectRatio(tenantSettings?.template_id);
   const {
     variables,
     getProductVariables
@@ -473,7 +477,7 @@ export const ProductEditModal = ({
                   </CardHeader>
                   <CardContent className={isMobile ? 'pb-2 px-3' : 'pb-3'}>
                     <div className={`grid ${isMobile ? 'grid-cols-1 gap-2' : 'grid-cols-2 md:grid-cols-4 gap-3'}`}>
-                      {[0, 1, 2, 3].map(index => <div key={index} className={`group aspect-square border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors ${formData.images[index] ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'} ${isUploading ? 'opacity-50 pointer-events-none' : ''}`} onClick={() => {
+                      {[0, 1, 2, 3].map(index => <div key={index} style={{ aspectRatio: String(productAspect) }} className={`group border-2 border-dashed rounded-lg flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors ${formData.images[index] ? 'border-primary bg-primary/5' : 'border-muted-foreground/25'} ${isUploading ? 'opacity-50 pointer-events-none' : ''}`} onClick={() => {
                         if (isUploading) return;
                         if (formData.images[index]) {
                           handleRecrop(index);
@@ -1025,9 +1029,9 @@ export const ProductEditModal = ({
       isOpen={cropperOpen}
       onClose={() => setCropperOpen(false)}
       imageSrc={imageToCrop}
-      aspectRatio={1}
+      aspectRatio={productAspect}
       onCropComplete={handleCropComplete}
-      title="Recortar Imagen de Producto"
+      title={`Recortar foto — formato ${getProductAspectLabel(tenantSettings?.template_id)}`}
     />
   </Dialog>;
 };
