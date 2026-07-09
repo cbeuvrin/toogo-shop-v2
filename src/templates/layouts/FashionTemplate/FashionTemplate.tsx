@@ -132,7 +132,7 @@ export const FashionTemplate = (props: any) => {
                 <img
                     src={(product.images?.[0] && typeof product.images[0] === 'object') ? product.images[0].url : (product.images?.[0] || product.image || '/placeholder.svg')}
                     alt={product.title || product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 relative z-10 mix-blend-multiply"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 relative z-10"
                 />
                 <button
                     className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white flex items-center justify-center hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100 z-20"

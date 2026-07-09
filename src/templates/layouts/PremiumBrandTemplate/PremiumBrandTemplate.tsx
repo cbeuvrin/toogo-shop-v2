@@ -310,7 +310,7 @@ export const PremiumBrandTemplate = (props: any) => {
                                     return (
                                         <div key={product.id} className="group cursor-pointer bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300" onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}>
                                             <div className="relative aspect-square bg-[#f8f8f8] p-6 flex items-center justify-center">
-                                                <img src={image} alt={product.title || product.name} className="max-w-full max-h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500" />
+                                                <img src={image} alt={product.title || product.name} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500" />
                                                 <button
                                                     className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white shadow flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-gray-50"
                                                     onClick={(e) => { e.stopPropagation(); toggleFavorite?.(product.id); }}
@@ -337,7 +337,7 @@ export const PremiumBrandTemplate = (props: any) => {
                                 displayProducts.slice(0, 4).map((product: any) => (
                                     <div key={product.id} className="group cursor-pointer bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300" onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}>
                                         <div className="relative aspect-square bg-[#f8f8f8] p-6 flex items-center justify-center">
-                                            <img src={(product.images?.[0] && typeof product.images[0] === 'object') ? product.images[0].url : (product.images?.[0] || product.image || '/placeholder.svg')} alt={product.title || product.name} className="max-w-full max-h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500" />
+                                            <img src={(product.images?.[0] && typeof product.images[0] === 'object') ? product.images[0].url : (product.images?.[0] || product.image || '/placeholder.svg')} alt={product.title || product.name} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500" />
                                             <button
                                                 className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white shadow flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-gray-50"
                                                 onClick={(e) => { e.stopPropagation(); toggleFavorite?.(product.id); }}
@@ -384,7 +384,7 @@ export const PremiumBrandTemplate = (props: any) => {
                         {(isCatalog ? displayProducts : displayProducts.slice(0, 8)).map((product: any) => (
                             <div key={product.id} className="group cursor-pointer bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300" onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}>
                                 <div className="relative aspect-square bg-[#f8f8f8] p-6 flex items-center justify-center">
-                                    <img src={(product.images?.[0] && typeof product.images[0] === 'object') ? product.images[0].url : (product.images?.[0] || product.image || '/placeholder.svg')} alt={product.title || product.name} className="max-w-full max-h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500" />
+                                    <img src={(product.images?.[0] && typeof product.images[0] === 'object') ? product.images[0].url : (product.images?.[0] || product.image || '/placeholder.svg')} alt={product.title || product.name} className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500" />
                                     <button
                                         className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white shadow flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-gray-50"
                                         onClick={(e) => { e.stopPropagation(); toggleFavorite?.(product.id); }}
@@ -503,7 +503,7 @@ export const PremiumBrandTemplate = (props: any) => {
                                 {cartItems.map((item: any) => (
                                     <li key={item.id} className="flex gap-4">
                                         <div className="w-24 aspect-square bg-[#f8f8f8] rounded-xl flex-shrink-0 flex items-center justify-center p-2 border border-gray-100">
-                                            <img src={item.image || item.images?.[0] || '/placeholder.svg'} alt={item.name} className="max-w-full max-h-full object-contain mix-blend-multiply" />
+                                            <img src={item.image || item.images?.[0] || '/placeholder.svg'} alt={item.name} className="max-w-full max-h-full object-contain" />
                                         </div>
                                         <div className="flex-1 flex flex-col">
                                             <div className="flex justify-between gap-2 mb-2">
