@@ -825,7 +825,7 @@ const Catalogo = () => {
     view: "catalog",
     effectiveSettings: settings,
     banners,
-    contactData: null,
+    contactData,
     welcomeTitle: heroData?.title,
     welcomeMessage: heroData?.message,
     onProductClick: setSelectedProduct,
