@@ -351,6 +351,16 @@ const Catalogo = () => {
         if (rpcBanners.length > 0) {
           setBanners(rpcBanners);
         }
+
+        // El contacto del footer también viene en el array visual del RPC.
+        // loadContactData() lo lee directo de la tabla y RLS lo bloquea para
+        // visitantes anónimos → por eso el footer del catálogo salía vacío.
+        const contactItem = visualArr.find((it: any) => it.element_type === 'contact' && it.element_id === 'store_contact')
+          || visualArr.find((it: any) => it.element_type === 'contact');
+        if (contactItem?.data) {
+          setContactData(contactItem.data);
+        }
+
         const methods: any[] = [];
 
         if (settings.mercadopago_public_key) {
