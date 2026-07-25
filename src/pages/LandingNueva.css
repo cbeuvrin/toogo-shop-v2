@@ -1287,3 +1287,86 @@
 .l2root .feat-grid .feat-card:nth-child(2) { transition-delay: 0.14s; }
 .l2root .feat-grid .feat-card:nth-child(3) { transition-delay: 0.28s; }
 }
+
+/* ── Conversión: email hero, CTA flotante, exit-intent ── */
+.l2root .hero-form {
+  display: flex;
+  gap: 10px;
+  max-width: 480px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.l2root .hero-email {
+  flex: 1 1 220px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 14px 22px;
+  font-size: 1rem;
+  font-family: inherit;
+  background: #fff;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.l2root .hero-email::placeholder { color: #9b98a6; }
+.l2root .hero-email:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.l2root .hero-form .btn { flex: 0 0 auto; }
+
+.l2root .cta-microcopy { margin-top: 14px; font-size: 0.9rem; color: var(--ink-soft); font-weight: 500; }
+
+/* CTA flotante (móvil) */
+.l2root .floating-cta {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  z-index: 60;
+  display: none;
+  padding: 15px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 1.02rem;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(124, 58, 237, 0.4);
+  animation: ctaPop 0.3s var(--ease);
+}
+@keyframes ctaPop { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+
+/* Exit-intent modal */
+.l2root .exit-box {
+  position: relative;
+  z-index: 2;
+  width: min(460px, 92vw);
+  background: #fff;
+  border-radius: 24px;
+  padding: 40px 32px 32px;
+  text-align: center;
+  box-shadow: 0 40px 90px rgba(24, 24, 27, 0.4);
+  animation: popIn 0.35s var(--ease);
+}
+.l2root .exit-badge {
+  display: inline-block;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 6px 14px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+}
+.l2root .exit-title { font-size: 1.9rem; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 10px; }
+.l2root .exit-sub { color: var(--ink-soft); font-size: 1.02rem; margin-bottom: 22px; }
+.l2root .exit-box .hero-form { max-width: none; margin-bottom: 12px; }
+.l2root .exit-box .hero-trust { margin-top: 4px; }
+
+@media (max-width: 768px) {
+  .l2root .floating-cta { display: block; }
+  .l2root .hero-form { max-width: none; }
+}

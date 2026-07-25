@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTenantByDomain } from '@/hooks/useTenantByDomain';
 import Index from '@/pages/Index';
+import LandingNueva from '@/pages/LandingNueva';
 import Tienda from '@/pages/Tienda';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
 
@@ -43,7 +44,7 @@ export const SmartHomePage = () => {
       return <Tienda />;
     }
     console.log('🏠 [SmartHomePage] Dominio principal/preview detectado - mostrando Index (landing)');
-    return <Index />;
+    return <LandingNueva />;
   }
 
   // Show loading state (with fallback)
@@ -59,7 +60,7 @@ export const SmartHomePage = () => {
       return <Tienda />;
     } else {
       console.log('🏠 [SmartHomePage] Dominio de preview - mostrando Index (landing) (fallback:', fallbackToIndex, ')');
-      return <Index />;
+      return <LandingNueva />;
     }
   }
 

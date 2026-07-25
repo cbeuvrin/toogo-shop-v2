@@ -43,7 +43,12 @@ const LandingNueva = () => {
   const [onboardingFlowType, setOnboardingFlowType] = useState<"subdomain" | "domain" | undefined>(undefined);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
+  const [heroEmail, setHeroEmail] = useState("");
+  const [showFloatingCta, setShowFloatingCta] = useState(false);
+  const [showExit, setShowExit] = useState(false);
+  const exitShownRef = useRef(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -56,7 +61,32 @@ const LandingNueva = () => {
     setOnboardingFlowType(flow);
     setShowOnboarding(true);
     setMobileOpen(false);
+    setShowExit(false);
   };
+
+  // CTA flotante en móvil: aparece cuando el hero sale de pantalla
+  useEffect(() => {
+    const hero = heroRef.current;
+    if (!hero) return;
+    const io = new IntersectionObserver(
+      ([e]) => setShowFloatingCta(!e.isIntersecting),
+      { threshold: 0 }
+    );
+    io.observe(hero);
+    return () => io.disconnect();
+  }, []);
+
+  // Exit-intent (desktop): al mover el mouse fuera por arriba, ofrecer el gancho una vez
+  useEffect(() => {
+    const onLeave = (e: MouseEvent) => {
+      if (e.clientY <= 0 && !exitShownRef.current && !showOnboarding) {
+        exitShownRef.current = true;
+        setShowExit(true);
+      }
+    };
+    document.addEventListener('mouseout', onLeave);
+    return () => document.removeEventListener('mouseout', onLeave);
+  }, [showOnboarding]);
 
   // Reveal + stagger al hacer scroll
   useEffect(() => {
@@ -142,19 +172,29 @@ const LandingNueva = () => {
 
         <main>
           {/* HERO */}
-          <section className="hero">
+          <section className="hero" ref={heroRef}>
             <div className="hero-content">
               <div className="hero-copy">
                 <p className="hero-badge reveal hero-r1">0% de comisión de por vida — solo para las primeras tiendas</p>
                 <h1 className="hero-title reveal hero-r1">Tu tienda en línea,<br />manejada desde <span className="text-wa">WhatsApp.</span></h1>
                 <p className="hero-sub reveal hero-r2">Crea tu tienda gratis y contrólala con un mensaje de WhatsApp.</p>
+                <form className="hero-form reveal hero-r3" onSubmit={(e) => { e.preventDefault(); openOnboarding('hero_email'); }}>
+                  <input
+                    type="email"
+                    className="hero-email"
+                    placeholder="Ingresa tu email"
+                    aria-label="Tu email"
+                    value={heroEmail}
+                    onChange={(e) => setHeroEmail(e.target.value)}
+                  />
+                  <button type="submit" className="btn btn-primary btn-lg">Crear tienda gratis</button>
+                </form>
                 <div className="hero-ctas reveal hero-r3">
-                  <button className="btn btn-primary btn-lg" onClick={() => openOnboarding('hero_button')}>Crear tienda gratis</button>
                   <button type="button" className="btn btn-outline btn-lg btn-video" onClick={() => setVideoOpen(true)}>
                     <span className="play-ico"></span> Ver video
                   </button>
                 </div>
-                <p className="hero-trust reveal hero-r3">Tu tienda queda lista en menos de 5 minutos · Sin tarjeta de crédito</p>
+                <p className="hero-trust reveal hero-r3">Tu tienda queda lista en menos de 5 minutos · Sin tarjeta · Cancela cuando quieras</p>
               </div>
               <div className="hero-visual reveal hero-rv" aria-hidden="true">
                 <div className="hero-collage">
@@ -381,6 +421,7 @@ const LandingNueva = () => {
             <div className="cta-marquee" aria-hidden="true"><img src={`${A}/toogo-wordmark.webp`} alt="" className="cta-logo" /></div>
             <div className="cta-content reveal">
               <button className="btn btn-primary btn-lg" onClick={() => openOnboarding('final_cta')}>Crear tienda gratis →</button>
+              <p className="cta-microcopy">Gratis para siempre · Sin tarjeta · Cancela cuando quieras</p>
             </div>
           </section>
         </main>
@@ -419,6 +460,29 @@ const LandingNueva = () => {
             </div>
           </div>
         )}
+
+        {/* CTA FLOTANTE (móvil) */}
+        {showFloatingCta && (
+          <button className="floating-cta" onClick={() => openOnboarding('floating_cta')}>Crear tienda gratis</button>
+        )}
+
+        {/* EXIT-INTENT */}
+        {showExit && (
+          <div className="video-modal">
+            <div className="video-modal-backdrop" onClick={() => setShowExit(false)}></div>
+            <div className="exit-box">
+              <button className="video-modal-close" aria-label="Cerrar" onClick={() => setShowExit(false)}>&times;</button>
+              <p className="exit-badge">Oferta de lanzamiento</p>
+              <h3 className="exit-title">Antes de irte…</h3>
+              <p className="exit-sub">Crea tu tienda hoy y quédate con <strong>0% de comisión de por vida</strong>. Solo para las primeras tiendas.</p>
+              <form className="hero-form" onSubmit={(e) => { e.preventDefault(); openOnboarding('exit_intent'); }}>
+                <input type="email" className="hero-email" placeholder="Ingresa tu email" aria-label="Tu email" value={heroEmail} onChange={(e) => setHeroEmail(e.target.value)} />
+                <button type="submit" className="btn btn-primary btn-lg">Crear tienda gratis</button>
+              </form>
+              <p className="hero-trust">Sin tarjeta · Cancela cuando quieras</p>
+            </div>
+          </div>
+        )}
       </div>
 
       <ChatBotContainer />
@@ -426,6 +490,7 @@ const LandingNueva = () => {
         open={showOnboarding}
         onOpenChange={(open) => { setShowOnboarding(open); if (!open) setOnboardingFlowType(undefined); }}
         initialFlowType={onboardingFlowType}
+        initialEmail={heroEmail}
       />
     </>
   );
