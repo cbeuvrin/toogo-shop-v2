@@ -276,69 +276,13 @@ const Index = () => {
       <div className="max-w-[95%] lg:max-w-[80%] mx-auto">
         <div className="bg-white rounded-[20px] md:rounded-[30px] p-6 md:p-10 lg:p-16 shadow-lg border border-gray-100">
           <div className="grid lg:grid-cols-2 gap-8 md:gap-12 lg:gap-20 items-center">
-            {/* Left Column - Chat Interface */}
+            {/* Left Column - Chat Interface (imagen real del celular) */}
             <div className={`order-2 lg:order-1 flex justify-center transition-transform ${isVibrating ? 'animate-shake' : ''}`}>
-              <div className="w-full max-w-[300px] sm:max-w-[350px] bg-white rounded-[2rem] sm:rounded-[2.5rem] shadow-2xl border-[6px] sm:border-8 border-gray-900 overflow-hidden relative">
-                {/* Phone Notch */}
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 sm:w-40 h-5 sm:h-6 bg-gray-900 rounded-b-3xl"></div>
-
-                {/* Chat Header */}
-                <div className="bg-[#075E54] p-4 pt-10 flex items-center gap-3 text-white">
-                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                    <Store className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-sm">Mi Tienda Toogo</h3>
-                    <p className="text-xs text-green-100">En línea</p>
-                  </div>
-                </div>
-
-                {/* Chat Messages */}
-                <div className="bg-[#E5DDD5] p-4 h-[400px] flex flex-col gap-4 overflow-y-auto bg-opacity-50" style={{ backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', backgroundSize: 'contain' }}>
-
-                  {/* User Message */}
-                  <div className="self-end bg-[#DCF8C6] p-3 rounded-lg rounded-tr-none shadow-sm max-w-[85%]">
-                    <p className="text-sm text-gray-800">Quiero subir el precio de los Sneakers a $1,200</p>
-                    <span className="text-[10px] text-gray-500 block text-right mt-1">10:42 AM <span className="text-blue-500">✓✓</span></span>
-                  </div>
-
-                  {/* Bot Reply */}
-                  <div className="self-start bg-white p-3 rounded-lg rounded-tl-none shadow-sm max-w-[85%] flex gap-2">
-                    <div>
-                      <p className="text-sm text-gray-800 font-semibold mb-1">¡Entendido! 👟</p>
-                      <p className="text-sm text-gray-800">He actualizado el precio de <strong>Sneakers Urban</strong> a <strong>$1,200</strong>.</p>
-                      <div className="mt-2 bg-gray-100 p-2 rounded text-xs text-gray-600 border-l-4 border-green-500">
-                        Precio anterior: $950
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* User Message 2 */}
-                  <div className="self-end bg-[#DCF8C6] p-3 rounded-lg rounded-tr-none shadow-sm max-w-[85%] mt-2">
-                    <p className="text-sm text-gray-800">¿Cuánto he vendido hoy?</p>
-                    <span className="text-[10px] text-gray-500 block text-right mt-1">10:45 AM <span className="text-blue-500">✓✓</span></span>
-                  </div>
-
-                  {/* Bot Reply 2 */}
-                  <div className="self-start bg-white p-3 rounded-lg rounded-tl-none shadow-sm max-w-[85%]">
-                    <p className="text-sm text-gray-800">📅 <strong>Reporte de Hoy:</strong></p>
-                    <p className="text-sm text-gray-800 mt-1">Ventas totales: <strong>$8,450.00</strong></p>
-                    <p className="text-sm text-gray-800">Pedidos: <strong>12</strong></p>
-                    <p className="text-xs text-gray-500 mt-2 italic">Sigue así 🚀</p>
-                    <span className="text-[10px] text-gray-400 block text-right mt-1">10:45 AM</span>
-                  </div>
-
-                </div>
-
-                {/* Input Area (Mock) */}
-                <div className="bg-white p-3 flex items-center gap-2 border-t">
-                  <div className="w-6 h-6 rounded-full bg-gray-200"></div>
-                  <div className="flex-1 h-8 bg-gray-100 rounded-full px-3 text-xs flex items-center text-gray-400">Escribe un mensaje...</div>
-                  <div className="w-8 h-8 rounded-full bg-[#075E54] flex items-center justify-center">
-                    <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-white border-b-[5px] border-b-transparent ml-1"></div>
-                  </div>
-                </div>
-              </div>
+              <img
+                src="/assets/whatsapp-phone.png"
+                alt="Conversación de WhatsApp con el asistente Toogi"
+                className="w-full max-w-[320px] sm:max-w-[360px] h-auto drop-shadow-2xl"
+              />
             </div>
 
             {/* Right Column - Text Content */}

@@ -22,6 +22,7 @@ interface OnboardingModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialFlowType?: "subdomain" | "domain";
+  initialEmail?: string;
 }
 type FlowType = "initial" | "subdomain" | "domain";
 interface FormData {
@@ -46,7 +47,8 @@ interface FormData {
 export const OnboardingModal = ({
   open,
   onOpenChange,
-  initialFlowType
+  initialFlowType,
+  initialEmail
 }: OnboardingModalProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -218,6 +220,13 @@ export const OnboardingModal = ({
       setIsProcessingVerification(false);
     }
   }, [open, initialFlowType]);
+
+  // Prefill del email cuando viene desde el campo del hero de la landing
+  useEffect(() => {
+    if (open && initialEmail) {
+      setFormData(prev => ({ ...prev, email: initialEmail }));
+    }
+  }, [open, initialEmail]);
 
   // Robust verification: detect confirmed user regardless of internal step state
   useEffect(() => {
