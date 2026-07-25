@@ -5,6 +5,7 @@ import { ChatBotContainer } from "@/components/ChatBotContainer";
 import { SEOHead } from "@/components/SEOHead";
 import { Helmet } from "react-helmet-async";
 import { usePlatformFacebookPixel } from "@/hooks/usePlatformFacebookPixel";
+import { supabase } from "@/integrations/supabase/client";
 import "./LandingNueva.css";
 
 const A = "/assets/l2";      // assets propios de esta landing
@@ -55,6 +56,12 @@ const LandingNueva = () => {
   const { trackPageView, trackLead } = usePlatformFacebookPixel();
 
   useEffect(() => { trackPageView('/', 'TOOGO - Landing'); }, []);
+
+  const captureLead = (source: string) => {
+    const email = heroEmail.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+    supabase.functions.invoke('capture-lead', { body: { email, source } }).catch(() => {});
+  };
 
   const openOnboarding = (source: string, flow: "subdomain" | "domain" = "subdomain") => {
     trackLead('onboarding_started', { source });
@@ -178,7 +185,7 @@ const LandingNueva = () => {
                 <p className="hero-badge reveal hero-r1">0% de comisión de por vida — solo para las primeras tiendas</p>
                 <h1 className="hero-title reveal hero-r1">Tu tienda en línea,<br />manejada desde <span className="text-wa">WhatsApp.</span></h1>
                 <p className="hero-sub reveal hero-r2">Crea tu tienda gratis y contrólala con un mensaje de WhatsApp.</p>
-                <form className="hero-form reveal hero-r3" onSubmit={(e) => { e.preventDefault(); openOnboarding('hero_email'); }}>
+                <form className="hero-form reveal hero-r3" onSubmit={(e) => { e.preventDefault(); captureLead('hero_email'); openOnboarding('hero_email'); }}>
                   <input
                     type="email"
                     className="hero-email"
@@ -475,7 +482,7 @@ const LandingNueva = () => {
               <p className="exit-badge">Oferta de lanzamiento</p>
               <h3 className="exit-title">Antes de irte…</h3>
               <p className="exit-sub">Crea tu tienda hoy y quédate con <strong>0% de comisión de por vida</strong>. Solo para las primeras tiendas.</p>
-              <form className="hero-form" onSubmit={(e) => { e.preventDefault(); openOnboarding('exit_intent'); }}>
+              <form className="hero-form" onSubmit={(e) => { e.preventDefault(); captureLead('exit_intent'); openOnboarding('exit_intent'); }}>
                 <input type="email" className="hero-email" placeholder="Ingresa tu email" aria-label="Tu email" value={heroEmail} onChange={(e) => setHeroEmail(e.target.value)} />
                 <button type="submit" className="btn btn-primary btn-lg">Crear tienda gratis</button>
               </form>
