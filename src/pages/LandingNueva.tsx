@@ -149,7 +149,7 @@ const LandingNueva = () => {
         <header className="site-header">
           <nav className="navbar">
             <a href="#" className="logo" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-              <img src={`${A}/mascot-chat.webp`} alt="" className="logo-toogi" />
+              <img src={`${A}/mascota.webp`} alt="" className="logo-toogi" />
               <img src={`${A}/toogo-wordmark.webp`} alt="Toogo" className="logo-img" />
             </a>
             <ul className="nav-links">
@@ -183,7 +183,7 @@ const LandingNueva = () => {
             <div className="hero-content">
               <div className="hero-copy">
                 <p className="hero-badge reveal hero-r1">0% de comisión de por vida — solo para las primeras tiendas</p>
-                <h1 className="hero-title reveal hero-r1">Tu tienda en línea,<br />manejada desde <span className="text-wa">WhatsApp.</span></h1>
+                <h1 className="hero-title reveal hero-r1">Tu tienda en línea,<br />manejada desde <span className="wa-nowrap"><span className="wa-word">WhatsApp</span><img src="https://cdn.simpleicons.org/whatsapp/25D366" alt="WhatsApp" className="wa-hero-icon" /></span></h1>
                 <p className="hero-sub reveal hero-r2">Crea tu tienda gratis y contrólala con un mensaje de WhatsApp.</p>
                 <form className="hero-form reveal hero-r3" onSubmit={(e) => { e.preventDefault(); captureLead('hero_email'); openOnboarding('hero_email'); }}>
                   <input

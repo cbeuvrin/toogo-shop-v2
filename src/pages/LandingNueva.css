@@ -1,8 +1,8 @@
 /* Landing 2 CSS aislado bajo .l2root (auto-generado) */
 .l2root {
-    --accent: #7C3AED;
-    --accent-hover: #6D28D9;
-    --accent-soft: #F3EEFD;
+    --accent: #8346C1;
+    --accent-hover: #6E38A6;
+    --accent-soft: #F0EAF9;
     --wa: #1FAF57;
     --ink: #18181B;
     --ink-soft: #52525B;
@@ -65,7 +65,7 @@
 .l2root .btn-primary {
     background: var(--accent);
     color: #fff;
-    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.28);
+    box-shadow: 0 8px 24px rgba(131, 70, 193, 0.28);
 }
 .l2root .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
 .l2root .btn-ghost { color: var(--ink); }
@@ -490,7 +490,7 @@
     aspect-ratio: 4/5;
 }
 .l2root .feat-perks {
-    background: linear-gradient(135deg, var(--accent), #5B21B6);
+    background: linear-gradient(135deg, var(--accent), #5C2E86);
     margin: 28px -36px 0;
     flex: 1;
     flex-direction: column;
@@ -553,7 +553,7 @@
     width: 34px;
     height: 34px;
     border-radius: 999px;
-    background: var(--wa);
+    background: var(--accent);
     color: #fff;
     font-weight: 800;
     display: flex;
@@ -642,7 +642,7 @@
 .l2root .tpl-tag {
     font-size: 0.72rem;
     background: #F5F0FE;
-    color: #6D28D9;
+    color: #6E38A6;
     padding: 2px 10px;
     border-radius: 999px;
 }
@@ -857,7 +857,7 @@
 .l2root .price-card .btn { text-align: center; }
 .l2root .price-featured {
     border: 2px solid var(--accent);
-    box-shadow: 0 24px 64px rgba(124, 58, 237, 0.14);
+    box-shadow: 0 24px 64px rgba(131, 70, 193, 0.14);
 }
 .l2root .badge {
     position: absolute;
@@ -1244,7 +1244,7 @@
     font-weight: 700;
     line-height: 1.18;
     letter-spacing: -0.02em;
-    background: linear-gradient(100deg, #34D399 0%, #3B82F6 25%, #7C3AED 50%, #3B82F6 75%, #34D399 100%);
+    background: linear-gradient(100deg, #34D399 0%, #3B82F6 25%, #8346C1 50%, #3B82F6 75%, #34D399 100%);
     background-size: 200% 100%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -1332,7 +1332,7 @@
   font-weight: 700;
   font-size: 1.02rem;
   cursor: pointer;
-  box-shadow: 0 10px 30px rgba(124, 58, 237, 0.4);
+  box-shadow: 0 10px 30px rgba(131, 70, 193, 0.4);
   animation: ctaPop 0.3s var(--ease);
 }
 @keyframes ctaPop { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
@@ -1370,3 +1370,9 @@
   .l2root .floating-cta { display: block; }
   .l2root .hero-form { max-width: none; }
 }
+
+
+/* Hero: WhatsApp negro + icono verde al lado */
+.l2root .wa-nowrap { white-space: nowrap; }
+.l2root .wa-word { color: var(--ink); }
+.l2root .wa-hero-icon { display: inline-block; height: 0.72em; width: auto; vertical-align: -0.06em; margin-left: 0.16em; }
