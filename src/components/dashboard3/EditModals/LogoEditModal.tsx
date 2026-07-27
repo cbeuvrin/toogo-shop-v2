@@ -1,8 +1,9 @@
 // Logo Edit Modal - Updated with 30px borders and simplified UI
 import React, { useState, useRef, useEffect } from "react";
-import { Upload, X, Minus, Plus, Crop } from "lucide-react";
+import { Upload, X, Minus, Plus, Crop, Eraser } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { ImageCropperModal } from "@/components/ui/ImageCropperModal";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,48 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData, deviceMode
 
   // Use current logo from settings, not local state
   const currentLogoUrl = settings?.logo_url || initialData?.url || "";
+
+  const [cropOpen, setCropOpen] = useState(false);
+  const [isRemovingBg, setIsRemovingBg] = useState(false);
+
+  // Sube un Blob (recorte / sin fondo) como nuevo logo y refresca settings.
+  const uploadBlobAsLogo = async (blob: Blob): Promise<boolean> => {
+    const file = new File([blob], `logo_${Date.now()}.png`, { type: 'image/png' });
+    const uploadedUrl = await uploadLogo(file);
+    if (uploadedUrl) {
+      await loadSettings();
+      // Reflejar el nuevo logo en el preview del editor de inmediato (como "Guardar").
+      const url = new URL(uploadedUrl, window.location.origin);
+      url.searchParams.set('cb', Date.now().toString());
+      onSave({ url: url.toString(), alt: "Logo" });
+      return true;
+    }
+    return false;
+  };
+
+  const handleCropComplete = async (blob: Blob) => {
+    const ok = await uploadBlobAsLogo(blob);
+    if (ok) toast.success("Logo recortado");
+    else toast.error("No se pudo guardar el recorte");
+  };
+
+  const handleRemoveBackground = async () => {
+    if (!currentLogoUrl) return;
+    setIsRemovingBg(true);
+    try {
+      // Carga perezosa: el modelo solo se descarga cuando el usuario lo usa.
+      const { removeBackground } = await import('@imgly/background-removal');
+      const blob = await removeBackground(currentLogoUrl);
+      const ok = await uploadBlobAsLogo(blob);
+      if (ok) toast.success("Fondo eliminado");
+      else toast.error("No se pudo guardar el logo sin fondo");
+    } catch (error) {
+      console.error('Error removing background:', error);
+      toast.error("No se pudo quitar el fondo. Intenta con otra imagen.");
+    } finally {
+      setIsRemovingBg(false);
+    }
+  };
 
   // Initialize logo size + position from settings.
   // Pick the size matching the current device mode; fall back to desktop size.
@@ -113,6 +156,7 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData, deviceMode
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md rounded-[30px] max-h-[90vh] overflow-y-auto">
         <DialogHeader className="relative">
@@ -127,12 +171,21 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData, deviceMode
           {/* Current Logo Preview */}
           {currentLogoUrl ? (
             <div className="flex justify-center">
-              <div className="relative">
+              <div
+                className="relative border rounded-lg p-2"
+                style={{
+                  // Damero para que se note la transparencia tras "Quitar fondo"
+                  backgroundImage:
+                    'linear-gradient(45deg,#e5e7eb 25%,transparent 25%),linear-gradient(-45deg,#e5e7eb 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e5e7eb 75%),linear-gradient(-45deg,transparent 75%,#e5e7eb 75%)',
+                  backgroundSize: '16px 16px',
+                  backgroundPosition: '0 0,0 8px,8px -8px,-8px 0',
+                }}
+              >
                 <img
                   src={currentLogoUrl}
                   alt="Logo"
                   style={{ height: `${logoSize * 16}px` }}
-                  className="w-auto object-contain border rounded-lg p-2"
+                  className="w-auto object-contain"
                 />
               </div>
             </div>
@@ -142,6 +195,35 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData, deviceMode
                 <span className="text-muted-foreground text-sm">Sin logo</span>
               </div>
             </div>
+          )}
+
+          {/* Herramientas del logo: recortar + quitar fondo */}
+          {currentLogoUrl && (
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setCropOpen(true)}
+                disabled={isRemovingBg || isUploading}
+                className="rounded-[30px]"
+              >
+                <Crop className="w-4 h-4 mr-2" />
+                Recortar
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleRemoveBackground}
+                disabled={isRemovingBg || isUploading}
+                className="rounded-[30px]"
+              >
+                <Eraser className="w-4 h-4 mr-2" />
+                {isRemovingBg ? "Quitando…" : "Quitar fondo"}
+              </Button>
+            </div>
+          )}
+          {currentLogoUrl && (
+            <p className="text-[10px] text-muted-foreground text-center -mt-3">
+              "Quitar fondo" deja el logo transparente. La primera vez tarda unos segundos.
+            </p>
           )}
 
           {/* Logo Size Slider */}
@@ -227,5 +309,16 @@ export const LogoEditModal = ({ isOpen, onClose, onSave, initialData, deviceMode
 
       </DialogContent>
     </Dialog>
+
+    {/* Recorte del logo — salida PNG para conservar transparencia */}
+    <ImageCropperModal
+      isOpen={cropOpen}
+      onClose={() => setCropOpen(false)}
+      imageSrc={currentLogoUrl}
+      onCropComplete={handleCropComplete}
+      outputFormat="image/png"
+      title="Recortar logo"
+    />
+    </>
   );
 };

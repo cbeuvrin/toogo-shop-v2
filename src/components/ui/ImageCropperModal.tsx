@@ -20,6 +20,8 @@ interface ImageCropperModalProps {
   aspectRatio?: number; // Optional. If undefined, allows free cropping
   onCropComplete: (croppedBlob: Blob) => void;
   title?: string;
+  /** Formato de salida. PNG conserva transparencia (útil para logos). Default JPEG. */
+  outputFormat?: 'image/jpeg' | 'image/png' | 'image/webp';
 }
 
 export const ImageCropperModal = ({
@@ -29,6 +31,7 @@ export const ImageCropperModal = ({
   aspectRatio,
   onCropComplete,
   title = "Recortar Imagen",
+  outputFormat = 'image/jpeg',
 }: ImageCropperModalProps) => {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -55,7 +58,7 @@ export const ImageCropperModal = ({
 
     setIsProcessing(true);
     try {
-      const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+      const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels, outputFormat);
       onCropComplete(croppedBlob);
       resetState();
       onClose();
