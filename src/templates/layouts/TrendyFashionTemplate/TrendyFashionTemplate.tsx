@@ -464,35 +464,35 @@ export const TrendyFashionTemplate = (props: any) => {
                 <div className="container mx-auto px-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
                         <div>
-                            <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500" style={styleFor('footerHeading1')}>{els?.footerHeading1?.text || 'Contacto'}</h4>
+                            <h4 className="font-bold uppercase mb-6 text-sm tracking-widest" style={{ color: footerCol.muted, ...styleFor('footerHeading1') }}>{els?.footerHeading1?.text || 'Contacto'}</h4>
                             <ul className="space-y-4 text-sm font-medium">
                                 {contactData?.whatsapp && (
                                     <li className="flex items-center gap-3">
-                                        <a href={`https://wa.me/${contactData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                                        <a href={`https://wa.me/${contactData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">
                                             <span style={{ color: footerCol.muted }}>WhatsApp:</span> {contactData.whatsapp}
                                         </a>
                                     </li>
                                 )}
                                 {contactData?.email && (
                                     <li className="flex items-center gap-3">
-                                        <a href={`mailto:${contactData.email}`} className="hover:text-white transition-colors">
+                                        <a href={`mailto:${contactData.email}`} className="transition-opacity hover:opacity-70">
                                             <span style={{ color: footerCol.muted }}>Email:</span> {contactData.email}
                                         </a>
                                     </li>
                                 )}
                                 {!contactData?.whatsapp && !contactData?.email && (
-                                    <li className="text-zinc-600 italic">Agrega tus datos de contacto</li>
+                                    <li className="italic" style={{ color: footerCol.muted, opacity: 0.8 }}>Agrega tus datos de contacto</li>
                                 )}
                             </ul>
                         </div>
                         <div>
-                            <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500" style={styleFor('footerHeading2')}>{els?.footerHeading2?.text || 'Ubicación'}</h4>
+                            <h4 className="font-bold uppercase mb-6 text-sm tracking-widest" style={{ color: footerCol.muted, ...styleFor('footerHeading2') }}>{els?.footerHeading2?.text || 'Ubicación'}</h4>
                             <p className="text-sm font-medium leading-relaxed max-w-xs" style={{ color: footerCol.muted }}>
                                 {contactData?.address || <span className="italic opacity-70">Configura tu dirección</span>}
                             </p>
                         </div>
                         <div>
-                            <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500" style={styleFor('footerHeading3')}>{els?.footerHeading3?.text || 'Síguenos'}</h4>
+                            <h4 className="font-bold uppercase mb-6 text-sm tracking-widest" style={{ color: footerCol.muted, ...styleFor('footerHeading3') }}>{els?.footerHeading3?.text || 'Síguenos'}</h4>
                             <div className="flex flex-col gap-3 text-sm">
                                 {contactData?.instagram && (
                                     <a href={contactData.instagram} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" style={{ color: footerIconColor, fontSize: `${14 * footerIconScale}px` }}>Instagram</a>
@@ -501,7 +501,7 @@ export const TrendyFashionTemplate = (props: any) => {
                                     <a href={contactData.facebook} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" style={{ color: footerIconColor, fontSize: `${14 * footerIconScale}px` }}>Facebook</a>
                                 )}
                                 {!contactData?.instagram && !contactData?.facebook && (
-                                    <span className="text-zinc-600 italic">Agrega tus redes sociales</span>
+                                    <span className="italic" style={{ color: footerCol.muted, opacity: 0.8 }}>Agrega tus redes sociales</span>
                                 )}
                             </div>
                         </div>

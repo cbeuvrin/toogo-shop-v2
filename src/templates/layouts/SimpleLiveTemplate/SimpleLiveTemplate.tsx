@@ -614,10 +614,10 @@ export const SimpleLiveTemplate = (props: any) => {
                             <h4 className="font-bold uppercase mb-6 text-sm tracking-widest text-zinc-500" style={styleFor('footerHeading3')}>{els?.footerHeading3?.text || 'Síguenos'}</h4>
                             <div className="flex flex-col gap-3 text-sm">
                                 {contactData?.instagram && (
-                                    <a href={contactData.instagram} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" style={{ color: footerIconColor, fontSize: `${14 * footerIconScale}px` }}>Instagram</a>
+                                    <a href={contactData.instagram} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" style={{ color: settings?.footer_icon_color ? footerIconColor : footerCol.muted, fontSize: `${14 * footerIconScale}px` }}>Instagram</a>
                                 )}
                                 {contactData?.facebook && (
-                                    <a href={contactData.facebook} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" style={{ color: footerIconColor, fontSize: `${14 * footerIconScale}px` }}>Facebook</a>
+                                    <a href={contactData.facebook} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" style={{ color: settings?.footer_icon_color ? footerIconColor : footerCol.muted, fontSize: `${14 * footerIconScale}px` }}>Facebook</a>
                                 )}
                             </div>
                         </div>

@@ -10,6 +10,7 @@ import { LogoDisplay } from "@/components/ui/LogoDisplay";
 import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { heroFontFamily } from "@/lib/heroFonts";
+import { footerTextColors } from "@/utils/contrastColor";
 
 export const FashionTemplate = (props: any) => {
     const {
@@ -66,6 +67,7 @@ export const FashionTemplate = (props: any) => {
     const headerIconScale = settings?.header_icon_scale || 1;
     const footerBgColor = settings?.footer_bg_color || '#ffffff';
     const footerIconColor = settings?.footer_icon_color || '#111111';
+    const footerCol = footerTextColors(props.sectionBg?.footer || footerBgColor);
     const footerIconScale = settings?.footer_icon_scale || 1;
     const cardBgColor = settings?.product_card_bg_color || '#f5f5f5';
     const cardHoverColor = settings?.product_card_hover_color || '#000000';
@@ -545,21 +547,21 @@ export const FashionTemplate = (props: any) => {
             )}
 
             {/* ─── FOOTER ─── */}
-            <footer className="border-t-2 border-gray-100 py-16 px-6 flex flex-col md:flex-row justify-between items-center text-xs font-bold uppercase tracking-widest gap-8 text-gray-400" style={{ backgroundColor: props.sectionBg?.footer || footerBgColor }}>
+            <footer className="border-t-2 py-16 px-6 flex flex-col md:flex-row justify-between items-center text-xs font-bold uppercase tracking-widest gap-8" style={{ backgroundColor: props.sectionBg?.footer || footerBgColor, color: footerCol.muted, borderColor: footerCol.border }}>
                 <div className="flex gap-6">
                     {contactData?.facebook && (
-                        <a href={contactData.facebook} target="_blank" rel="noopener noreferrer" className="hover:text-black transition-colors" style={{ color: footerIconColor }}>Facebook</a>
+                        <a href={contactData.facebook} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: settings?.footer_icon_color ? footerIconColor : footerCol.muted }}>Facebook</a>
                     )}
                     {contactData?.instagram && (
-                        <a href={contactData.instagram} target="_blank" rel="noopener noreferrer" className="hover:text-black transition-colors" style={{ color: footerIconColor }}>Instagram</a>
+                        <a href={contactData.instagram} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: settings?.footer_icon_color ? footerIconColor : footerCol.muted }}>Instagram</a>
                     )}
                 </div>
-                <div className="text-black text-center">
+                <div className="text-center" style={{ color: footerCol.text }}>
                     © {new Date().getFullYear()} {settings?.store_name || "TIENDA FASHION"}
                 </div>
                 <div className="flex gap-6">
-                    <a href="/politica-privacidad" target="_blank" rel="noopener noreferrer" className="hover:text-black transition-colors">Política de Privacidad</a>
-                    <a href="/terminos-condiciones" target="_blank" rel="noopener noreferrer" className="hover:text-black transition-colors">Términos y Condiciones</a>
+                    <a href="/politica-privacidad" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: footerCol.muted }}>Política de Privacidad</a>
+                    <a href="/terminos-condiciones" target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70" style={{ color: footerCol.muted }}>Términos y Condiciones</a>
                 </div>
             </footer>
 

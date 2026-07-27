@@ -285,7 +285,7 @@ export const NatureTemplate = (props: any) => {
                                         <button
                                             key={tab}
                                             onClick={() => setActiveTab(tab)}
-                                            className={`text-xs font-bold tracking-widest uppercase pb-1 border-b-2 whitespace-nowrap ${activeTab === tab ? 'border-gray-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
+                                            className={`text-xs font-bold tracking-widest uppercase pb-1 border-b-2 whitespace-nowrap ${activeTab === tab ? 'border-gray-500 text-gray-900' : 'border-transparent text-gray-500 hover:opacity-70'}`}
                                         >
                                             {tab}
                                         </button>
@@ -383,29 +383,30 @@ export const NatureTemplate = (props: any) => {
                                 logoUrl={settings?.logo_url}
                                 fallbackText={settings?.store_name || 'LOGO'}
                             disableFetch={true}
-                                className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold tracking-tight text-gray-900 mb-4"
+                                className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold tracking-tight mb-4"
+                                style={{ color: footerCol.text }}
                             />
                             <p className="text-sm mb-6 max-w-xs leading-relaxed" style={{ color: footerCol.muted }}>
                                 {contactData?.address || <span className="italic opacity-70">Agrega tu dirección</span>}
                             </p>
                         </div>
                         <div>
-                            <h4 className="font-bold uppercase mb-6 text-xs tracking-widest text-[#142642]" style={styleFor('footerHeading1')}>{els?.footerHeading1?.text || 'Tienda'}</h4>
+                            <h4 className="font-bold uppercase mb-6 text-xs tracking-widest" style={{ color: footerCol.text, ...styleFor('footerHeading1') }}>{els?.footerHeading1?.text || 'Tienda'}</h4>
                             <ul className="space-y-4 text-sm font-medium" style={{ color: footerCol.muted }}>
                                 {topCategories.slice(0, 4).map((cat: any) => (
-                                    <li key={cat.id}><button onClick={() => handleNavigate('/catalogo', { category: cat.name.toLowerCase() })} className="hover:text-gray-900">{cat.name}</button></li>
+                                    <li key={cat.id}><button onClick={() => handleNavigate('/catalogo', { category: cat.name.toLowerCase() })} className="hover:opacity-70">{cat.name}</button></li>
                                 ))}
-                                <li><button onClick={() => handleNavigate('/catalogo')} className="hover:text-gray-900">Ver todo</button></li>
+                                <li><button onClick={() => handleNavigate('/catalogo')} className="hover:opacity-70">Ver todo</button></li>
                             </ul>
                         </div>
                         <div>
-                            <h4 className="font-bold uppercase mb-6 text-xs tracking-widest text-[#142642]" style={styleFor('footerHeading2')}>{els?.footerHeading2?.text || 'Soporte'}</h4>
+                            <h4 className="font-bold uppercase mb-6 text-xs tracking-widest" style={{ color: footerCol.text, ...styleFor('footerHeading2') }}>{els?.footerHeading2?.text || 'Soporte'}</h4>
                             <ul className="space-y-4 text-sm font-medium" style={{ color: footerCol.muted }}>
                                 {contactData?.whatsapp && (
-                                    <li><a href={`https://wa.me/${contactData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-gray-900 flex items-center gap-2">WhatsApp: {contactData.whatsapp}</a></li>
+                                    <li><a href={`https://wa.me/${contactData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:opacity-70 flex items-center gap-2">WhatsApp: {contactData.whatsapp}</a></li>
                                 )}
                                 {contactData?.email && (
-                                    <li><a href={`mailto:${contactData.email}`} className="hover:text-gray-900 flex items-center gap-2">Email: {contactData.email}</a></li>
+                                    <li><a href={`mailto:${contactData.email}`} className="hover:opacity-70 flex items-center gap-2">Email: {contactData.email}</a></li>
                                 )}
                                 {!contactData?.whatsapp && !contactData?.email && (
                                     <li className="italic opacity-70">Agrega tus datos de contacto</li>
@@ -416,8 +417,8 @@ export const NatureTemplate = (props: any) => {
                     <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] uppercase tracking-widest font-semibold" style={{ borderColor: footerCol.border, color: footerCol.muted }}>
                         <p>© {new Date().getFullYear()} {storeDisplayName(settings)}. Todos los derechos reservados.</p>
                         <div className="flex gap-4">
-                            <a href="/terminos-condiciones" target="_blank" rel="noopener noreferrer" className="hover:text-gray-900">Términos</a>
-                            <a href="/politica-privacidad" target="_blank" rel="noopener noreferrer" className="hover:text-gray-900">Privacidad</a>
+                            <a href="/terminos-condiciones" target="_blank" rel="noopener noreferrer" className="hover:opacity-70">Términos</a>
+                            <a href="/politica-privacidad" target="_blank" rel="noopener noreferrer" className="hover:opacity-70">Privacidad</a>
                             <span>Powered by Toogo</span>
                         </div>
                     </div>
@@ -475,9 +476,9 @@ export const NatureTemplate = (props: any) => {
                                             </div>
                                             <div className="flex justify-between items-center mt-2">
                                                 <div className="flex items-center gap-3 border border-gray-300 px-2 py-1 bg-white">
-                                                    <button className="text-gray-500 hover:text-gray-900 font-bold w-4" onClick={() => updateQuantity(item.id, Math.max(0, item.quantity - 1))}>-</button>
+                                                    <button className="text-gray-500 hover:opacity-70 font-bold w-4" onClick={() => updateQuantity(item.id, Math.max(0, item.quantity - 1))}>-</button>
                                                     <span className="font-medium w-4 text-center text-sm">{item.quantity}</span>
-                                                    <button className="text-gray-500 hover:text-gray-900 font-bold w-4" onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
+                                                    <button className="text-gray-500 hover:opacity-70 font-bold w-4" onClick={() => updateQuantity(item.id, item.quantity + 1)}>+</button>
                                                 </div>
                                                 <button onClick={() => removeItem(item.id)} className="text-[10px] font-bold tracking-widest uppercase text-gray-500 hover:text-red-500 underline">Eliminar</button>
                                             </div>

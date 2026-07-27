@@ -9,6 +9,7 @@ import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { heroFontFamily } from "@/lib/heroFonts";
 import { storeDisplayName } from "@/utils/storeDisplayName";
+import { footerTextColors } from "@/utils/contrastColor";
 
 export const CyberTemplate = (props: any) => {
     const {
@@ -72,6 +73,14 @@ export const CyberTemplate = (props: any) => {
     const cyberMagenta = settings?.secondary_color || '#FF00E5';
     const cyberText = '#E8E8F0';
     const cyberMuted = '#8888A0';
+    // Footer adapta sus colores SOLO si el dueño cambia el fondo del footer
+    // (así conserva el look neón por defecto, pero nunca queda ilegible).
+    const footerCustomBg = props.sectionBg?.footer;
+    const footerCol = footerTextColors(footerCustomBg || cyberSurface);
+    const footHeadingColor = footerCustomBg ? footerCol.text : cyberNeon;
+    const footTextColor = footerCustomBg ? footerCol.text : cyberText;
+    const footMutedColor = footerCustomBg ? footerCol.muted : cyberMuted;
+    const footBorderColor = footerCustomBg ? footerCol.border : cyberBorder;
 
     const heroTitle = props.welcomeTitle || settings?.welcome_title || 'FUTURO\nDIGITAL.\nDISEÑADO\nHOY.';
     const heroMessage = props.welcomeMessage || settings?.welcome_message || 'Productos del mañana. Tecnología que se adelanta. Bienvenido al perímetro.';
@@ -476,7 +485,7 @@ export const CyberTemplate = (props: any) => {
             )}
 
             {/* Footer */}
-            <footer className="border-t mt-12" style={{ borderColor: cyberBorder, backgroundColor: props.sectionBg?.footer || cyberSurface }}>
+            <footer className="border-t mt-12" style={{ borderColor: footBorderColor, backgroundColor: props.sectionBg?.footer || cyberSurface, color: footTextColor }}>
                 <div className="container mx-auto px-6 py-12">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
                         <div>
@@ -488,39 +497,39 @@ export const CyberTemplate = (props: any) => {
                                     className="text-xl font-black tracking-[0.15em] uppercase"
                                 />
                             </div>
-                            <p className="text-sm" style={{ color: cyberMuted }}>{contactData?.address || <span className="italic opacity-60">Agrega tu dirección</span>}</p>
+                            <p className="text-sm" style={{ color: footMutedColor }}>{contactData?.address || <span className="italic opacity-60">Agrega tu dirección</span>}</p>
                         </div>
                         <div>
-                            <h4 className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: cyberNeon, ...styleFor('footerHeading1') }}>{els?.footerHeading1?.text || '// Tienda'}</h4>
+                            <h4 className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: footHeadingColor, ...styleFor('footerHeading1') }}>{els?.footerHeading1?.text || '// Tienda'}</h4>
                             <ul className="space-y-2 text-sm">
-                                <li><button onClick={() => handleNavigate('/catalogo')} className="hover:opacity-100" style={{ color: cyberMuted }}>Catálogo</button></li>
-                                <li><button onClick={() => handleNavigate('/catalogo', { onSale: 'true' })} className="hover:opacity-100" style={{ color: cyberMuted }}>Drops</button></li>
-                                <li><button onClick={() => handleNavigate('/catalogo')} className="hover:opacity-100" style={{ color: cyberMuted }}>Tech</button></li>
+                                <li><button onClick={() => handleNavigate('/catalogo')} className="hover:opacity-100" style={{ color: footMutedColor }}>Catálogo</button></li>
+                                <li><button onClick={() => handleNavigate('/catalogo', { onSale: 'true' })} className="hover:opacity-100" style={{ color: footMutedColor }}>Drops</button></li>
+                                <li><button onClick={() => handleNavigate('/catalogo')} className="hover:opacity-100" style={{ color: footMutedColor }}>Tech</button></li>
                             </ul>
                         </div>
                         <div>
-                            <h4 className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: cyberNeon, ...styleFor('footerHeading2') }}>{els?.footerHeading2?.text || '// Contacto'}</h4>
+                            <h4 className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: footHeadingColor, ...styleFor('footerHeading2') }}>{els?.footerHeading2?.text || '// Contacto'}</h4>
                             <ul className="space-y-2 text-sm">
                                 {contactData?.whatsapp && (
-                                    <li><a href={`https://wa.me/${contactData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:opacity-100" style={{ color: cyberMuted }}>WhatsApp</a></li>
+                                    <li><a href={`https://wa.me/${contactData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:opacity-100" style={{ color: footMutedColor }}>WhatsApp</a></li>
                                 )}
                                 {contactData?.email && (
-                                    <li><a href={`mailto:${contactData.email}`} className="hover:opacity-100" style={{ color: cyberMuted }}>{contactData.email}</a></li>
+                                    <li><a href={`mailto:${contactData.email}`} className="hover:opacity-100" style={{ color: footMutedColor }}>{contactData.email}</a></li>
                                 )}
                                 {!contactData?.whatsapp && !contactData?.email && (
-                                    <li className="italic opacity-60" style={{ color: cyberMuted }}>Agrega tus datos</li>
+                                    <li className="italic opacity-60" style={{ color: footMutedColor }}>Agrega tus datos</li>
                                 )}
                             </ul>
                         </div>
                         <div>
-                            <h4 className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: cyberNeon, ...styleFor('footerHeading3') }}>{els?.footerHeading3?.text || '// Legal'}</h4>
+                            <h4 className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: footHeadingColor, ...styleFor('footerHeading3') }}>{els?.footerHeading3?.text || '// Legal'}</h4>
                             <ul className="space-y-2 text-sm">
-                                <li><a href="/terminos-condiciones" target="_blank" rel="noopener noreferrer" className="hover:opacity-100" style={{ color: cyberMuted }}>Términos</a></li>
-                                <li><a href="/politica-privacidad" target="_blank" rel="noopener noreferrer" className="hover:opacity-100" style={{ color: cyberMuted }}>Privacidad</a></li>
+                                <li><a href="/terminos-condiciones" target="_blank" rel="noopener noreferrer" className="hover:opacity-100" style={{ color: footMutedColor }}>Términos</a></li>
+                                <li><a href="/politica-privacidad" target="_blank" rel="noopener noreferrer" className="hover:opacity-100" style={{ color: footMutedColor }}>Privacidad</a></li>
                             </ul>
                         </div>
                     </div>
-                    <div className="border-t pt-6 flex flex-col md:flex-row justify-between items-center gap-2 text-xs tracking-[0.2em] uppercase" style={{ borderColor: cyberBorder, color: cyberMuted }}>
+                    <div className="border-t pt-6 flex flex-col md:flex-row justify-between items-center gap-2 text-xs tracking-[0.2em] uppercase" style={{ borderColor: footBorderColor, color: footMutedColor }}>
                         <span>© {new Date().getFullYear()} {storeDisplayName(settings)}</span>
                         <span>// Powered by Toogo</span>
                     </div>

@@ -430,23 +430,23 @@ export const PremiumBrandTemplate = (props: any) => {
                 <div className="container mx-auto px-6 relative z-10">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
                         <div className="md:col-span-1">
-                            <LogoDisplay logoUrl={settings?.logo_url} fallbackText={settings?.store_name || 'LOGO'} className="text-3xl font-bold tracking-tight text-white mb-6" />
+                            <LogoDisplay logoUrl={settings?.logo_url} fallbackText={settings?.store_name || 'LOGO'} className="text-3xl font-bold tracking-tight mb-6" style={{ color: footerCol.text }} />
                             <p className="text-sm max-w-xs leading-relaxed" style={{ color: footerCol.muted }}>{contactData?.address || <span className="italic opacity-70">Agrega tu dirección</span>}</p>
                         </div>
                         <div>
                             <h4 className="font-bold text-sm mb-6 uppercase tracking-widest text-[#e98063]" style={styleFor('footerHeading1')}>{els?.footerHeading1?.text || 'Tienda'}</h4>
                             <ul className="space-y-4 text-sm" style={{ color: footerCol.muted }}>
                                 {topCategories.map((c: any) => (
-                                    <li key={c.id}><button onClick={() => handleNavigate('/catalogo', { category: c.name.toLowerCase() })} className="hover:text-white transition-colors">{c.name}</button></li>
+                                    <li key={c.id}><button onClick={() => handleNavigate('/catalogo', { category: c.name.toLowerCase() })} className="transition-opacity hover:opacity-70">{c.name}</button></li>
                                 ))}
-                                <li><button onClick={() => handleNavigate('/catalogo')} className="hover:text-white transition-colors">Todos los Productos</button></li>
+                                <li><button onClick={() => handleNavigate('/catalogo')} className="transition-opacity hover:opacity-70">Todos los Productos</button></li>
                             </ul>
                         </div>
                         <div>
                             <h4 className="font-bold text-sm mb-6 uppercase tracking-widest text-[#e98063]" style={styleFor('footerHeading2')}>{els?.footerHeading2?.text || 'Soporte'}</h4>
                             <ul className="space-y-4 text-sm" style={{ color: footerCol.muted }}>
-                                {contactData?.whatsapp && <li><a href={`https://wa.me/${contactData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">WhatsApp: {contactData.whatsapp}</a></li>}
-                                {contactData?.email && <li><a href={`mailto:${contactData.email}`} className="hover:text-white transition-colors">Email: {contactData.email}</a></li>}
+                                {contactData?.whatsapp && <li><a href={`https://wa.me/${contactData.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="transition-opacity hover:opacity-70">WhatsApp: {contactData.whatsapp}</a></li>}
+                                {contactData?.email && <li><a href={`mailto:${contactData.email}`} className="transition-opacity hover:opacity-70">Email: {contactData.email}</a></li>}
                                 {!contactData?.whatsapp && !contactData?.email && <li className="italic opacity-70">Agrega tus datos de contacto</li>}
                             </ul>
                         </div>
