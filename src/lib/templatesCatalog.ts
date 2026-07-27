@@ -13,7 +13,7 @@ export interface TemplateInfo {
 export const TEMPLATES: TemplateInfo[] = [
     {
         id: 'default',
-        name: 'Default',
+        name: 'Atlántico (original)',
         description: 'Diseño limpio y equilibrado. Ideal para cualquier tipo de tienda.',
         thumbnail: '/assets/templates/atlantico.png',
         tags: ['Versátil', 'Clásico'],
