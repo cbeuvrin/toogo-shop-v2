@@ -317,7 +317,7 @@ export const DashboardVisualEditor = () => {
       id: category.id,
       name: category.name,
       slug: category.slug,
-      showOnHome: category.showOnHome || true,
+      showOnHome: category.showOnHome ?? true,
       parent_id: category.parent_id
     }));
     setEditorData(prev => ({
@@ -378,16 +378,19 @@ export const DashboardVisualEditor = () => {
         const featuredProducts2Item = visualData.find(item => item.element_type === 'featured_products' && item.element_id === 'featured_grid_2');
         const testimonialsItem = visualData.find(item => item.element_type === 'testimonials' && item.element_id === 'main_testimonials');
 
-        const mappedBanners = bannerItems.map(item => ({
-          id: item.element_id,
-          imageUrl: withCacheBuster((item.data as any).imageUrl),
-          imageUrlTablet: (item.data as any).imageUrlTablet ? withCacheBuster((item.data as any).imageUrlTablet) : undefined,
-          imageUrlMobile: (item.data as any).imageUrlMobile ? withCacheBuster((item.data as any).imageUrlMobile) : undefined,
-          sort: (item.data as any).sort,
-          position: (item.data as any).position || 'center center',
-          positionTablet: (item.data as any).positionTablet,
-          positionMobile: (item.data as any).positionMobile,
-        }));
+        const mappedBanners = bannerItems.map(item => {
+          const d = (item.data as any) || {}; // fila con data nula no debe abortar la carga del editor
+          return {
+            id: item.element_id,
+            imageUrl: withCacheBuster(d.imageUrl),
+            imageUrlTablet: d.imageUrlTablet ? withCacheBuster(d.imageUrlTablet) : undefined,
+            imageUrlMobile: d.imageUrlMobile ? withCacheBuster(d.imageUrlMobile) : undefined,
+            sort: d.sort,
+            position: d.position || 'center center',
+            positionTablet: d.positionTablet,
+            positionMobile: d.positionMobile,
+          };
+        });
         // Reindex by real slot (`sort`) so the editor's banner slots line up with
         // the template (e.g. slot 3 = banner editorial) even when middle slots are empty.
         const validBanners: any[] = [];
@@ -534,8 +537,11 @@ export const DashboardVisualEditor = () => {
       });
     }
   };
-  const saveEditorData = async (type: string, elementId: string, data: any) => {
-    if (!tenantId) return;
+  // Devuelve true si guardó bien, false si falló. Los handlers deben chequear el
+  // resultado para no mostrar "éxito" ni aplicar cambios de forma optimista cuando
+  // el guardado en realidad falló (red/RLS).
+  const saveEditorData = async (type: string, elementId: string, data: any): Promise<boolean> => {
+    if (!tenantId) return false;
     try {
       const {
         error
@@ -552,6 +558,7 @@ export const DashboardVisualEditor = () => {
         title: "Guardado exitoso",
         description: "Los cambios se han guardado correctamente"
       });
+      return true;
     } catch (error) {
       console.error('Error saving editor data:', error);
       toast({
@@ -559,6 +566,7 @@ export const DashboardVisualEditor = () => {
         description: "No se pudieron guardar los cambios",
         variant: "destructive"
       });
+      return false;
     }
   };
   const handleEditElement = (type: EditModalType, item?: any) => {
@@ -672,11 +680,12 @@ export const DashboardVisualEditor = () => {
     console.log('handleSaveBanners called with', bannersData, heroText, heroShape);
     setIsSaving(true);
     try {
-      // First, delete all existing banners for this tenant
-      await supabase.from('visual_editor_data').delete().eq('tenant_id', tenantId).eq('element_type', 'banner');
-
-      // Then insert the new banners
-      const promises = bannersData.map(banner => supabase.from('visual_editor_data').insert({
+      // Guardado ATÓMICO de banners: primero UPSERT de los nuevos (así la tienda
+      // NUNCA queda con cero banners si algo falla), y solo después borramos los
+      // que el usuario eliminó. Antes se hacía DELETE-todo + insert, que ante un
+      // fallo de red/RLS a mitad de camino borraba todos los banners de forma
+      // permanente (el hero público quedaba en placeholder).
+      const bannerRows = bannersData.map(banner => ({
         tenant_id: tenantId,
         element_type: 'banner',
         element_id: banner.id,
@@ -690,7 +699,30 @@ export const DashboardVisualEditor = () => {
           positionMobile: (banner as any).positionMobile || undefined,
         }
       }));
-      await Promise.all(promises);
+      if (bannerRows.length > 0) {
+        const { error: upsertErr } = await supabase
+          .from('visual_editor_data')
+          .upsert(bannerRows, { onConflict: 'tenant_id,element_type,element_id' });
+        if (upsertErr) throw upsertErr;
+      }
+      // Borrar SOLO los banners que ya no están en la lista (los que el usuario quitó).
+      const keepIds = bannersData.map(b => b.id);
+      const { data: existingBanners } = await supabase
+        .from('visual_editor_data')
+        .select('element_id')
+        .eq('tenant_id', tenantId)
+        .eq('element_type', 'banner');
+      const toRemove = (existingBanners || [])
+        .map((r: any) => r.element_id)
+        .filter((id: string) => !keepIds.includes(id));
+      if (toRemove.length > 0) {
+        await supabase
+          .from('visual_editor_data')
+          .delete()
+          .eq('tenant_id', tenantId)
+          .eq('element_type', 'banner')
+          .in('element_id', toRemove);
+      }
 
       // Save Hero Text if provided
       // Save Hero Text if provided
@@ -860,7 +892,8 @@ export const DashboardVisualEditor = () => {
       const newHero = { ...currentHero, shape, scale: scale || 100 };
 
       // Update hero shape data directly in the JSON
-      await saveEditorData('hero', 'main_hero', newHero);
+      const okHero = await saveEditorData('hero', 'main_hero', newHero);
+      if (!okHero) return; // saveEditorData ya mostró el error; no aplicar cambios optimistas
 
       let updatedBanners = [...(editorData.banners || [])];
 

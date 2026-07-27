@@ -123,19 +123,9 @@ const Catalogo = () => {
 
   const loading = tenantLoading || productsLoading || categoriesLoading;
 
-  // Load tenant plan
-  useEffect(() => {
-    if (currentTenantId) {
-      supabase
-        .from('tenants')
-        .select('plan')
-        .eq('id', currentTenantId)
-        .single()
-        .then(({ data }) => {
-          if (data) setTenantPlan(data.plan);
-        });
-    }
-  }, [currentTenantId]);
+  // El plan se toma del RPC público (get_public_store_data) más abajo. NO hacemos
+  // fetch directo a `tenants` porque no hay política RLS pública sobre esa tabla,
+  // así que para un comprador anónimo devolvería null y el favicon nunca se aplicaría.
 
   // Set favicon for Basic/Premium plans
   useFavicon({
@@ -329,6 +319,9 @@ const Catalogo = () => {
         // the RPC-loaded settings here so the rest of the page (template chooser,
         // colors, etc.) works without authentication.
         setPublicSettings(settings);
+
+        // Plan del tenant desde el RPC (funciona para anónimos) → favicon del logo
+        if (result.data.tenant?.plan) setTenantPlan(result.data.tenant.plan);
 
         // Same story for the hero/banners visual_editor_data record: loadVisualData()
         // does a direct table fetch that anonymous shoppers can't read. Extract the

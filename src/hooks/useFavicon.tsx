@@ -16,26 +16,23 @@ export const useFavicon = ({ logoUrl, plan }: UseFaviconProps) => {
       return;
     }
 
-    // Find or create favicon link element
-    let link = document.querySelector("link[rel='icon']") as HTMLLinkElement;
-    
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'icon';
-      document.head.appendChild(link);
-    }
-
-    // Store original favicon to restore on cleanup
-    const originalHref = link.href;
-
-    // Set tenant logo as favicon
-    link.href = logoUrl;
-
-    // Cleanup: restore original favicon when component unmounts or dependencies change
-    return () => {
-      if (link && originalHref) {
-        link.href = originalHref;
+    // Actualiza (o crea) un <link> de icono con el logo del tenant.
+    const setIcon = (rel: string) => {
+      let link = document.querySelector(`link[rel='${rel}']`) as HTMLLinkElement | null;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = rel;
+        document.head.appendChild(link);
       }
+      link.href = logoUrl;
     };
+
+    // Favicon de pestaña + icono de "agregar a inicio" en iOS.
+    setIcon('icon');
+    setIcon('apple-touch-icon');
+
+    // Sin cleanup que reponga el favicon por defecto: al navegar entre
+    // home ↔ catálogo ↔ producto el favicon del tenant se mantiene estable
+    // (evita el parpadeo al favicon TOOGO durante la carga de la nueva ruta).
   }, [logoUrl, plan]);
 };

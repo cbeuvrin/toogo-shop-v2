@@ -97,7 +97,7 @@ export const useCategories = (publicTenantId?: string) => {
           tenant_id: tenantId,
           name: categoryData.name,
           slug: categoryData.slug,
-          show_on_home: categoryData.showOnHome || true,
+          show_on_home: categoryData.showOnHome ?? true,
           sort: categoryData.sort || 0,
           parent_id: categoryData.parent_id
         });

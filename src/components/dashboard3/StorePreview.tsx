@@ -239,15 +239,19 @@ export const StorePreview = ({
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Auto-slide banners
+  // Auto-slide banners — SOLO fuera del editor. En el preview del editor, el
+  // re-render cada 5s remonta todo el subárbol de la plantilla (los layouts se
+  // definen inline) → flicker, pérdida de scroll y reset de carruseles. En el
+  // editor mostramos el primer banner estático.
   useEffect(() => {
+    if (isEditorMode) return;
     if (banners.length > 1) {
       const interval = setInterval(() => {
         setCurrentBanner((prev) => (prev + 1) % banners.length);
       }, 5000);
       return () => clearInterval(interval);
     }
-  }, [banners.length]);
+  }, [banners.length, isEditorMode]);
 
   // Functions
   const toggleFavorite = (productId: string) => {
@@ -642,11 +646,15 @@ export const StorePreview = ({
         {/* Hero — photo opens banners editor; title/message/button each editable */}
         <div className="relative w-full aspect-[4/3] md:aspect-[21/9] bg-gray-200 overflow-hidden">
           <EditableElement type="banners" isEditorMode={isEditorMode} onEdit={() => onEditElement('banners', 0)} className="absolute inset-0">
-            {banners.length > 0 ? (
-              <img src={banners[0].image} className="w-full h-full object-cover" style={{ objectPosition: banners[0].position || 'center center' }} />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-300">Banner</div>
-            )}
+            {(() => {
+              // banners puede ser un array disperso (indexado por sort): usamos el primero presente
+              const hb = banners.find(Boolean);
+              return hb ? (
+                <img src={hb.image} className="w-full h-full object-cover" style={{ objectPosition: hb.position || 'center center' }} />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-300">Banner</div>
+              );
+            })()}
           </EditableElement>
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-8 pointer-events-none">
             <div className="pointer-events-auto flex flex-col items-start gap-2">
@@ -725,7 +733,7 @@ export const StorePreview = ({
               <div key={product.id} className="min-w-[180px] md:min-w-[220px] cursor-pointer" onClick={() => openProductModal(product)}>
                 <div className="aspect-[3/4] rounded-sm overflow-hidden mb-2 relative group transition-colors duration-300" style={{ backgroundColor: cardBgColor }}>
                   <div className="absolute inset-0 transition-colors duration-300 opacity-0 group-hover:opacity-100" style={{ backgroundColor: hoverColor }} />
-                  <img src={product.image} className="w-full h-full object-cover relative z-10 mix-blend-multiply" alt={product.name} />
+                  <img src={product.image || (typeof product.images?.[0] === 'object' ? product.images[0]?.url : product.images?.[0]) || '/placeholder.svg'} className="w-full h-full object-cover relative z-10 mix-blend-multiply" alt={product.name} />
                   {product.features?.includes("new_arrival") && (
                     <div className="absolute top-2 left-2 bg-white px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider z-20">Nuevo</div>
                   )}
@@ -1018,7 +1026,7 @@ export const StorePreview = ({
           {productsToShow.slice(0, 8).map((product: any) => (
             <div key={product.id} className="group cursor-pointer" onClick={() => openProductModal(product)}>
               <div className="relative aspect-[3/4] bg-gray-50 overflow-hidden mb-4">
-                <img src={product.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt={product.name} />
+                <img src={product.image || (typeof product.images?.[0] === 'object' ? product.images[0]?.url : product.images?.[0]) || '/placeholder.svg'} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt={product.name} />
               </div>
               <div className="text-center">
                 <h3 className="text-sm text-gray-900 font-medium mb-1 line-clamp-1" style={cardNameStyle} onClick={cardNameClick}>{product.name}</h3>
@@ -1574,7 +1582,7 @@ export const StorePreview = ({
             {productsToShow.slice(0, 4).map((product: any, idx) => (
               <div key={product.id} className={`w-full md:w-1/4 group cursor-pointer border-r border-gray-100 last:border-r-0 hover:bg-gray-50 transition-colors shrink-0`} onClick={() => openProductModal(product)}>
                 <div className="relative aspect-[3/4] bg-gray-50 overflow-hidden">
-                  <img src={product.image} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt={product.name} />
+                  <img src={product.image || (typeof product.images?.[0] === 'object' ? product.images[0]?.url : product.images?.[0]) || '/placeholder.svg'} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt={product.name} />
 
                   <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button variant="secondary" size="icon" className="w-10 h-10 rounded-full bg-white text-black shadow-md hover:bg-black hover:text-white" onClick={(e) => { e.stopPropagation(); toggleFavorite(product.id); }}>
@@ -2051,7 +2059,7 @@ export const StorePreview = ({
               >
                 <div className="aspect-[3/4] overflow-hidden mb-2 relative group transition-colors duration-300" style={{ backgroundColor: cardBgColor }}>
                   <div className="absolute inset-0 transition-colors duration-300 opacity-0 group-hover:opacity-100" style={{ backgroundColor: hoverColor }} />
-                  <img src={product.image} className="w-full h-full object-cover relative z-10 mix-blend-multiply" alt={product.name} />
+                  <img src={product.image || (typeof product.images?.[0] === 'object' ? product.images[0]?.url : product.images?.[0]) || '/placeholder.svg'} className="w-full h-full object-cover relative z-10 mix-blend-multiply" alt={product.name} />
                   <div className="absolute top-2 left-2 bg-white px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider z-20">NUEVO</div>
                   {/* Hover CTA — only the first card shows it persistently in editor mode so the
                       user can see + click to edit. In production it appears on hover for every card. */}

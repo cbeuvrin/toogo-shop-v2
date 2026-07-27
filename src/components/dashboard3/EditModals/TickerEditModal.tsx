@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,14 +38,17 @@ export const TickerEditModal = ({ isOpen, onClose, onSave, initialData }: Ticker
         textColor: ""
     });
 
+    // Sincronizar SOLO al abrir, para que "Cancelar" descarte de verdad los cambios.
+    const wasOpen = useRef(false);
     useEffect(() => {
-        if (initialData) {
+        if (isOpen && !wasOpen.current && initialData) {
             setFormData(prev => ({
                 ...prev,
                 ...initialData
             }));
         }
-    }, [initialData]);
+        wasOpen.current = isOpen;
+    }, [isOpen, initialData]);
 
     const handleSave = () => {
         onSave(formData);

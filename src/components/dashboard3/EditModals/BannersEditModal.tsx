@@ -227,27 +227,35 @@ export const BannersEditModal = ({
   // For superadmins, use Demo Store tenant ID as fallback
   const tenantId = currentTenantId || (isSuperAdmin ? DEMO_STORE_ID : null);
 
+  // Sincronizar SOLO cuando el modal se abre. El padre pasa `initialData`/
+  // `initialHeroText` como literales nuevos en cada render; sincronizar por su
+  // identidad reiniciaba los banners y textos en cualquier re-render del padre,
+  // borrando una imagen recién subida (aún no guardada) o el título escrito.
+  const wasBannersOpen = useRef(false);
   useEffect(() => {
-    if (initialData && initialData.length > 0) {
-      // Place each banner at its real slot index (`sort`) WITHOUT compressing —
-      // empty middle slots must stay empty so slot N maps to the same image the
-      // template reads as banners[N].
-      const byIndex: BannerItem[] = [];
-      initialData.forEach((b) => {
-        const i = typeof b.sort === 'number' ? b.sort : byIndex.length;
-        byIndex[i] = b;
-      });
-      setBanners(byIndex);
-    } else {
-      setBanners([]);
-    }
+    if (isOpen && !wasBannersOpen.current) {
+      if (initialData && initialData.length > 0) {
+        // Place each banner at its real slot index (`sort`) WITHOUT compressing —
+        // empty middle slots must stay empty so slot N maps to the same image the
+        // template reads as banners[N].
+        const byIndex: BannerItem[] = [];
+        initialData.forEach((b) => {
+          const i = typeof b.sort === 'number' ? b.sort : byIndex.length;
+          byIndex[i] = b;
+        });
+        setBanners(byIndex);
+      } else {
+        setBanners([]);
+      }
 
-    if (initialHeroText) {
-      setHeroTitle(initialHeroText.title || "");
-      setHeroDescription(initialHeroText.description || "");
-      setCta1Label(initialHeroText.cta1Label || "");
-      setCta2Label(initialHeroText.cta2Label || "");
+      if (initialHeroText) {
+        setHeroTitle(initialHeroText.title || "");
+        setHeroDescription(initialHeroText.description || "");
+        setCta1Label(initialHeroText.cta1Label || "");
+        setCta2Label(initialHeroText.cta2Label || "");
+      }
     }
+    wasBannersOpen.current = isOpen;
   }, [initialData, initialHeroText, isOpen]);
 
   const removeBanner = (index: number) => {

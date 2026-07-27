@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -31,9 +31,17 @@ export const AllColorsEditModal = ({
   initialData
 }: AllColorsEditModalProps) => {
   const [colors, setColors] = useState<AllColorsData>(initialData);
+  // Sincronizar SOLO cuando el modal se abre. El padre pasa `initialData` como
+  // objeto literal nuevo en cada render, así que sincronizar por identidad de
+  // `initialData` pisaba lo que el usuario editaba en cualquier re-render del
+  // padre (perdía cambios antes de dar "Guardar").
+  const wasOpen = useRef(false);
   useEffect(() => {
-    setColors(initialData);
-  }, [initialData]);
+    if (isOpen && !wasOpen.current) {
+      setColors(initialData);
+    }
+    wasOpen.current = isOpen;
+  }, [isOpen, initialData]);
   const handleColorChange = (field: keyof AllColorsData, value: string | number) => {
     setColors(prev => ({
       ...prev,
