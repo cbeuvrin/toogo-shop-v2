@@ -209,14 +209,7 @@ export const TrendyFashionTemplate = (props: any) => {
                         </button>
                     ))}
                     {topCategories.length === 0 && (
-                        <>
-                            <button className="hover:text-gray-900 transition-colors">Belleza</button>
-                            <button className="hover:text-gray-900 transition-colors">Hombre</button>
-                            <button className="hover:text-gray-900 transition-colors">Mujer</button>
-                            <button className="hover:text-gray-900 transition-colors">Niños</button>
-                            <button className="hover:text-gray-900 transition-colors">Soporte</button>
-                            <button className="hover:text-gray-900 transition-colors">Nosotros</button>
-                        </>
+                        <button onClick={() => handleNavigate('/catalogo')} className="hover:text-gray-900 transition-colors">Catálogo</button>
                     )}
                 </nav>
 
@@ -282,12 +275,12 @@ export const TrendyFashionTemplate = (props: any) => {
                             )}
                         </div>
 
-                        {/* Promotional text — custom override renders as plain text */}
-                        <p className="text-sm text-gray-600" style={styleFor('promoText')}>
-                            {els?.promoText?.text
-                                ? els.promoText.text
-                                : (<>¡Ahorra <span className="text-xl font-bold text-gray-900">20% Ahora!</span></>)}
-                        </p>
+                        {/* Texto promocional — solo si el dueño lo configura (sin descuentos inventados) */}
+                        {els?.promoText?.text && (
+                            <p className="text-sm text-gray-600" style={styleFor('promoText')}>
+                                {els.promoText.text}
+                            </p>
+                        )}
 
                         {/* Decorative star */}
                         <div className="absolute left-[45%] top-[35%] hidden lg:block text-gray-400 opacity-60 text-2xl pointer-events-none select-none">✦</div>

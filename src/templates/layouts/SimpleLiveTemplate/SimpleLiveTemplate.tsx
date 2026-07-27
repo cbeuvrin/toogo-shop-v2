@@ -553,23 +553,21 @@ export const SimpleLiveTemplate = (props: any) => {
                                         );
                                     })
                                 ) : (
-                                    // Fallback if no products selected
-                                    <>
-                                        <div className="relative aspect-square md:aspect-[4/3] bg-gray-100 group overflow-hidden cursor-pointer">
-                                            <img src="/placeholder.svg" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                                            <div className="absolute bottom-8 left-8">
-                                                <h3 className="text-white text-3xl font-bold uppercase mb-2">Sudaderas Hombre</h3>
-                                                <span className="text-white underline font-semibold">Ver ahora</span>
+                                    // Sin destacados elegidos: mostramos productos REALES (nunca tarjetas inventadas)
+                                    (props.products || []).slice(0, 2).map((product: any) => {
+                                        const firstImg = product.images?.[0];
+                                        const image = (firstImg && typeof firstImg === 'object') ? firstImg.url : (firstImg || product.image || "/placeholder.svg");
+                                        return (
+                                            <div key={product.id} className="relative aspect-square md:aspect-[4/3] bg-gray-100 group overflow-hidden cursor-pointer" onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}>
+                                                <img src={image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                                <div className="absolute bottom-8 left-8">
+                                                    <h3 className="text-white text-3xl font-bold uppercase mb-2 drop-shadow-md">{product.title || product.name}</h3>
+                                                    <span className="text-white underline font-semibold drop-shadow-md">Ver ahora</span>
+                                                </div>
+                                                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors" />
                                             </div>
-                                        </div>
-                                        <div className="relative aspect-square md:aspect-[4/3] bg-gray-100 group overflow-hidden cursor-pointer">
-                                            <img src="/placeholder.svg" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                                            <div className="absolute bottom-8 left-8">
-                                                <h3 className="text-white text-3xl font-bold uppercase mb-2">Leggings Mujer</h3>
-                                                <span className="text-white underline font-semibold">Ver ahora</span>
-                                            </div>
-                                        </div>
-                                    </>
+                                        );
+                                    })
                                 )}
                             </div>
                         </div>

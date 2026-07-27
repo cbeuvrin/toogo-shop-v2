@@ -687,22 +687,21 @@ export const FashionHeroTemplate = (props: any) => {
                                     );
                                 })
                             ) : (
-                                <>
-                                    <div className="relative aspect-square md:aspect-[4/3] bg-gray-100 group overflow-hidden cursor-pointer">
-                                        <img src="/placeholder.svg" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Placeholder" />
-                                        <div className="absolute bottom-8 left-8">
-                                            <h3 className="text-white text-2xl md:text-3xl font-black uppercase mb-2 tracking-tight">Nueva Llegada</h3>
-                                            <span className="text-white underline font-semibold text-sm uppercase tracking-wider">Ver ahora</span>
+                                // Sin destacados elegidos: mostramos productos REALES (nunca tarjetas inventadas)
+                                (products || []).slice(0, 2).map((product: any) => {
+                                    const firstImg = product.images?.[0];
+                                    const image = (firstImg && typeof firstImg === 'object') ? firstImg.url : (firstImg || product.image || "/placeholder.svg");
+                                    return (
+                                        <div key={product.id} className="relative aspect-square md:aspect-[4/3] bg-gray-100 group overflow-hidden cursor-pointer" onClick={() => (props.onProductClick ? props.onProductClick(product) : handleNavigate(`/product/${product.slug || product.id}`))}>
+                                            <img src={image} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={product.title} />
+                                            <div className="absolute bottom-8 left-8 right-8">
+                                                <h3 className="text-white text-2xl md:text-3xl font-black uppercase mb-2 drop-shadow-md tracking-tight">{product.title || product.name}</h3>
+                                                <span className="text-white underline font-semibold drop-shadow-md text-sm uppercase tracking-wider">Ver ahora</span>
+                                            </div>
+                                            <div className="absolute inset-0 bg-black/15 group-hover:bg-black/25 transition-colors" />
                                         </div>
-                                    </div>
-                                    <div className="relative aspect-square md:aspect-[4/3] bg-gray-100 group overflow-hidden cursor-pointer">
-                                        <img src="/placeholder.svg" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Placeholder" />
-                                        <div className="absolute bottom-8 left-8">
-                                            <h3 className="text-white text-2xl md:text-3xl font-black uppercase mb-2 tracking-tight">Colección VIP</h3>
-                                            <span className="text-white underline font-semibold text-sm uppercase tracking-wider">Ver ahora</span>
-                                        </div>
-                                    </div>
-                                </>
+                                    );
+                                })
                             )}
                         </div>
                     </div>

@@ -165,6 +165,10 @@ export const FashionTemplate = (props: any) => {
 
             {/* ─── HEADER ─── */}
             <header className={`px-6 py-4 flex flex-col gap-4 border-b border-gray-200 sticky top-0 z-50 bg-white transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${hideNav ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} style={{ backgroundColor: props.sectionBg?.navbar || settings?.navbar_bg_color || '#ffffff' }}>
+                {/* Announcement en móvil (en desktop se muestra en la fila social de la izquierda) */}
+                {announcement?.enabled && announcement?.text && (
+                    <div className="md:hidden text-center text-[11px] font-semibold tracking-wide -mb-1" style={{ color: announcement?.textColor || '#000' }}>{announcement.text}</div>
+                )}
                 <div className="flex items-center justify-between">
                     {/* Left: Social links */}
                     <div className="hidden md:flex items-center gap-4 text-xs font-semibold tracking-wider text-gray-500">
@@ -241,13 +245,7 @@ export const FashionTemplate = (props: any) => {
                         </button>
                     ))}
                     {topCategories.length === 0 && (
-                        <>
-                            <span className="cursor-pointer hover:text-gray-500">Inicio ▾</span>
-                            <span className="cursor-pointer hover:text-gray-500">Tienda ▾</span>
-                            <span className="cursor-pointer hover:text-gray-500">Blog ▾</span>
-                            <span className="cursor-pointer hover:text-gray-500">Páginas ▾</span>
-                            <button onClick={() => handleNavigate('/catalogo')} className="cursor-pointer hover:text-gray-500">Contacto</button>
-                        </>
+                        <button onClick={() => handleNavigate('/catalogo')} className="cursor-pointer hover:text-gray-500 transition-colors">Catálogo</button>
                     )}
                 </nav>
             </header>

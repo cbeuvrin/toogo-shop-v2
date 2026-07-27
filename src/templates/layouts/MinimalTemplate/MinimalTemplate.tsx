@@ -314,7 +314,7 @@ export const MinimalTemplate = (props: any) => {
                                 <span className="text-3xl md:text-6xl font-serif italic opacity-20 px-4 text-center">Nueva Colección</span>
                             </div>
                         )}
-                        <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
                             <div className="text-center text-white px-4">
                                 <h2 className="text-4xl md:text-6xl font-serif mb-4 drop-shadow-md" style={styleFor('title')}>{props.welcomeTitle || settings?.welcome_title || 'Esenciales de Temporada'}</h2>
                                 <p className="text-lg font-light tracking-wide mb-8 drop-shadow-md" style={styleFor('message')}>{props.welcomeMessage || settings?.welcome_message || 'Descubre la nueva colección minimalista.'}</p>
@@ -394,7 +394,7 @@ export const MinimalTemplate = (props: any) => {
                             className="w-full h-full object-contain lg:object-cover"
                             style={{ objectPosition: banners[1].position || 'center center' }}
                         />
-                        <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/25 flex items-center justify-center">
                             <h2 className="text-3xl md:text-5xl font-serif text-white drop-shadow-md text-center px-4" style={styleFor('midBannerTitle')}>
                                 {els?.midBannerTitle?.text || 'Hecho para durar'}
                             </h2>

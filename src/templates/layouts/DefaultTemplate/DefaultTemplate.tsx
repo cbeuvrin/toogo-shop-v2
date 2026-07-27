@@ -225,7 +225,9 @@ export const DefaultTemplate = (props: any) => {
                 </div>}
             </header>
 
-            <CartSidebar checkoutConfig={null} /> {/* Passing null as hook handles context, but sidebar might need checkoutConfig? Yes, passed from storeData in Tienda. Let's assume CartSidebar reads from context or we pass it? Original passed it. We should pass it via props. */}
+            {/* checkoutConfig=null es correcto: CheckoutModal carga la config de pago
+                desde el RPC público cuando no recibe una precargada (funciona para compradores anónimos). */}
+            <CartSidebar checkoutConfig={null} />
 
             <div className="hidden md:block fixed bottom-4 right-4 z-40">
                 <Button onClick={toggleCart} className="w-12 h-12 rounded-full bg-black hover:bg-gray-800 text-white shadow-lg flex items-center justify-center relative">
@@ -250,7 +252,7 @@ export const DefaultTemplate = (props: any) => {
 
             {/* Products area — background editable via sectionBg.section1 */}
             <div style={{ backgroundColor: props.sectionBg?.section1 || undefined }}>
-                {bestSellers.length > 0 && <div className="relative -mt-20 z-10 w-full px-4 pt-8 pb-4">
+                {bestSellers.length > 0 && <div className="relative -mt-8 md:-mt-20 z-10 w-full px-4 pt-8 pb-4">
                     <AutoCarousel title="Más vendidos" products={bestSellers} isBestSellers={true} onProductClick={openProductModalLocal} onToggleFavorite={toggleFavorite} favorites={favorites} hoverColor={effectiveSettings?.product_card_hover_color} cardBgColor={effectiveSettings?.product_card_bg_color} />
                 </div>}
 

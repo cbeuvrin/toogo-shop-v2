@@ -104,10 +104,10 @@ export const BauhausTemplate = (props: any) => {
     return (
         <div className="min-h-screen font-sans" style={{ backgroundColor: bauhausBg, color: bauhausBlack }}>
 
-            {/* Announcement bar */}
-            {announcement?.enabled !== false && (
+            {/* Announcement bar — solo si el dueño escribió un mensaje real (sin promesas inventadas) */}
+            {announcement?.enabled !== false && announcement?.text && (
                 <div className="text-center py-2 text-xs font-bold tracking-[0.3em] uppercase" style={{ backgroundColor: announcement?.bgColor || bauhausBlack, color: announcement?.textColor || bauhausYellow }}>
-                    {announcement?.text || "ENVÍO GRATIS EN PEDIDOS MAYORES A $999"}
+                    {announcement.text}
                 </div>
             )}
 
