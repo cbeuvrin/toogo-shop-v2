@@ -129,7 +129,7 @@ export const DefaultTemplate = (props: any) => {
         name: category.name,
         slug: category.slug,
         products: formattedProducts.filter(product => {
-            const productFromOriginal = products.find(p => p.id === product.id);
+            const productFromOriginal = products?.find(p => p.id === product.id);
             return productFromOriginal?.categories?.some((cat: any) => cat.id === category.id);
         }).slice(0, 8)
     })).filter(cat => cat.products.length > 0) || [];
@@ -193,7 +193,7 @@ export const DefaultTemplate = (props: any) => {
                         <div className="flex items-center space-x-3">
                             <Button variant="ghost" size="icon" className="relative" onClick={() => setIsFavoritesModalOpen(true)}>
                                 <Heart style={{ color: effectiveSettings?.header_icon_color || '#6b7280', width: `${20 * (effectiveSettings?.header_icon_scale || 1.0)}px`, height: `${20 * (effectiveSettings?.header_icon_scale || 1.0)}px` }} />
-                                {favorites.length > 0 && <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">{favorites.length}</Badge>}
+                                {(favorites?.length ?? 0) > 0 && <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">{favorites?.length}</Badge>}
                             </Button>
                             <HamburgerButton
                                 isOpen={isMobileMenuOpen}

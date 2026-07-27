@@ -52,7 +52,7 @@ export const PremiumBrandTemplate = (props: any) => {
     };
 
     const isCatalog = view === 'catalog';
-    const displayProducts = isCatalog ? (catalogProducts || []) : products;
+    const displayProducts = isCatalog ? (catalogProducts || []) : (products || []);
 
     // Styling configuration
     const bg = settings?.store_background_color || '#023f66';

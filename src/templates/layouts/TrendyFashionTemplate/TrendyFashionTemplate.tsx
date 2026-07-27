@@ -55,7 +55,7 @@ export const TrendyFashionTemplate = (props: any) => {
     };
 
     const isCatalog = view === 'catalog';
-    const displayProducts = isCatalog ? (catalogProducts || []) : products;
+    const displayProducts = isCatalog ? (catalogProducts || []) : (products || []);
     // "Nueva Colección" grid: hand-picked featured products when chosen in the
     // editor, otherwise the first 8 products as fallback.
     const featuredIds = props.featuredProducts;

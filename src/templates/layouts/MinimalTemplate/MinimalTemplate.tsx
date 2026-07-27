@@ -12,6 +12,7 @@ import { CheckoutModal } from "@/components/cart/CheckoutModal";
 import { useHideOnScroll } from "@/hooks/useHideOnScroll";
 import { heroFontFamily } from "@/lib/heroFonts";
 import { storeDisplayName } from "@/utils/storeDisplayName";
+import { footerTextColors } from "@/utils/contrastColor";
 
 // --- Components (Internal to this template for cohesion) ---
 
@@ -153,6 +154,7 @@ export const MinimalTemplate = (props: any) => {
     const headerIconColor = settings?.header_icon_color || '#000000';
     const headerIconScale = settings?.header_icon_scale || 1;
     const footerBgColor = settings?.footer_bg_color || '#f9fafb';
+    const footerCol = footerTextColors(props.sectionBg?.footer || footerBgColor);
     const footerIconColor = settings?.footer_icon_color || '#9ca3af';
     const footerIconScale = settings?.footer_icon_scale || 1;
 
@@ -438,25 +440,25 @@ export const MinimalTemplate = (props: any) => {
             <footer className="border-t border-gray-100 py-20 px-6" style={{ backgroundColor: props.sectionBg?.footer || footerBgColor }}>
                 <div className="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 text-center md:text-left">
                     <div>
-                        <h3 className="uppercase text-xs tracking-widest font-bold mb-6" style={styleFor('footerHeading1')}>{els?.footerHeading1?.text || 'Nosotros'}</h3>
-                        <p className="text-sm text-gray-500 font-light leading-relaxed max-w-xs mx-auto md:mx-0" style={styleFor('footerAbout')}>
+                        <h3 className="uppercase text-xs tracking-widest font-bold mb-6" style={{ color: footerCol.text, ...styleFor('footerHeading1') }}>{els?.footerHeading1?.text || 'Nosotros'}</h3>
+                        <p className="text-sm font-light leading-relaxed max-w-xs mx-auto md:mx-0" style={{ color: footerCol.muted, ...styleFor('footerAbout') }}>
                             {els?.footerAbout?.text || settings?.description || 'Una selección curada de esenciales minimalistas para el estilo de vida moderno.'}
                         </p>
                     </div>
                     <div>
-                        <h3 className="uppercase text-xs tracking-widest font-bold mb-6" style={styleFor('footerHeading2')}>{els?.footerHeading2?.text || 'Contacto'}</h3>
+                        <h3 className="uppercase text-xs tracking-widest font-bold mb-6" style={{ color: footerCol.text, ...styleFor('footerHeading2') }}>{els?.footerHeading2?.text || 'Contacto'}</h3>
                         {(contactData?.email || settings?.contact?.email) && (
-                            <p className="text-sm text-gray-500 font-light mb-2">{contactData?.email || settings?.contact?.email}</p>
+                            <p className="text-sm font-light mb-2" style={{ color: footerCol.muted }}>{contactData?.email || settings?.contact?.email}</p>
                         )}
                         {(contactData?.phone || contactData?.whatsapp || settings?.contact?.phone) && (
-                            <p className="text-sm text-gray-500 font-light">{contactData?.phone || contactData?.whatsapp || settings?.contact?.phone}</p>
+                            <p className="text-sm font-light" style={{ color: footerCol.muted }}>{contactData?.phone || contactData?.whatsapp || settings?.contact?.phone}</p>
                         )}
                         {!contactData?.email && !settings?.contact?.email && !contactData?.phone && !contactData?.whatsapp && !settings?.contact?.phone && (
                             <p className="text-sm text-gray-400 font-light italic">Agrega tus datos de contacto</p>
                         )}
                     </div>
                     <div>
-                        <h3 className="uppercase text-xs tracking-widest font-bold mb-6" style={styleFor('footerHeading3')}>{els?.footerHeading3?.text || 'Síguenos'}</h3>
+                        <h3 className="uppercase text-xs tracking-widest font-bold mb-6" style={{ color: footerCol.text, ...styleFor('footerHeading3') }}>{els?.footerHeading3?.text || 'Síguenos'}</h3>
                         <div className="flex justify-center md:justify-start gap-4">
                             {(contactData?.instagram || settings?.social_links?.instagram) && (
                                 <a href={contactData?.instagram || settings?.social_links?.instagram} className="hover:text-black transition-colors" style={{ color: footerIconColor }}><Instagram className="h-5 w-5" style={{ width: `${20 * footerIconScale}px`, height: `${20 * footerIconScale}px` }} /></a>
@@ -470,7 +472,7 @@ export const MinimalTemplate = (props: any) => {
                         </div>
                     </div>
                 </div>
-                <div className="mt-20 text-center text-xs text-gray-300">
+                <div className="mt-20 text-center text-xs" style={{ color: footerCol.muted }}>
                     &copy; {new Date().getFullYear()} {storeDisplayName(settings)}. Todos los derechos reservados. Powered by TOOGO.
                 </div>
             </footer>

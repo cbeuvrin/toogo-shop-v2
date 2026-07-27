@@ -419,7 +419,7 @@ export const SimpleLiveTemplate = (props: any) => {
                             <div className="flex gap-6 min-w-max">
                                 {(() => {
                                     const newArrivals = products?.filter((p: any) => p.features?.includes("new_arrival")) || [];
-                                    const productsToShow = newArrivals.length > 0 ? newArrivals : products?.slice(0, 4);
+                                    const productsToShow = newArrivals.length > 0 ? newArrivals : (products?.slice(0, 4) || []);
 
                                     return productsToShow.map((product: any) => {
                                         const isNew = product.features?.includes("new_arrival");
@@ -533,7 +533,7 @@ export const SimpleLiveTemplate = (props: any) => {
                                 {/* Dynamic Featured Products */}
                                 {(props.featuredProducts && props.featuredProducts.length > 0) ? (
                                     props.featuredProducts.map((productId: string) => {
-                                        const product = props.products.find((p: any) => p.id === productId);
+                                        const product = props.products?.find((p: any) => p.id === productId);
 
                                         if (!product) return null;
 
