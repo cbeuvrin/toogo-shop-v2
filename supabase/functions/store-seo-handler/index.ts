@@ -7,6 +7,84 @@ const corsHeaders = {
 
 const FB_APP_ID = Deno.env.get('FACEBOOK_APP_ID') || '1595938024873627';
 
+// ─── Prerender del SITIO DE MARKETING (www.toogo.store) ───
+// Cuando el host es el de marketing (no una tienda de tenant), servimos HTML de
+// marketing con el mensaje correcto (tienda gratis + administrar por WhatsApp).
+// Va aquí (mismo handler) porque Vercel no permite dos rewrites con source "/".
+const MKT_SITE = 'https://www.toogo.store';
+const MKT_OG = `${MKT_SITE}/assets/mascot-toogo.png`;
+const MKT_PAGES: Record<string, { title: string; description: string; h1: string; body: string[] }> = {
+    '/': {
+        title: 'Crea tu tienda en línea gratis y manéjala por WhatsApp | TOOGO',
+        description: 'Crea tu tienda en línea gratis en 5 minutos y adminístrala desde WhatsApp: sube productos con una foto, recibe pedidos y consulta tus ventas por chat. Hecho para México.',
+        h1: 'Crea tu tienda en línea gratis. Manéjala desde WhatsApp.',
+        body: [
+            'TOOGO es la plataforma mexicana para crear tu tienda en línea gratis en 5 minutos, sin programar. Elige una plantilla, sube tus productos y empieza a vender.',
+            'Lo que hace diferente a TOOGO: administras toda tu tienda desde WhatsApp. Subes un producto mandando una foto y un precio, recibes y gestionas tus pedidos, cambias el diseño de tu tienda y consultas tus ventas del día — todo por chat, sin abrir la computadora.',
+            'Tus clientes también pueden pedirte por WhatsApp, y cobras en línea con Mercado Pago, PayPal, OXXO y SPEI. Conecta tu dominio propio y vende en toda la República.',
+        ],
+    },
+    '/precios': {
+        title: 'Precios de TOOGO: crea tu tienda en línea gratis | TOOGO',
+        description: 'Empieza gratis con TOOGO. Crea tu tienda en línea sin mensualidad y adminístrala por WhatsApp. Conoce los planes y comisiones para vender en México.',
+        h1: 'Precios de TOOGO',
+        body: [
+            'TOOGO tiene un plan gratis para crear tu tienda en línea y empezar a vender sin mensualidad. Administras tu tienda desde WhatsApp desde el primer día.',
+            'Consulta los planes, las comisiones y las funciones incluidas para vender en línea en México con dominio propio y cobros integrados.',
+        ],
+    },
+};
+
+const marketingHtml = (rawPath: string): string => {
+    let path = rawPath || '/';
+    if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
+    const page = MKT_PAGES[path] || MKT_PAGES['/'];
+    const canonical = `${MKT_SITE}${path === '/' ? '/' : path}`;
+    const title = escapeHtml(page.title);
+    const description = escapeHtml(page.description);
+    const ld = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@graph': [
+            { '@type': 'Organization', '@id': `${MKT_SITE}/#organization`, name: 'TOOGO', alternateName: ['TOOGO Store', 'TOOGO México'], url: `${MKT_SITE}/`, logo: { '@type': 'ImageObject', url: MKT_OG }, description: 'Plataforma mexicana para crear una tienda en línea gratis en 5 minutos y administrarla desde WhatsApp, sin programar.', areaServed: { '@type': 'Country', name: 'México' }, sameAs: ['https://www.facebook.com/Toogo.Online/'] },
+            { '@type': 'WebSite', '@id': `${MKT_SITE}/#website`, url: `${MKT_SITE}/`, name: 'TOOGO', inLanguage: 'es-MX', publisher: { '@id': `${MKT_SITE}/#organization` } },
+            { '@type': 'SoftwareApplication', name: 'TOOGO', applicationCategory: 'BusinessApplication', applicationSubCategory: 'E-commerce Platform', operatingSystem: 'Web, iOS, Android', url: `${MKT_SITE}/`, inLanguage: 'es-MX', description: 'Crea tu tienda en línea gratis en 5 minutos y adminístrala desde WhatsApp. Sin programar.', featureList: ['Administra tu tienda desde WhatsApp', 'Sube productos mandando una foto por WhatsApp', 'Recibe y gestiona pedidos por chat', 'Consulta tus ventas preguntando por WhatsApp', 'Cambia el diseño de tu tienda sin computadora', 'Cobros con Mercado Pago, PayPal, OXXO y SPEI', 'Dominio propio y plantillas listas'], offers: { '@type': 'Offer', price: '0', priceCurrency: 'MXN', availability: 'https://schema.org/InStock', url: `${MKT_SITE}/precios` }, publisher: { '@id': `${MKT_SITE}/#organization` } },
+        ],
+    });
+    return `<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+  <meta name="description" content="${description}">
+  <link rel="canonical" href="${canonical}">
+  <meta name="robots" content="index, follow">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="TOOGO">
+  <meta property="og:locale" content="es_MX">
+  <meta property="og:title" content="${title}">
+  <meta property="og:description" content="${description}">
+  <meta property="og:url" content="${canonical}">
+  <meta property="og:image" content="${MKT_OG}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${title}">
+  <meta name="twitter:description" content="${description}">
+  <meta name="twitter:image" content="${MKT_OG}">
+  <script type="application/ld+json">${ld}</script>
+</head>
+<body>
+  <header><a href="${MKT_SITE}/">TOOGO</a>
+    <nav><a href="${MKT_SITE}/">Inicio</a> <a href="${MKT_SITE}/precios">Precios</a> <a href="${MKT_SITE}/blog">Blog</a></nav>
+  </header>
+  <main>
+    <h1>${escapeHtml(page.h1)}</h1>
+    ${page.body.map((p) => `<p>${escapeHtml(p)}</p>`).join('\n    ')}
+  </main>
+  <footer><p>TOOGO — Crea tu tienda en línea gratis y manéjala desde WhatsApp. Hecho para México.</p></footer>
+</body>
+</html>`;
+};
+
 // Function to escape HTML special characters
 const escapeHtml = (text: string): string => {
     if (!text) return '';
@@ -80,6 +158,16 @@ Deno.serve(async (req) => {
 
         if (!hostname) {
             return new Response('Missing hostname', { status: 400, headers: corsHeaders });
+        }
+
+        // Rama de MARKETING: si el host es el sitio principal (no una tienda de
+        // tenant), servimos el HTML de marketing. Evita el 404 "Tenant not found".
+        if (hostname === 'toogo.store' || hostname === 'www.toogo.store') {
+            const path = url.searchParams.get('path') || url.pathname || '/';
+            return new Response(marketingHtml(path), {
+                status: 200,
+                headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300', ...corsHeaders },
+            });
         }
 
         // Initialize Supabase
