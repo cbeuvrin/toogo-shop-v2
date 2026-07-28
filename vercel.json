@@ -1,4 +1,17 @@
 {
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "^toogo\\.store$"
+        }
+      ],
+      "destination": "https://www.toogo.store/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/",
