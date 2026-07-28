@@ -114,6 +114,10 @@ verify_jwt = false
 verify_jwt = false
 # Note: Public endpoint for social media crawlers to get proper meta tags
 
+[functions.marketing-seo-handler]
+verify_jwt = false
+# Note: Public endpoint — prerender SEO del sitio de marketing para crawlers/IA
+
 [functions.check-subdomain-availability]
 verify_jwt = false
 # Note: Public endpoint for checking subdomain availability without authentication
