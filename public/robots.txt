@@ -1,3 +1,4 @@
+# --- Buscadores clásicos ---
 User-agent: *
 Allow: /
 Disallow: /auth
@@ -16,4 +17,34 @@ Disallow: /auth
 Disallow: /dashboard
 Disallow: /admin
 
-Sitemap: https://toogo.store/sitemap.xml
+User-agent: Applebot
+Allow: /
+Disallow: /auth
+Disallow: /dashboard
+Disallow: /admin
+
+# --- Motores de IA: indexación y recuperación en vivo (citabilidad) ---
+User-agent: OAI-SearchBot
+Allow: /
+User-agent: ChatGPT-User
+Allow: /
+User-agent: GPTBot
+Allow: /
+User-agent: Claude-SearchBot
+Allow: /
+User-agent: Claude-User
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: Perplexity-User
+Allow: /
+User-agent: Google-Extended
+Allow: /
+User-agent: DuckAssistBot
+Allow: /
+User-agent: MistralAI-User
+Allow: /
+
+Sitemap: https://www.toogo.store/sitemap.xml

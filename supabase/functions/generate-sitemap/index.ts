@@ -38,13 +38,16 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${blogPosts?.length || 0} published blog posts`);
 
-    // Current date for lastmod
-    const today = new Date().toISOString().split('T')[0];
+    // Fecha FIJA de última edición real de las páginas estáticas. NO usar new Date()
+    // aquí: un lastmod que cambia a diario sin que cambie el contenido es una señal
+    // de frescura falsa y Google deja de confiar en el sitemap. Actualizar a mano al
+    // editar de verdad estas páginas.
+    const today = '2026-07-28';
 
     // Static pages configuration
     const staticPages = [
       { url: '/', priority: '1.0', changefreq: 'weekly', lastmod: today },
-      { url: '/blog', priority: '0.9', changefreq: 'daily', lastmod: today },
+      { url: '/blog', priority: '0.9', changefreq: 'weekly', lastmod: today },
       { url: '/terminos-condiciones', priority: '0.3', changefreq: 'monthly', lastmod: today },
       { url: '/politica-privacidad', priority: '0.3', changefreq: 'monthly', lastmod: today },
       { url: '/liberacion-responsabilidad', priority: '0.3', changefreq: 'monthly', lastmod: today },
@@ -58,7 +61,7 @@ Deno.serve(async (req) => {
     // Add static pages
     for (const page of staticPages) {
       xml += '  <url>\n';
-      xml += `    <loc>https://toogo.store${page.url}</loc>\n`;
+      xml += `    <loc>https://www.toogo.store${page.url}</loc>\n`;
       xml += `    <lastmod>${page.lastmod}</lastmod>\n`;
       xml += `    <changefreq>${page.changefreq}</changefreq>\n`;
       xml += `    <priority>${page.priority}</priority>\n`;
@@ -70,7 +73,7 @@ Deno.serve(async (req) => {
       for (const post of blogPosts) {
         const lastmod = new Date(post.updated_at).toISOString().split('T')[0];
         xml += '  <url>\n';
-        xml += `    <loc>https://toogo.store/blog/${post.slug}</loc>\n`;
+        xml += `    <loc>https://www.toogo.store/blog/${post.slug}</loc>\n`;
         xml += `    <lastmod>${lastmod}</lastmod>\n`;
         xml += `    <changefreq>weekly</changefreq>\n`;
         xml += `    <priority>0.8</priority>\n`;

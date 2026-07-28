@@ -50,8 +50,11 @@ Deno.serve(async (req) => {
       previewMode
     });
     
-    // Detectar si es un crawler de redes sociales o modo preview
-    const isCrawler = previewMode || /(Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview)/i.test(userAgent);
+    // Detectar crawler o modo preview. BUG previo: solo incluía redes sociales, así
+    // que Googlebot y los bots de IA (que el rewrite de Vercel SÍ manda aquí) no se
+    // reconocían → 302 a la app y los posts nunca prerenderizaban. Ahora incluye
+    // buscadores y agentes de IA.
+    const isCrawler = previewMode || /(bot|crawler|spider|Googlebot|GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|PerplexityBot|Perplexity-User|Applebot|Amazonbot|Bytespider|bingbot|DuckAssistBot|MistralAI-User|Google-Extended|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview)/i.test(userAgent);
     
     // Obtener el path del query param o del pathname
     const blogPath = url.searchParams.get('path') || url.pathname;
@@ -127,7 +130,26 @@ Deno.serve(async (req) => {
     
     // Safe handling of seo_keywords
     const tags = Array.isArray(post.seo_keywords) ? post.seo_keywords.slice(0, 5) : [];
-    
+
+    // Contenido real del artículo (mejora enorme de citabilidad: el crawler ve el
+    // texto completo, no solo el resumen). Viene de un editor rich-text (HTML).
+    const articleContent = post.content || post.body || post.content_html || '';
+
+    // JSON-LD BlogPosting. dateModified es la señal con más peso para citación por IA.
+    const blogLd = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: post.seo_title || post.title,
+      description: post.seo_description || post.excerpt || '',
+      image: imageUrl,
+      datePublished: post.published_at || post.created_at,
+      dateModified: post.updated_at || post.published_at || post.created_at,
+      inLanguage: 'es-MX',
+      author: { '@type': 'Organization', name: 'TOOGO', url: 'https://www.toogo.store/' },
+      publisher: { '@type': 'Organization', name: 'TOOGO', logo: { '@type': 'ImageObject', url: 'https://www.toogo.store/assets/mascot-toogo.png' } },
+      mainEntityOfPage: { '@type': 'WebPage', '@id': articleUrl },
+    });
+
     // Generar HTML con meta tags correctos
     const html = `<!DOCTYPE html>
 <html lang="es">
@@ -175,11 +197,17 @@ Deno.serve(async (req) => {
   
   <!-- Language -->
   <meta http-equiv="Content-Language" content="es-MX">
+
+  <!-- Structured data -->
+  <script type="application/ld+json">${blogLd}</script>
 </head>
 <body>
-  <h1>${title}</h1>
-  <p>${description}</p>
-  <img src="${imageUrl}" alt="${title}" />
+  <article>
+    <h1>${title}</h1>
+    <p>${description}</p>
+    <img src="${imageUrl}" alt="${title}" />
+    <div>${articleContent}</div>
+  </article>
 </body>
 </html>`;
     
