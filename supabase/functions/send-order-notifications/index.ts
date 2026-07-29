@@ -225,7 +225,8 @@ serve(async (req) => {
             message: whatsappMessage,
             tenantId: requestBody.tenant_id,
             responseType: 'text'
-          }
+          },
+          headers: { 'x-internal-secret': Deno.env.get('INTERNAL_WEBHOOK_SECRET') || '' }
         });
         waSent = true;
       }

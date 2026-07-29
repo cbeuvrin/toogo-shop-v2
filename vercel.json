@@ -25,7 +25,7 @@
       "destination": "https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/store-seo-handler?path=/"
     },
     {
-      "source": "/precios",
+      "source": "/crear-tienda-con-ia",
       "has": [
         {
           "type": "header",
@@ -33,7 +33,7 @@
           "value": ".*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot|GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|PerplexityBot|Perplexity-User|Applebot|Amazonbot|Bytespider|MistralAI-User|DuckAssistBot|Google-Extended).*"
         }
       ],
-      "destination": "https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/store-seo-handler?path=/precios"
+      "destination": "https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/store-seo-handler?path=/crear-tienda-con-ia"
     },
     {
       "source": "/blog/:slug",

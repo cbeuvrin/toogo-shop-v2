@@ -24,14 +24,37 @@ serve(async (req) => {
       }
     )
 
+    // Auth: exigir un usuario autenticado REAL (no el anon key). El comprador es
+    // SIEMPRE el usuario del token, nunca el buyerUserId del body → nadie puede crear
+    // tiendas a nombre de otro.
+    const token = (req.headers.get('Authorization') || '').replace('Bearer ', '')
+    const { data: { user }, error: authErr } = await supabaseClient.auth.getUser(token)
+    if (authErr || !user) {
+      return new Response(JSON.stringify({ error: 'unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const {
       masterTenantId,
       newTenantName,
-      buyerUserId,
       primaryHost,
       couponId,
       discountAmount
     } = await req.json()
+
+    const buyerUserId = user.id
+
+    // Allowlist de tiendas plantilla clonables. Sin esto, cualquiera podía clonar el
+    // catálogo COMPLETO de cualquier tenant (robo). Fail-closed: si no está configurada,
+    // no se clona nada (la función está dormida en la UI hoy).
+    const clonable = (Deno.env.get('CLONABLE_MASTER_TENANT_IDS') || '')
+      .split(',').map((s) => s.trim()).filter(Boolean)
+    if (clonable.length === 0 || !clonable.includes(masterTenantId)) {
+      return new Response(JSON.stringify({ error: 'master tenant not clonable' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
 
     console.log('Cloning store for:', {
       masterTenantId,

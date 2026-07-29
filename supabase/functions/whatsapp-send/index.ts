@@ -12,6 +12,16 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Solo llamadas internas (webhook, ai-agent, notificaciones de pedido) pueden enviar
+  // WhatsApp desde el número del negocio. Sin esto, cualquiera con el anon key público
+  // podía mandar mensajes/imágenes suplantando al negocio (phishing + costo Twilio).
+  const INTERNAL_SECRET = Deno.env.get('INTERNAL_WEBHOOK_SECRET');
+  if (!INTERNAL_SECRET || req.headers.get('x-internal-secret') !== INTERNAL_SECRET) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const { to, message, responseType, tenantId, conversationId, imageUrl } = await req.json();
 

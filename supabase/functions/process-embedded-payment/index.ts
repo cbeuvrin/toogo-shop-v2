@@ -231,6 +231,22 @@ serve(async (req) => {
 
       if (tenantId) {
         console.log(`[UPGRADE] Updating existing tenant: ${tenantId}`);
+
+        // Verificar PROPIEDAD: el usuario autenticado debe ser el dueño del tenant.
+        // Sin esto, un usuario podía pasar el tenantId de OTRA tienda y secuestrarle
+        // el dominio/plan tras pagar con su propia tarjeta.
+        const { data: ownerRow, error: ownerErr } = await supabase
+          .from('tenants')
+          .select('owner_user_id')
+          .eq('id', tenantId)
+          .single();
+        if (ownerErr || !ownerRow || ownerRow.owner_user_id !== user.id) {
+          console.warn(`[UPGRADE] Ownership check failed: user ${user.id} is not owner of tenant ${tenantId}`);
+          return new Response(JSON.stringify({ error: 'forbidden: not tenant owner' }), {
+            status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
         // Update existing tenant (Upgrade Plan + Add Domain)
         const { data: updatedTenant, error: updateError } = await supabase
           .from('tenants')

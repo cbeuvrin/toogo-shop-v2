@@ -12,11 +12,35 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Auth interna: solo el webhook (que conoce el secreto) puede invocar esta función.
+  // Sin esto, cualquiera con la URL podía dispararla y provocar el SSRF de abajo.
+  const INTERNAL_SECRET = Deno.env.get('INTERNAL_WEBHOOK_SECRET');
+  if (!INTERNAL_SECRET || req.headers.get('x-internal-secret') !== INTERNAL_SECRET) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const { audioUrl, tenantId } = await req.json();
 
     if (!audioUrl) {
       throw new Error('audioUrl is required');
+    }
+
+    // Anti-SSRF: solo descargamos de Twilio. Las credenciales de Twilio se adjuntan
+    // al fetch de abajo; sin este candado, un audioUrl arbitrario las filtraba a un
+    // servidor atacante. Aceptamos únicamente https en *.twilio.com / api.twilio.com.
+    try {
+      const parsed = new URL(audioUrl);
+      const audioHost = parsed.hostname.toLowerCase();
+      if (parsed.protocol !== 'https:' || (audioHost !== 'api.twilio.com' && !audioHost.endsWith('.twilio.com'))) {
+        throw new Error('host not allowed');
+      }
+    } catch (_e) {
+      return new Response(JSON.stringify({ error: 'audioUrl must be an https Twilio URL' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;

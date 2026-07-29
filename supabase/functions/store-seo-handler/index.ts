@@ -24,13 +24,14 @@ const MKT_PAGES: Record<string, { title: string; description: string; h1: string
             'Tus clientes también pueden pedirte por WhatsApp, y cobras en línea con Mercado Pago, PayPal, OXXO y SPEI. Conecta tu dominio propio y vende en toda la República.',
         ],
     },
-    '/precios': {
-        title: 'Precios de TOOGO: crea tu tienda en línea gratis | TOOGO',
-        description: 'Empieza gratis con TOOGO. Crea tu tienda en línea sin mensualidad y adminístrala por WhatsApp. Conoce los planes y comisiones para vender en México.',
-        h1: 'Precios de TOOGO',
+    '/crear-tienda-con-ia': {
+        title: 'Crear tu tienda online con inteligencia artificial gratis | TOOGO',
+        description: 'Crea tu tienda en línea gratis con ayuda de inteligencia artificial y adminístrala desde WhatsApp: sube productos con una foto, y la IA arma tu catálogo. Hecho para México.',
+        h1: 'Crea tu tienda online con inteligencia artificial. Gratis.',
         body: [
-            'TOOGO tiene un plan gratis para crear tu tienda en línea y empezar a vender sin mensualidad. Administras tu tienda desde WhatsApp desde el primer día.',
-            'Consulta los planes, las comisiones y las funciones incluidas para vender en línea en México con dominio propio y cobros integrados.',
+            'Con TOOGO creas tu tienda en línea gratis en minutos y la manejas conversando con una inteligencia artificial por WhatsApp. Le mandas una foto y el precio de tu producto, y la IA lo publica en tu tienda por ti.',
+            'La IA de TOOGO también te ayuda a describir tus productos, organizar tu catálogo, revisar tus ventas del día y cambiar el diseño de tu tienda — todo por chat, sin programar y sin abrir la computadora.',
+            'Es la forma más rápida de tener una tienda en línea profesional en México: elige una plantilla, deja que la IA arme tu catálogo desde WhatsApp, conecta tu dominio y empieza a vender con cobros por Mercado Pago, PayPal, OXXO y SPEI.',
         ],
     },
 };

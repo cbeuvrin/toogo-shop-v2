@@ -6,6 +6,58 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// HMAC-SHA1 → base64 (el algoritmo que usa Twilio para X-Twilio-Signature).
+async function hmacSha1Base64(key: string, data: string): Promise<string> {
+  const enc = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', enc.encode(key), { name: 'HMAC', hash: 'SHA-1' }, false, ['sign'],
+  );
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, enc.encode(data));
+  return btoa(String.fromCharCode(...new Uint8Array(sig)));
+}
+
+// Verifica la firma de Twilio probando varias reconstrucciones de la URL, porque
+// detrás del proxy de Supabase la URL que ve la función puede no ser idéntica a la
+// que Twilio firmó. En modo log-only reporta cuál coincide para poder activar el
+// bloqueo (TWILIO_SIGNATURE_ENFORCE) con certeza y sin tumbar el bot.
+async function twilioSignatureCheck(req: Request, formData: FormData) {
+  const authToken = Deno.env.get('TWILIO_AUTH_TOKEN') || '';
+  const received = req.headers.get('X-Twilio-Signature') || '';
+  const params: [string, string][] = [];
+  for (const [k, v] of formData.entries()) {
+    if (typeof v === 'string') params.push([k, v]);
+  }
+  params.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+  const suffix = params.map(([k, v]) => k + v).join('');
+
+  const u = new URL(req.url);
+  const host = req.headers.get('host') || u.host;
+  const xfHost = req.headers.get('x-forwarded-host') || '';
+  const xfProto = req.headers.get('x-forwarded-proto') || 'https';
+  const supaBase = (Deno.env.get('SUPABASE_URL') || '').replace(/\/$/, '');
+  const candidates: Record<string, string> = {
+    envUrl: Deno.env.get('TWILIO_WEBHOOK_URL') || '',
+    reqUrl: req.url,
+    httpsHost: `https://${host}${u.pathname}${u.search}`,
+    canonical: supaBase ? `${supaBase}/functions/v1/whatsapp-webhook` : '',
+    fwdHost: xfHost ? `${xfProto}://${xfHost}${u.pathname}${u.search}` : '',
+  };
+
+  const results: Record<string, boolean | 'skip'> = {};
+  let anyValid = false;
+  let matchedKey = '';
+  for (const [name, url] of Object.entries(candidates)) {
+    if (!url) { results[name] = 'skip'; continue; }
+    const computed = await hmacSha1Base64(authToken, url + suffix);
+    const ok = received.length > 0 && computed === received;
+    results[name] = ok;
+    if (ok && !anyValid) { anyValid = true; matchedKey = name; }
+  }
+  // Diagnóstico (solo para afinar la URL; no expone el auth token):
+  const diag = { reqUrl: req.url, host, xfHost, xfProto, pathname: u.pathname, search: u.search, receivedPrefix: received.slice(0, 8), paramKeys: params.map(([k]) => k).join(',') };
+  return { anyValid, matchedKey, results, hasSignature: received.length > 0, diag };
+}
+
 serve(async (req) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
@@ -20,6 +72,26 @@ serve(async (req) => {
 
     // Twilio envía form-data, no JSON
     const formData = await req.formData();
+
+    // Validación de firma de Twilio (anti-suplantación). Arranca en modo LOG-ONLY:
+    // registra si la firma coincide y con qué reconstrucción de URL, sin bloquear.
+    // Cuando confirmemos en logs que coincide con un WhatsApp real, se pone el secret
+    // TWILIO_SIGNATURE_ENFORCE=true y a partir de ahí rechaza las peticiones falsas.
+    const enforce = Deno.env.get('TWILIO_SIGNATURE_ENFORCE') === 'true';
+    const sig = await twilioSignatureCheck(req, formData);
+    console.log('🔐 Twilio signature:', JSON.stringify({ enforce, valid: sig.anyValid, matched: sig.matchedKey, hasSignature: sig.hasSignature, results: sig.results }));
+    // Dejamos rastro en whatsapp_logs (legible por SQL) para confirmar qué reconstrucción
+    // de URL coincide con el tráfico real de Twilio antes de activar el enforce.
+    try {
+      await supabase.from('whatsapp_logs').insert({
+        event_type: 'twilio_sig_check',
+        payload: { enforce, valid: sig.anyValid, matched: sig.matchedKey, hasSignature: sig.hasSignature, results: sig.results, diag: sig.diag },
+      });
+    } catch (_e) { /* best-effort */ }
+    if (enforce && !sig.anyValid) {
+      console.warn('❌ Firma de Twilio inválida — petición rechazada (enforce ON)');
+      return new Response('Forbidden', { status: 403, headers: corsHeaders });
+    }
 
     // Extraer campos de Twilio
     const from = formData.get('From')?.toString().replace('whatsapp:', '') || '';
@@ -170,7 +242,8 @@ serve(async (req) => {
       const { data: transcription, error: transcribeError } = await supabase.functions.invoke(
         'whatsapp-transcribe',
         {
-          body: { audioUrl: mediaUrl0, tenantId }
+          body: { audioUrl: mediaUrl0, tenantId },
+          headers: { 'x-internal-secret': Deno.env.get('INTERNAL_WEBHOOK_SECRET') || '' }
         }
       );
 
@@ -290,7 +363,8 @@ serve(async (req) => {
             imageUrl: aiResponse.generatedImageUrl,
             tenantId,
             conversationId: conversation.id
-          }
+          },
+          headers: { 'x-internal-secret': Deno.env.get('INTERNAL_WEBHOOK_SECRET') || '' }
         }
       );
 
@@ -308,7 +382,8 @@ serve(async (req) => {
             responseType: messageType === 'audio' ? 'audio' : 'text',
             tenantId,
             conversationId: conversation.id
-          }
+          },
+          headers: { 'x-internal-secret': Deno.env.get('INTERNAL_WEBHOOK_SECRET') || '' }
         }
       );
 
