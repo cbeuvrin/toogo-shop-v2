@@ -2,7 +2,17 @@
 
 **Fecha:** 2026-07-28
 **Autor:** Carlos + Claude
-**Estado:** Aprobado (pendiente de revisión final antes del plan de implementación)
+**Estado:** DIFERIDO — reservado como **Camino 3 (futuro)**.
+
+> **DECISIÓN (28 jul 2026):** tras evaluar el trade-off honestamente, Carlos eligió el
+> **Camino 2** para AHORA: prerenderizar/generar como estático las páginas de marketing
+> **dentro de la app Vite actual** (con una herramienta SSG tipo Vike / vite-react-ssg),
+> sin mover dominios ni separar el repo. Da el mismo beneficio SEO/GEO (HTML real para
+> crawlers) con mucho menos riesgo y esfuerzo, apropiado para un producto que ya funciona.
+>
+> **Este documento (Astro, sitio aparte) queda como referencia del Camino 3**, la
+> arquitectura purista a la que se puede migrar cuando el sitio de marketing crezca y
+> valga la pena separarlo. Todo el diseño de aquí abajo sigue siendo válido para ese día.
 
 ## 1. Contexto y objetivo
 
