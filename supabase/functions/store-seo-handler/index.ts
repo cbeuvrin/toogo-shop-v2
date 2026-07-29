@@ -27,7 +27,7 @@ const MKT_PAGES: Record<string, { title: string; description: string; h1: string
     '/crear-tienda-con-ia': {
         title: 'Crear tu tienda online con inteligencia artificial gratis | TOOGO',
         description: 'Crea tu tienda en línea gratis con ayuda de inteligencia artificial y adminístrala desde WhatsApp: sube productos con una foto, y la IA arma tu catálogo. Hecho para México.',
-        h1: 'Crea tu tienda online con inteligencia artificial. Gratis.',
+        h1: 'Crea tu tienda en línea gratis y manéjala desde WhatsApp',
         body: [
             'Con TOOGO creas tu tienda en línea gratis en minutos y la manejas conversando con una inteligencia artificial por WhatsApp. Le mandas una foto y el precio de tu producto, y la IA lo publica en tu tienda por ti.',
             'La IA de TOOGO también te ayuda a describir tus productos, organizar tu catálogo, revisar tus ventas del día y cambiar el diseño de tu tienda — todo por chat, sin programar y sin abrir la computadora.',

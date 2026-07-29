@@ -75,11 +75,11 @@ const CrearTiendaConIA = () => {
             Tienda en línea con IA
           </span>
           <h1 className="text-4xl md:text-6xl font-black leading-tight mb-6">
-            Crea tu tienda online con <span style={{ color: PURPLE }}>inteligencia artificial</span>. Gratis.
+            Crea tu tienda en línea gratis y <span style={{ color: PURPLE }}>manéjala desde WhatsApp</span>
           </h1>
           <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Con TOOGO le mandas una foto de tu producto a la IA por WhatsApp y ella arma tu tienda por ti.
-            Sin programar, sin mensualidad para empezar. Hecho para México.
+            Con un asistente de inteligencia artificial: le mandas una foto de tu producto por WhatsApp
+            y arma tu tienda por ti. Sin programar, sin mensualidad para empezar. Hecho para México.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
