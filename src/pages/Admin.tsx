@@ -5,13 +5,14 @@ import { Link, Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Building, DollarSign, TrendingUp, Shield, Settings, MessageSquare, Phone, Store } from 'lucide-react';
+import { Users, Building, DollarSign, TrendingUp, Shield, Settings, MessageSquare, Phone, Store, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AdminMetrics } from '@/components/admin/AdminMetrics';
 import { AdminUserManagement } from '@/components/admin/AdminUserManagement';
 import { AdminTenantManagement } from '@/components/admin/AdminTenantManagement';
 import { AdminActivityLogs } from '@/components/admin/AdminActivityLogs';
 import { AdminSettings } from '@/components/admin/AdminSettings';
+import { PlanPromoAdmin } from '@/components/admin/PlanPromoAdmin';
 import AdminChatbotSettings from '@/components/admin/AdminChatbotSettings';
 import { AdminDomainPurchases } from '@/components/admin/AdminDomainPurchases';
 import { AdminBlogEditor } from '@/components/admin/AdminBlogEditor';
@@ -126,7 +127,7 @@ const Admin = () => {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="metrics" className="space-y-6">
-          <TabsList className="inline-flex w-full md:grid md:grid-cols-9 overflow-x-auto">
+          <TabsList className="inline-flex w-full md:grid md:grid-cols-10 overflow-x-auto">
             <TabsTrigger value="metrics" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               <span className="hidden md:inline">Métricas</span>
@@ -162,6 +163,10 @@ const Admin = () => {
             <TabsTrigger value="whatsapp" className="flex items-center gap-2">
               <Phone className="w-4 h-4" />
               <span className="hidden md:inline">WhatsApp</span>
+            </TabsTrigger>
+            <TabsTrigger value="promo" className="flex items-center gap-2">
+              <Gift className="w-4 h-4" />
+              <span className="hidden md:inline">Promo</span>
             </TabsTrigger>
 
           </TabsList>
@@ -201,6 +206,10 @@ const Admin = () => {
 
           <TabsContent value="whatsapp" className="space-y-6">
             <AdminWhatsAppSettings />
+          </TabsContent>
+
+          <TabsContent value="promo" className="space-y-6">
+            <PlanPromoAdmin />
           </TabsContent>
 
 

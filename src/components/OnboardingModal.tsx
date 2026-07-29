@@ -10,6 +10,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, AlertCircle, Mail, Loader2, ShoppingBag, Globe, ArrowLeft, CreditCard, X, HelpCircle, Eye, EyeOff } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PlanPromoModal } from "@/components/PlanPromoModal";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -69,6 +70,9 @@ export const OnboardingModal = ({
   const [selectedOption, setSelectedOption] = useState<"subdomain" | "domain">("subdomain");
   const [currentStep, setCurrentStep] = useState("step1");
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
+  // Promo de plan (regalo del código): tenant recién creado + a dónde redirigir después.
+  const [promoTenantId, setPromoTenantId] = useState<string | null>(null);
+  const [promoRedirectUrl, setPromoRedirectUrl] = useState<string>("");
   const [isCheckingDomain, setIsCheckingDomain] = useState(false);
   const [isDomainAvailable, setIsDomainAvailable] = useState<boolean | null>(null);
   const [isVerificationSent, setIsVerificationSent] = useState(false);
@@ -930,6 +934,17 @@ export const OnboardingModal = ({
       } else {
         console.log('No session found, redirecting to dashboard directly');
       }
+      // Promo de plan: si hay una activa, mostramos el popup del código antes de
+      // redirigir. El PlanPromoModal continúa a la tienda al aplicar o al saltar.
+      try {
+        const { data: promo } = await supabase.rpc('get_active_plan_promo');
+        if ((promo as any)?.active && newTenant?.id) {
+          setPromoRedirectUrl(redirectUrl);
+          setPromoTenantId(newTenant.id);
+          return;
+        }
+      } catch (_e) { /* si falla el chequeo, seguimos con el flujo normal */ }
+
       const domainType = flowType === "subdomain" ? "subdominio" : "dominio personalizado";
       toast({
         title: "🎉 ¡Tu tienda está lista!",
@@ -1680,7 +1695,7 @@ export const OnboardingModal = ({
   }
 
   // Show onboarding flow
-  return <Dialog open={open} onOpenChange={onOpenChange}>
+  return <><Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto p-0 bg-transparent border-0 shadow-none">
           <DialogHeader>
             <DialogTitle className="sr-only">Onboarding de tienda</DialogTitle>
@@ -1761,5 +1776,16 @@ export const OnboardingModal = ({
         lastName: formData.email.split('@')[0]
       }
     }} />
-    </Dialog>;
+    </Dialog>
+
+    <PlanPromoModal
+      open={!!promoTenantId}
+      tenantId={promoTenantId}
+      onDone={() => {
+        setPromoTenantId(null);
+        onOpenChange(false);
+        if (promoRedirectUrl) window.location.href = promoRedirectUrl;
+      }}
+    />
+    </>;
 };
