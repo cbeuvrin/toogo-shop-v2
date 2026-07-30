@@ -997,7 +997,7 @@
     flex: 0 0 auto;
     opacity: 0.14;
 }
-.l2root .cta-logo { height: 780px; width: auto; aspect-ratio: 1 / 1; object-fit: contain; flex: 0 0 auto; opacity: 0.14; }
+.l2root .cta-logo { width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: contain; max-width: 90vw; flex: 1; opacity: 0.14; }
 .l2root .cta-mascot { height: 380px; width: auto; flex: 0 0 auto; }
 .l2root .cta-content {
     position: relative;
@@ -1025,7 +1025,7 @@
 .l2root .final-cta .btn { margin-top: 8px; }
 @media (max-width: 768px) {
 .l2root .final-cta { padding: 64px 0; }
-.l2root .cta-logo { height: 440px; aspect-ratio: 1 / 1; object-fit: contain; }
+.l2root .cta-logo { width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: contain; max-width: 90vw; flex: 1; }
 .l2root .cta-mascot { height: 230px; }
 .l2root .cta-track { gap: 48px; padding-left: 48px; }
 .l2root .final-cta h2 { white-space: normal; }
