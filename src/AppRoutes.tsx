@@ -8,6 +8,7 @@ const Index = React.lazy(() => import("./pages/Index"));
 const LandingOriginal = React.lazy(() => import("./pages/Index"));
 const Landing4 = React.lazy(() => import("./pages/Landing4"));
 const LandingNueva = React.lazy(() => import("./pages/LandingNueva"));
+const LandingV5 = React.lazy(() => import("./pages/LandingV5"));
 const CrearTiendaConIA = React.lazy(() => import("./pages/CrearTiendaConIA"));
 const Auth = React.lazy(() => import("./pages/Auth"));
 const Tienda = React.lazy(() => import("./pages/Tienda"));
@@ -37,6 +38,7 @@ export const AppRoutes = () => {
                 {/* SmartHomePage handles redirection logic */}
                 <Route path="/" element={<SmartHomePage />} />
                 <Route path="/landing4" element={<Landing4 />} />
+                <Route path="/landing-v5" element={<LandingV5 />} />
                 <Route path="/landing-nueva" element={<LandingNueva />} />
                 <Route path="/crear-tienda-con-ia" element={<CrearTiendaConIA />} />
                 <Route path="/landing-original" element={<LandingOriginal />} />
