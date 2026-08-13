@@ -10,9 +10,12 @@ interface SEOHeadProps {
 }
 
 export const SEOHead = ({
-  title = "Crea tu Tienda Online Gratis en 5 Minutos | TOOGO México - E-commerce Sin Programación",
-  description = "⚡ Crea tu tienda online profesional GRATIS en menos de 5 minutos con TOOGO. Sin programación ni conocimientos técnicos. Vende por WhatsApp, gestiona productos y acepta pagos desde un solo lugar. ¡Comienza hoy mismo! 🛍️",
-  keywords = "crear tienda online gratis, ecommerce mexico, tienda virtual gratis, vender por whatsapp, negocio online, tienda sin programacion, ecommerce facil, tienda online, e-commerce, crear tienda virtual, vender online, negocio digital, comercio electrónico",
+  // Mantener en sincronía con index.html y con MKT_PAGES['/'] del
+  // store-seo-handler: el gancho es que el comerciante MANEJA su tienda desde
+  // WhatsApp; cerrar la venta por ahí es una opción suya, va al final.
+  title = "Crea tu tienda en línea gratis y manéjala por WhatsApp | TOOGO",
+  description = "Crea tu tienda en línea gratis y manéjala desde WhatsApp: sube productos con una foto y mira tus ventas por chat. Y si quieres, cierras la venta por WhatsApp.",
+  keywords = "tienda en línea administrada por whatsapp, administrar mi tienda desde whatsapp, subir productos por whatsapp, crear tienda online gratis, ecommerce mexico, tienda virtual gratis, vender por whatsapp, tienda sin programacion, crear tienda virtual, negocio digital, comercio electrónico",
   ogImage = "https://toogo.store/assets/toogo-og-image.jpg",
   ogType = "website",
   structuredData
