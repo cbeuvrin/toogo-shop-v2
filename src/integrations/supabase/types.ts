@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       admin_activity_logs: {
@@ -323,6 +348,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          parent_id: string | null
           show_on_home: boolean | null
           slug: string
           sort: number | null
@@ -333,6 +359,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          parent_id?: string | null
           show_on_home?: boolean | null
           slug: string
           sort?: number | null
@@ -343,6 +370,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          parent_id?: string | null
           show_on_home?: boolean | null
           slug?: string
           sort?: number | null
@@ -350,6 +378,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "categories_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -542,6 +577,38 @@ export type Database = {
         }
         Relationships: []
       }
+      design_snapshots: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          payload: Json
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string
+          payload: Json
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          payload?: Json
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_snapshots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       domain_purchases: {
         Row: {
           created_at: string
@@ -550,6 +617,7 @@ export type Database = {
           dns_verified_at: string | null
           dns_verified_bool: boolean | null
           domain: string
+          expires_at: string | null
           id: string
           metadata: Json | null
           openprovider_domain_id: number | null
@@ -567,6 +635,7 @@ export type Database = {
           dns_verified_at?: string | null
           dns_verified_bool?: boolean | null
           domain: string
+          expires_at?: string | null
           id?: string
           metadata?: Json | null
           openprovider_domain_id?: number | null
@@ -584,6 +653,7 @@ export type Database = {
           dns_verified_at?: string | null
           dns_verified_bool?: boolean | null
           domain?: string
+          expires_at?: string | null
           id?: string
           metadata?: Json | null
           openprovider_domain_id?: number | null
@@ -610,8 +680,16 @@ export type Database = {
           auto_renew: boolean
           created_at: string
           domain: string
+          domain_purchase_id: string | null
           id: string
+          last_renewal_attempt_at: string | null
+          mercadopago_preapproval_id: string | null
+          metadata: Json | null
           next_renewal_date: string | null
+          price_mxn: number | null
+          reminders_sent: Json | null
+          renewal_attempts: number | null
+          status: string | null
           tenant_id: string
           updated_at: string
         }
@@ -620,8 +698,16 @@ export type Database = {
           auto_renew?: boolean
           created_at?: string
           domain: string
+          domain_purchase_id?: string | null
           id?: string
+          last_renewal_attempt_at?: string | null
+          mercadopago_preapproval_id?: string | null
+          metadata?: Json | null
           next_renewal_date?: string | null
+          price_mxn?: number | null
+          reminders_sent?: Json | null
+          renewal_attempts?: number | null
+          status?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -630,12 +716,27 @@ export type Database = {
           auto_renew?: boolean
           created_at?: string
           domain?: string
+          domain_purchase_id?: string | null
           id?: string
+          last_renewal_attempt_at?: string | null
+          mercadopago_preapproval_id?: string | null
+          metadata?: Json | null
           next_renewal_date?: string | null
+          price_mxn?: number | null
+          reminders_sent?: Json | null
+          renewal_attempts?: number | null
+          status?: string | null
           tenant_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "domain_renewals_domain_purchase_id_fkey"
+            columns: ["domain_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "domain_purchases"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "domain_renewals_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -644,6 +745,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      leads: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          metadata: Json
+          source: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          metadata?: Json
+          source?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          metadata?: Json
+          source?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
       }
       order_items: {
         Row: {
@@ -715,6 +843,7 @@ export type Database = {
           payment_ref: string | null
           shipping_cost: number | null
           status: Database["public"]["Enums"]["order_status"] | null
+          stock_applied: boolean
           store_coupon_id: string | null
           store_discount_amount: number | null
           tenant_id: string
@@ -737,6 +866,7 @@ export type Database = {
           payment_ref?: string | null
           shipping_cost?: number | null
           status?: Database["public"]["Enums"]["order_status"] | null
+          stock_applied?: boolean
           store_coupon_id?: string | null
           store_discount_amount?: number | null
           tenant_id: string
@@ -759,6 +889,7 @@ export type Database = {
           payment_ref?: string | null
           shipping_cost?: number | null
           status?: Database["public"]["Enums"]["order_status"] | null
+          stock_applied?: boolean
           store_coupon_id?: string | null
           store_discount_amount?: number | null
           tenant_id?: string
@@ -783,6 +914,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      plan_promo_redemptions: {
+        Row: {
+          id: string
+          promo_id: string
+          redeemed_at: string
+          tenant_id: string
+        }
+        Insert: {
+          id?: string
+          promo_id: string
+          redeemed_at?: string
+          tenant_id: string
+        }
+        Update: {
+          id?: string
+          promo_id?: string
+          redeemed_at?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_promo_redemptions_promo_id_fkey"
+            columns: ["promo_id"]
+            isOneToOne: false
+            referencedRelation: "plan_promos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_promo_redemptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_promos: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          duration_days: number
+          id: string
+          max_uses: number
+          plan_grant: Database["public"]["Enums"]["plan_type"]
+          title: string | null
+          updated_at: string
+          used_count: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          duration_days?: number
+          id?: string
+          max_uses?: number
+          plan_grant?: Database["public"]["Enums"]["plan_type"]
+          title?: string | null
+          updated_at?: string
+          used_count?: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          duration_days?: number
+          id?: string
+          max_uses?: number
+          plan_grant?: Database["public"]["Enums"]["plan_type"]
+          title?: string | null
+          updated_at?: string
+          used_count?: number
+        }
+        Relationships: []
       }
       platform_orders: {
         Row: {
@@ -1050,10 +1256,12 @@ export type Database = {
       products: {
         Row: {
           created_at: string
+          cta_label: string | null
           description: string | null
           features: string[] | null
           id: string
           price_mxn: number
+          pricing_mode: string | null
           product_type: string | null
           sale_price_mxn: number | null
           sku: string | null
@@ -1065,10 +1273,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          cta_label?: string | null
           description?: string | null
           features?: string[] | null
           id?: string
           price_mxn: number
+          pricing_mode?: string | null
           product_type?: string | null
           sale_price_mxn?: number | null
           sku?: string | null
@@ -1080,10 +1290,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          cta_label?: string | null
           description?: string | null
           features?: string[] | null
           id?: string
           price_mxn?: number
+          pricing_mode?: string | null
           product_type?: string | null
           sale_price_mxn?: number | null
           sku?: string | null
@@ -1151,7 +1363,9 @@ export type Database = {
         Row: {
           amount_mxn: number
           created_at: string
+          failed_payment_attempts: number | null
           id: string
+          last_payment_failure_at: string | null
           mercadopago_subscription_id: string | null
           next_billing_date: string
           status: string
@@ -1161,7 +1375,9 @@ export type Database = {
         Insert: {
           amount_mxn?: number
           created_at?: string
+          failed_payment_attempts?: number | null
           id?: string
+          last_payment_failure_at?: string | null
           mercadopago_subscription_id?: string | null
           next_billing_date: string
           status?: string
@@ -1171,7 +1387,9 @@ export type Database = {
         Update: {
           amount_mxn?: number
           created_at?: string
+          failed_payment_attempts?: number | null
           id?: string
+          last_payment_failure_at?: string | null
           mercadopago_subscription_id?: string | null
           next_billing_date?: string
           status?: string
@@ -1267,6 +1485,118 @@ export type Database = {
           },
         ]
       }
+      tenant_payment_integrations: {
+        Row: {
+          access_token: string | null
+          application_fee_pct: number | null
+          connected_at: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          last_refreshed_at: string | null
+          metadata: Json | null
+          provider: string
+          provider_user_email: string | null
+          provider_user_id: string | null
+          public_key: string | null
+          refresh_token: string | null
+          revoked_at: string | null
+          scope: string | null
+          status: string
+          tenant_id: string
+          token_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          application_fee_pct?: number | null
+          connected_at?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          last_refreshed_at?: string | null
+          metadata?: Json | null
+          provider: string
+          provider_user_email?: string | null
+          provider_user_id?: string | null
+          public_key?: string | null
+          refresh_token?: string | null
+          revoked_at?: string | null
+          scope?: string | null
+          status?: string
+          tenant_id: string
+          token_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          application_fee_pct?: number | null
+          connected_at?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          last_refreshed_at?: string | null
+          metadata?: Json | null
+          provider?: string
+          provider_user_email?: string | null
+          provider_user_id?: string | null
+          public_key?: string | null
+          refresh_token?: string | null
+          revoked_at?: string | null
+          scope?: string | null
+          status?: string
+          tenant_id?: string
+          token_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_payment_integrations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_payment_secrets: {
+        Row: {
+          created_at: string
+          id: string
+          mercadopago_access_token: string | null
+          paypal_client_secret: string | null
+          stripe_secret_key: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mercadopago_access_token?: string | null
+          paypal_client_secret?: string | null
+          stripe_secret_key?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mercadopago_access_token?: string | null
+          paypal_client_secret?: string | null
+          stripe_secret_key?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_payment_secrets_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_settings: {
         Row: {
           created_at: string
@@ -1281,7 +1611,10 @@ export type Database = {
           header_icon_color: string | null
           header_icon_scale: number | null
           id: string
+          logo_position: string | null
           logo_size: number | null
+          logo_size_mobile: number | null
+          logo_size_tablet: number | null
           logo_url: string | null
           mercadopago_public_key: string | null
           navbar_bg_color: string | null
@@ -1300,6 +1633,7 @@ export type Database = {
           shipping_zones_config: Json | null
           shipping_zones_enabled: boolean | null
           store_background_color: string | null
+          template_id: string
           tenant_id: string
           updated_at: string
           whatsapp_message: string | null
@@ -1318,7 +1652,10 @@ export type Database = {
           header_icon_color?: string | null
           header_icon_scale?: number | null
           id?: string
+          logo_position?: string | null
           logo_size?: number | null
+          logo_size_mobile?: number | null
+          logo_size_tablet?: number | null
           logo_url?: string | null
           mercadopago_public_key?: string | null
           navbar_bg_color?: string | null
@@ -1337,6 +1674,7 @@ export type Database = {
           shipping_zones_config?: Json | null
           shipping_zones_enabled?: boolean | null
           store_background_color?: string | null
+          template_id?: string
           tenant_id: string
           updated_at?: string
           whatsapp_message?: string | null
@@ -1355,7 +1693,10 @@ export type Database = {
           header_icon_color?: string | null
           header_icon_scale?: number | null
           id?: string
+          logo_position?: string | null
           logo_size?: number | null
+          logo_size_mobile?: number | null
+          logo_size_tablet?: number | null
           logo_url?: string | null
           mercadopago_public_key?: string | null
           navbar_bg_color?: string | null
@@ -1374,6 +1715,7 @@ export type Database = {
           shipping_zones_config?: Json | null
           shipping_zones_enabled?: boolean | null
           store_background_color?: string | null
+          template_id?: string
           tenant_id?: string
           updated_at?: string
           whatsapp_message?: string | null
@@ -1477,6 +1819,7 @@ export type Database = {
           name: string
           owner_user_id: string | null
           plan: Database["public"]["Enums"]["plan_type"]
+          plan_expires_at: string | null
           primary_host: string
           status: Database["public"]["Enums"]["tenant_status"]
           updated_at: string
@@ -1488,6 +1831,7 @@ export type Database = {
           name: string
           owner_user_id?: string | null
           plan?: Database["public"]["Enums"]["plan_type"]
+          plan_expires_at?: string | null
           primary_host: string
           status?: Database["public"]["Enums"]["tenant_status"]
           updated_at?: string
@@ -1499,6 +1843,7 @@ export type Database = {
           name?: string
           owner_user_id?: string | null
           plan?: Database["public"]["Enums"]["plan_type"]
+          plan_expires_at?: string | null
           primary_host?: string
           status?: Database["public"]["Enums"]["tenant_status"]
           updated_at?: string
@@ -1581,6 +1926,7 @@ export type Database = {
       }
       verification_codes: {
         Row: {
+          attempts: number
           code: string
           created_at: string
           email: string
@@ -1589,6 +1935,7 @@ export type Database = {
           used: boolean | null
         }
         Insert: {
+          attempts?: number
           code: string
           created_at?: string
           email: string
@@ -1597,6 +1944,7 @@ export type Database = {
           used?: boolean | null
         }
         Update: {
+          attempts?: number
           code?: string
           created_at?: string
           email?: string
@@ -1766,6 +2114,7 @@ export type Database = {
           message_type: string
           meta_message_id: string | null
           processed_at: string | null
+          sentiment: string | null
         }
         Insert: {
           audio_url?: string | null
@@ -1778,6 +2127,7 @@ export type Database = {
           message_type: string
           meta_message_id?: string | null
           processed_at?: string | null
+          sentiment?: string | null
         }
         Update: {
           audio_url?: string | null
@@ -1790,6 +2140,7 @@ export type Database = {
           message_type?: string
           meta_message_id?: string | null
           processed_at?: string | null
+          sentiment?: string | null
         }
         Relationships: [
           {
@@ -1850,6 +2201,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_order_stock: { Args: { p_order_id: string }; Returns: Json }
+      get_active_plan_promo: { Args: never; Returns: Json }
       get_admin_metrics: {
         Args: never
         Returns: {
@@ -1865,6 +2218,7 @@ export type Database = {
           total_users: number
         }[]
       }
+      get_plan_promo_admin: { Args: { p_code: string }; Returns: Json }
       get_product_variables: {
         Args: { product_id_param: string }
         Returns: {
@@ -1922,6 +2276,10 @@ export type Database = {
         Args: { p_tenant_id: string }
         Returns: Json
       }
+      get_tenant_payment_secrets: {
+        Args: { p_tenant_id: string }
+        Returns: Json
+      }
       get_tenant_payment_settings: {
         Args: { p_tenant_id: string }
         Returns: Json
@@ -1971,6 +2329,14 @@ export type Database = {
           p_target_user_id?: string
         }
         Returns: string
+      }
+      redeem_plan_promo: {
+        Args: { p_code: string; p_tenant_id: string }
+        Returns: Json
+      }
+      set_plan_promo_active: {
+        Args: { p_active: boolean; p_code: string }
+        Returns: Json
       }
       sync_visual_editor_products_to_products: {
         Args: never
@@ -2116,6 +2482,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["superadmin", "tenant_admin", "tenant_staff"],
