@@ -296,7 +296,7 @@ export const DashboardVisualEditor = () => {
   // cuando avisa, recargamos para que preview y modales muestren lo nuevo.
   useEffect(() => {
     const onDesignUpdated = () => {
-      if (tenantId) loadEditorData();
+      if (tenantId) loadEditorData({ silent: true });
     };
     window.addEventListener('toogo:design-updated', onDesignUpdated);
     return () => window.removeEventListener('toogo:design-updated', onDesignUpdated);
@@ -359,9 +359,11 @@ export const DashboardVisualEditor = () => {
     }
   }, [settings]);
 
-  const loadEditorData = async () => {
+  const loadEditorData = async (opts?: { silent?: boolean }) => {
     if (!tenantId) return;
-    setIsLoading(true);
+    // silent: la recarga disparada por el Diseñador IA no debe pasar por la
+    // rama del spinner — ese early-return desmonta el panel y borra el chat.
+    if (!opts?.silent) setIsLoading(true);
     console.log('Loading editor data for tenant:', tenantId);
     try {
       const {
