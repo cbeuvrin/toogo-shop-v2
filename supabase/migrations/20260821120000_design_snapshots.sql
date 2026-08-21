@@ -13,6 +13,9 @@ alter table public.design_snapshots enable row level security;
 
 -- Mismo criterio de acceso que ya usa el editor visual: cualquier usuario con
 -- un rol en el tenant puede leer/escribir sus snapshots.
+-- Idempotencia: CREATE POLICY no tiene IF NOT EXISTS; el drop previo hace
+-- que la migración sea segura de re-ejecutar.
+drop policy if exists "tenant members manage design snapshots" on public.design_snapshots;
 create policy "tenant members manage design snapshots"
   on public.design_snapshots
   for all
