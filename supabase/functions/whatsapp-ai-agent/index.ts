@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
+import { DESIGN_TOOLS, isDesignTool, executeDesignTool } from '../_shared/designTools.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -80,7 +81,7 @@ serve(async (req) => {
   }
 
   try {
-    const { tenantId, message, conversationId, imageUrl, messageId } = await req.json();
+    const { tenantId, message, conversationId, imageUrl, messageId, history } = await req.json();
 
     if (!tenantId || !message) {
       throw new Error('tenantId and message are required');
@@ -256,6 +257,15 @@ Tu trabajo es ayudar al vendedor a gestionar su tienda de forma conversacional. 
 
 🎨 **Gestión visual:**
 - Cambiar colores de la tienda (primario, secundario, fondo, navbar)
+- Cambiar la plantilla de la tienda (Atlántico, Pacífico, Mediterráneo, Adriático, Índico, Caribe, Nature & Earth, Premium Brand, Bauhaus, Cyber)
+- Editar la barra de anuncio, el ticker, el text banner y los testimonios
+- Editar los textos de la portada (título, mensaje, botones) con su color, fuente y tamaño
+- Cambiar el color de fondo de cada sección (portada, secciones intermedias, footer)
+
+Reglas para cambios de diseño:
+- Antes de un cambio amplio ("hazla más elegante", "ponla en modo oscuro"), llama get_design_state y toca SOLO lo necesario para cumplir lo pedido.
+- Después de aplicar cambios, resume en 1-2 frases qué cambiaste exactamente. NUNCA digas que cambiaste algo que ninguna herramienta confirmó con success.
+- Si el usuario pide algo que no puedes tocar (p. ej. mover secciones de lugar), dilo claro y sugiere lo más cercano que sí puedes hacer.
 - Actualizar el logo de la tienda
 - **GESTIONAR BANNERS** (crear, editar, eliminar, activar/desactivar)
 - Gestionar categorías (crear, actualizar, eliminar)
@@ -823,7 +833,10 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
             required: ['action']
           }
         }
-      }
+      },
+      // Herramientas de diseño compartidas (Diseñador IA) — mismo formato
+      // OpenAI-style; la conversión a Anthropic la hace toAnthropicTools.
+      ...DESIGN_TOOLS,
     ];
 
     const anthropicTools = convertToolsToAnthropic(tools);
@@ -833,6 +846,12 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
     // LUEGO actualizarlo) — antes solo se hacía un paso, por eso "decía que sí"
     // pero no aplicaba el cambio.
     const executeTool = async (functionName: string, args: any): Promise<any> => {
+      // Diseñador IA: las herramientas de diseño viven en el módulo
+      // compartido; retorno temprano para no crecer el switch gigante.
+      if (isDesignTool(functionName)) {
+        return await executeDesignTool(supabase, tenantId, functionName, args);
+      }
+
       let result: any;
       console.log('🔧 Executing function:', functionName, 'with args:', JSON.stringify(args));
 
@@ -1451,7 +1470,17 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
     // ejecutamos, le devolvemos los resultados y repetimos, hasta que responda
     // con texto. Esto permite encadenar pasos (buscar producto → actualizarlo),
     // que es lo que faltaba para que los cambios se apliquen de verdad.
-    const convo: any[] = [{ role: 'user', content: message }];
+    // Historial que manda el panel del dashboard (el chat de WhatsApp trae el
+    // suyo por conversationId; este campo es opcional y compatible hacia atrás).
+    const clientHistory = Array.isArray(history)
+      ? history
+          .filter((m: any) =>
+            m && (m.role === 'user' || m.role === 'assistant') &&
+            typeof m.content === 'string' && m.content.trim())
+          .slice(-12)
+          .map((m: any) => ({ role: m.role, content: m.content }))
+      : [];
+    const convo: any[] = [...clientHistory, { role: 'user', content: message }];
     let generatedImageUrl: string | null = null;
     let responseText = '';
     const MAX_ROUNDS = 6;
