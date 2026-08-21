@@ -29,6 +29,7 @@ import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { useTenantContext } from "@/contexts/TenantContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TemplateSelector } from "./TemplateSelector";
+import { DesignChatPanel } from "./DesignChatPanel";
 
 // Visual editor product interface for compatibility
 interface VisualEditorProduct {
@@ -290,6 +291,17 @@ export const DashboardVisualEditor = () => {
       }
     }
   }, [tenantId, tenantLoading]);
+
+  // El Diseñador IA escribe visual_editor_data por fuera de este componente;
+  // cuando avisa, recargamos para que preview y modales muestren lo nuevo.
+  useEffect(() => {
+    const onDesignUpdated = () => {
+      if (tenantId) loadEditorData();
+    };
+    window.addEventListener('toogo:design-updated', onDesignUpdated);
+    return () => window.removeEventListener('toogo:design-updated', onDesignUpdated);
+  }, [tenantId]);
+
   useEffect(() => {
     // Convert products and categories from hooks to visual editor format
     const visualProducts: VisualEditorProduct[] = products.map(product => {
@@ -1238,6 +1250,8 @@ export const DashboardVisualEditor = () => {
           />
         );
       })()}
+
+      <DesignChatPanel />
     </div>
   );
 };
