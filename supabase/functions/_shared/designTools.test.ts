@@ -180,4 +180,60 @@ Deno.test('validateThemeProposal: valida catálogo y colores', () => {
     validateThemeProposal({ ...ok, colors: { ...ok.colors, primary: 'azul' } }) !== null,
     'color inválido aceptado',
   );
+  const { rationale: _omit, ...sinRationale } = ok as any;
+  assertTrue(validateThemeProposal(sinRationale) !== null, 'propuesta sin rationale aceptada');
+});
+
+Deno.test('update_text_banner: merge + par canónico + rechazo de color inválido', async () => {
+  const { client, writes } = makeMock({
+    elements: { 'text_banner/main_text_banner': { text: 'Viejo', isActive: true } },
+  });
+  const r = await executeDesignTool(client, 't1', 'update_text_banner', { buttonLabel: 'Compra ya' });
+  assertEq(r.success, true, 'debió aplicar');
+  assertEq(writes[0].payload.element_type, 'text_banner', 'element_type');
+  assertEq(writes[0].payload.element_id, 'main_text_banner', 'element_id');
+  assertEq(writes[0].payload.data, { text: 'Viejo', isActive: true, buttonLabel: 'Compra ya' }, 'merge');
+  const { client: c2, writes: w2 } = makeMock({});
+  const r2 = await executeDesignTool(c2, 't1', 'update_text_banner', { buttonBgColor: 'rojo' });
+  assertEq(r2.success, false, 'color inválido debió rechazarse');
+  assertEq(w2.length, 0, 'no debió escribir');
+});
+
+Deno.test('update_testimonials: par canónico + lista con ids generados', async () => {
+  const { client, writes } = makeMock({ elements: {} });
+  const r = await executeDesignTool(client, 't1', 'update_testimonials', {
+    enabled: true, title: 'Clientes felices',
+    list: [{ author: 'Ana', text: 'Me encantó' }],
+  });
+  assertEq(r.success, true, 'debió aplicar');
+  assertEq(writes[0].payload.element_type, 'testimonials', 'element_type');
+  assertEq(writes[0].payload.element_id, 'main_testimonials', 'element_id');
+  const d = writes[0].payload.data as any;
+  assertEq(d.enabled, true, 'enabled');
+  assertEq(d.title, 'Clientes felices', 'title');
+  assertEq(d.list.length, 1, 'lista');
+  assertTrue(typeof d.list[0].id === 'string' && d.list[0].id.length > 0, 'id generado');
+  assertEq(d.list[0].author, 'Ana', 'author');
+  assertEq(d.list[0].text, 'Me encantó', 'text');
+  assertEq(d.list[0].logo, '', 'logo vacío por defecto');
+});
+
+Deno.test('update_hero_text: rechaza element, fontFamily y color inválidos sin escribir', async () => {
+  const { client, writes } = makeMock({ elements: {} });
+  const r1 = await executeDesignTool(client, 't1', 'update_hero_text', { element: 'zzz', text: 'x' });
+  assertEq(r1.success, false, 'element inválido');
+  const r2 = await executeDesignTool(client, 't1', 'update_hero_text', { element: 'title', fontFamily: 'comic-sans' });
+  assertEq(r2.success, false, 'fontFamily inválida');
+  const r3 = await executeDesignTool(client, 't1', 'update_hero_text', { element: 'title', color: 'dorado' });
+  assertEq(r3.success, false, 'color inválido');
+  assertEq(writes.length, 0, 'ninguna escritura');
+});
+
+Deno.test('set_section_background: rechaza section y bgColor inválidos sin escribir', async () => {
+  const { client, writes } = makeMock({ elements: {} });
+  const r1 = await executeDesignTool(client, 't1', 'set_section_background', { section: 'sidebar', bgColor: '#101010' });
+  assertEq(r1.success, false, 'section inválida');
+  const r2 = await executeDesignTool(client, 't1', 'set_section_background', { section: 'footer', bgColor: 'negro' });
+  assertEq(r2.success, false, 'bgColor inválido');
+  assertEq(writes.length, 0, 'ninguna escritura');
 });

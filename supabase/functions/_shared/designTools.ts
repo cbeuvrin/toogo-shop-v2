@@ -415,6 +415,7 @@ export interface ThemeProposal {
 export function validateThemeProposal(p: any): string | null {
   if (!p || typeof p !== 'object') return 'propuesta vacía';
   if (!p.name || typeof p.name !== 'string') return 'falta name';
+  if (!p.rationale || typeof p.rationale !== 'string') return 'falta rationale';
   if (!(TEMPLATE_IDS as readonly string[]).includes(p.templateId)) {
     return `templateId inválido: ${p.templateId}`;
   }
