@@ -88,7 +88,12 @@ export const DesignWizard = ({ open, onOpenChange }: DesignWizardProps) => {
     if (ok) {
       await loadSettings();
       window.dispatchEvent(new CustomEvent('toogo:design-updated'));
-      toast({ title: 'Tema aplicado', description: 'Puedes deshacerlo desde el Diseñador IA.' });
+      toast({
+        title: 'Tema aplicado',
+        description: snapId
+          ? 'Puedes deshacerlo desde el Diseñador IA.'
+          : 'No pude guardar el punto de restauración: este cambio no se podrá deshacer con un click.',
+      });
       onOpenChange(false);
     } else {
       toast({ title: 'No se pudo aplicar el tema', variant: 'destructive' });
