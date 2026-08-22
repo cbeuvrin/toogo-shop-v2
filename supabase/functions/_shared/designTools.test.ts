@@ -190,6 +190,23 @@ Deno.test('validateThemeProposal: valida catálogo y colores', () => {
     validateThemeProposal({ ...ok, tickerText: 'Envío gratis desde $500' }) === null,
     'tickerText válido rechazado',
   );
+  const rico = {
+    ...ok,
+    heroTitleFont: 'playfair',
+    heroTitleColor: '#FFD700',
+    sectionBackgrounds: { footer: '#101010', hero: '#FFF8EE' },
+  };
+  assertEq(validateThemeProposal(rico), null, 'propuesta rica válida rechazada');
+  assertTrue(validateThemeProposal({ ...ok, heroTitleFont: 'comic-sans' }) !== null, 'font inválida aceptada');
+  assertTrue(validateThemeProposal({ ...ok, heroTitleColor: 'dorado' }) !== null, 'heroTitleColor inválido aceptado');
+  assertTrue(
+    validateThemeProposal({ ...ok, sectionBackgrounds: { sidebar: '#101010' } }) !== null,
+    'sección inválida aceptada',
+  );
+  assertTrue(
+    validateThemeProposal({ ...ok, sectionBackgrounds: { footer: 'negro' } }) !== null,
+    'fondo no-hex aceptado',
+  );
 });
 
 Deno.test('update_text_banner: merge + par canónico + rechazo de color inválido', async () => {
