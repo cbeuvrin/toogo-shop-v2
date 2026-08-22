@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
-import { TEMPLATE_IDS, validateThemeProposal } from '../_shared/designTools.ts';
+import { HERO_FONT_TOKENS, TEMPLATE_IDS, validateThemeProposal } from '../_shared/designTools.ts';
 import { buildInspirationPrompt, validateInspirationInput } from '../_shared/inspiration.ts';
 
 const corsHeaders = {
@@ -42,6 +42,22 @@ const proposeTool = {
             },
             announcementText: { type: 'string' },
             tickerText: { type: 'string' },
+            heroTitleFont: {
+              type: 'string',
+              enum: [...HERO_FONT_TOKENS],
+              description: 'tipografía del título del hero acorde al mood',
+            },
+            heroTitleColor: { type: 'string', description: 'hex #RRGGBB para el título del hero' },
+            sectionBackgrounds: {
+              type: 'object',
+              properties: {
+                hero: { type: 'string' },
+                section1: { type: 'string' },
+                section2: { type: 'string' },
+                footer: { type: 'string' },
+              },
+              description: 'fondos por sección en hex #RRGGBB, solo si aportan al look',
+            },
           },
           required: ['name', 'rationale', 'templateId', 'colors'],
         },
