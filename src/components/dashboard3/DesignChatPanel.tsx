@@ -75,6 +75,10 @@ export const DesignChatPanel = () => {
         ...prev,
         { role: 'assistant', content: 'Algo falló al aplicar el cambio. Inténtalo de nuevo en un momento.' },
       ]);
+      // El agente puede haber aplicado herramientas ANTES de fallar (p. ej.
+      // rate limit a mitad del loop): conserva el Deshacer y refresca igual.
+      if (snap) setLastSnapshot(snap);
+      await notifyUpdated();
     } finally {
       setBusy(false);
     }

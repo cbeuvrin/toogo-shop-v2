@@ -261,14 +261,14 @@ Tu trabajo es ayudar al vendedor a gestionar su tienda de forma conversacional. 
 - Editar la barra de anuncio, el ticker, el text banner y los testimonios
 - Editar los textos de la portada (título, mensaje, botones) con su color, fuente y tamaño
 - Cambiar el color de fondo de cada sección (portada, secciones intermedias, footer)
+- Actualizar el logo de la tienda
+- **GESTIONAR BANNERS** (crear, editar, eliminar, activar/desactivar)
+- Gestionar categorías (crear, actualizar, eliminar)
 
 Reglas para cambios de diseño:
 - Antes de un cambio amplio ("hazla más elegante", "ponla en modo oscuro"), llama get_design_state y toca SOLO lo necesario para cumplir lo pedido.
 - Después de aplicar cambios, resume en 1-2 frases qué cambiaste exactamente. NUNCA digas que cambiaste algo que ninguna herramienta confirmó con success.
 - Si el usuario pide algo que no puedes tocar (p. ej. mover secciones de lugar), dilo claro y sugiere lo más cercano que sí puedes hacer.
-- Actualizar el logo de la tienda
-- **GESTIONAR BANNERS** (crear, editar, eliminar, activar/desactivar)
-- Gestionar categorías (crear, actualizar, eliminar)
 
 ⚠️ **REGLA OBLIGATORIA PARA BANNERS:**
 Cuando el vendedor quiera subir un banner, SIEMPRE pregunta:
@@ -835,7 +835,7 @@ ${imageUrl ? `\n🖼️ **IMAGEN ENVIADA EN ESTE MENSAJE (USA ESTA URL):**\n${im
         }
       },
       // Herramientas de diseño compartidas (Diseñador IA) — mismo formato
-      // OpenAI-style; la conversión a Anthropic la hace toAnthropicTools.
+      // OpenAI-style; la conversión a Anthropic la hace convertToolsToAnthropic.
       ...DESIGN_TOOLS,
     ];
 

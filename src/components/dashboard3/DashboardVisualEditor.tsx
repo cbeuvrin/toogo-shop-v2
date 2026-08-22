@@ -296,7 +296,13 @@ export const DashboardVisualEditor = () => {
   // cuando avisa, recargamos para que preview y modales muestren lo nuevo.
   useEffect(() => {
     const onDesignUpdated = () => {
-      if (tenantId) loadEditorData({ silent: true });
+      if (tenantId) {
+        loadEditorData({ silent: true });
+        // La plantilla y los colores globales viven en tenant_settings (estado
+        // por-instancia del hook): sin esto, un cambio de plantilla hecho por
+        // la IA no refresca el preview del editor.
+        loadSettings();
+      }
     };
     window.addEventListener('toogo:design-updated', onDesignUpdated);
     return () => window.removeEventListener('toogo:design-updated', onDesignUpdated);
