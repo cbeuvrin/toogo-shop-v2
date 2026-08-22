@@ -29,7 +29,7 @@ import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { useTenantContext } from "@/contexts/TenantContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TemplateSelector } from "./TemplateSelector";
-import { DesignChatPanel } from "./DesignChatPanel";
+import { DesignChat } from "./DesignChat";
 
 // Visual editor product interface for compatibility
 interface VisualEditorProduct {
@@ -963,7 +963,12 @@ export const DashboardVisualEditor = () => {
   }
 
   return (
-    <div className="space-y-6">
+    // Fusión "Editor Visual IA": el contenido del editor a la izquierda y el
+    // chat del Diseñador como columna fija a la derecha (en pantallas anchas).
+    // El chat vive FUERA de las sub-pestañas para que cambiar entre Editor y
+    // Galería no desmonte la conversación (Radix desmonta TabsContent).
+    <div className="flex flex-col gap-6 2xl:flex-row">
+      <div className="min-w-0 flex-1 space-y-6">
       <Tabs value={activeEditorTab} onValueChange={(v) => setActiveEditorTab(v as "editor" | "templates")} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="editor">Editor Visual</TabsTrigger>
@@ -1258,8 +1263,14 @@ export const DashboardVisualEditor = () => {
           />
         );
       })()}
+      </div>
 
-      <DesignChatPanel />
+      {/* Columna del chat: pegajosa en desktop, debajo del editor en móvil. */}
+      <div className="2xl:w-[380px] 2xl:flex-shrink-0">
+        <div className="h-[560px] 2xl:sticky 2xl:top-4 2xl:h-[calc(100vh-140px)]">
+          <DesignChat />
+        </div>
+      </div>
     </div>
   );
 };

@@ -9,19 +9,18 @@ import { DashboardProductsAndCategories } from "@/components/dashboard/Dashboard
 import { DashboardPayments } from "@/components/dashboard/DashboardPayments";
 import { DashboardAnalytics } from "@/components/dashboard/DashboardAnalytics";
 import { DashboardVisualEditor } from "@/components/dashboard3/DashboardVisualEditor";
-import { DesignStudio } from "@/components/dashboard3/DesignStudio";
 import { DashboardMiPerfil } from "@/components/dashboard/DashboardMiPerfil";
 import { DashboardSocial } from "@/components/dashboard/DashboardSocial";
 import { DashboardOrders } from "@/components/dashboard/DashboardOrders";
 import DashboardShipping from "@/components/dashboard/DashboardShipping";
-import { Home, Store, Package, CreditCard, Globe, BarChart3, LogOut, ExternalLink, Brush, User, ChevronDown, ShoppingCart, Truck, Tag, Users, Share2, Shield, MessageSquare, Sparkles } from "lucide-react";
+import { Home, Store, Package, CreditCard, Globe, BarChart3, LogOut, ExternalLink, Brush, User, ChevronDown, ShoppingCart, Truck, Tag, Users, Share2, Shield, MessageSquare } from "lucide-react";
 import { Navigate, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TenantSelector } from "@/components/dashboard/TenantSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { useFavicon } from "@/hooks/useFavicon";
-type DashboardSection = "resumen" | "productos" | "ordenes" | "pagos" | "envios" | "analytics" | "editor-visual" | "disenador-ia" | "compartir" | "mi-perfil";
+type DashboardSection = "resumen" | "productos" | "ordenes" | "pagos" | "envios" | "analytics" | "editor-visual" | "compartir" | "mi-perfil";
 const Dashboard3 = () => {
   const {
     isAuthenticated,
@@ -65,13 +64,6 @@ const Dashboard3 = () => {
       }
     }
   }, [isOnboardingComplete, activeTab]);
-
-  // El botón "✨ Diseñador IA" del editor visual salta a la pestaña del estudio.
-  useEffect(() => {
-    const openStudio = () => setActiveTab("disenador-ia");
-    window.addEventListener("toogo:open-design-studio", openStudio);
-    return () => window.removeEventListener("toogo:open-design-studio", openStudio);
-  }, []);
 
   // Soporte para deep-links desde emails (?tab=mis-dominios)
   // Permite que el link del email de renovación lleve directo a la pantalla de dominios
@@ -146,12 +138,8 @@ const Dashboard3 = () => {
     }, {
       id: "editor-visual" as const,
       icon: Brush,
-      label: "Editor Visual"
-    }, {
-      id: "disenador-ia" as const,
-      icon: Sparkles,
-      label: "Diseñador IA"
-    }, {
+      label: "Editor Visual IA"
+        }, {
       id: "compartir" as const,
       icon: Share2,
       label: "Compartir"
@@ -296,7 +284,7 @@ const Dashboard3 = () => {
       <Tabs value={activeTab} onValueChange={value => setActiveTab(value as DashboardSection)}>
         {/* Tab Navigation */}
         <div className="relative">
-          <TabsList className={`grid w-full ${isOnboardingComplete ? 'grid-cols-9' : 'grid-cols-10'} mb-4 bg-gray-100 p-2 rounded-[30px] h-auto gap-1`}>
+          <TabsList className={`grid w-full ${isOnboardingComplete ? 'grid-cols-8' : 'grid-cols-9'} mb-4 bg-gray-100 p-2 rounded-[30px] h-auto gap-1`}>
             {tabItems.map(tab => <TabsTrigger key={tab.id} value={tab.id} className="flex items-center justify-center rounded-[25px] px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=inactive]:bg-transparent data-[state=inactive]:text-gray-700 transition-all duration-200">
               <tab.icon className="w-4 h-4 md:w-4 md:h-4 flex-shrink-0" />
               <span className="hidden lg:inline md:ml-2">{tab.label}</span>
@@ -347,10 +335,6 @@ const Dashboard3 = () => {
 
         <TabsContent value="editor-visual">
           <DashboardVisualEditor />
-        </TabsContent>
-
-        <TabsContent value="disenador-ia">
-          <DesignStudio />
         </TabsContent>
 
         <TabsContent value="compartir">

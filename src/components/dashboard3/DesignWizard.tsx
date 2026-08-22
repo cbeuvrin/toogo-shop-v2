@@ -85,7 +85,7 @@ export const DesignWizard = ({ open, onOpenChange }: DesignWizardProps) => {
     if (!tenantId || applying !== null) return;
     setApplying(idx);
     // Snapshot ANTES de aplicar. Se anuncia por evento para que el botón
-    // "Deshacer" del DesignChatPanel (Fase 1) también cubra este cambio —
+    // "Deshacer" del DesignChat (columna del Editor Visual IA) cubra este cambio —
     // si no, el toast de abajo prometería algo falso.
     const snapId = await takeDesignSnapshot(tenantId, `antes del tema "${p.name}"`);
     if (snapId) {
