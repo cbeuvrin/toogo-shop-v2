@@ -182,6 +182,14 @@ Deno.test('validateThemeProposal: valida catálogo y colores', () => {
   );
   const { rationale: _omit, ...sinRationale } = ok as any;
   assertTrue(validateThemeProposal(sinRationale) !== null, 'propuesta sin rationale aceptada');
+  assertTrue(
+    validateThemeProposal({ ...ok, announcementText: 'x'.repeat(121) }) !== null,
+    'announcementText de más de 120 chars aceptado',
+  );
+  assertTrue(
+    validateThemeProposal({ ...ok, tickerText: 'Envío gratis desde $500' }) === null,
+    'tickerText válido rechazado',
+  );
 });
 
 Deno.test('update_text_banner: merge + par canónico + rechazo de color inválido', async () => {

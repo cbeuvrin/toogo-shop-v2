@@ -102,3 +102,17 @@ export async function restoreDesignSnapshot(tenantId: string, snapshotId: string
     return false;
   }
 }
+
+// Handoff del último snapshot entre superficies (wizard ↔ estudio). Vive a
+// nivel de módulo porque las pestañas del dashboard se DESMONTAN al cambiar:
+// el evento 'toogo:design-snapshot' no basta cuando el receptor aún no está
+// montado — este valor sobrevive al ciclo de vida de los componentes.
+let pendingSnapshotId: string | null = null;
+
+export function setPendingSnapshot(id: string | null): void {
+  pendingSnapshotId = id;
+}
+
+export function getPendingSnapshot(): string | null {
+  return pendingSnapshotId;
+}

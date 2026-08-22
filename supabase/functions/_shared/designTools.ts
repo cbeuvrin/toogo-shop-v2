@@ -423,5 +423,11 @@ export function validateThemeProposal(p: any): string | null {
   for (const k of ['primary', 'secondary', 'background', 'navbar']) {
     if (typeof c[k] !== 'string' || !HEX.test(c[k])) return `color ${k} inválido`;
   }
+  for (const k of ['announcementText', 'tickerText']) {
+    const v = (p as Record<string, unknown>)[k];
+    if (v !== undefined && (typeof v !== 'string' || v.length === 0 || v.length > 120)) {
+      return `${k} inválido`;
+    }
+  }
   return null;
 }

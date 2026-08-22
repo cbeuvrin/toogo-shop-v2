@@ -5,7 +5,12 @@ import { useTenantSettings } from '@/hooks/useTenantSettings';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { takeDesignSnapshot, restoreDesignSnapshot } from '@/lib/designSnapshots';
+import {
+  takeDesignSnapshot,
+  restoreDesignSnapshot,
+  getPendingSnapshot,
+  setPendingSnapshot,
+} from '@/lib/designSnapshots';
 
 // Diseñador IA "modo estudio": pestaña propia del dashboard con el chat a la
 // izquierda y la TIENDA REAL a la derecha (iframe del primary_host, que lee la
@@ -34,7 +39,7 @@ export const DesignStudio = () => {
   const [busy, setBusy] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMsg[]>([{ role: 'assistant', content: WELCOME }]);
-  const [lastSnapshot, setLastSnapshot] = useState<string | null>(null);
+  const [lastSnapshot, setLastSnapshot] = useState<string | null>(getPendingSnapshot());
   // Cambiar la key remonta el iframe → recarga la tienda tras cada cambio.
   const [previewKey, setPreviewKey] = useState(1);
   const endRef = useRef<HTMLDivElement>(null);
@@ -51,7 +56,10 @@ export const DesignStudio = () => {
   useEffect(() => {
     const onSnapshot = (e: Event) => {
       const id = (e as CustomEvent<{ id: string }>).detail?.id;
-      if (id) setLastSnapshot(id);
+      if (id) {
+        setLastSnapshot(id);
+        setPendingSnapshot(id);
+      }
     };
     window.addEventListener('toogo:design-snapshot', onSnapshot);
     return () => window.removeEventListener('toogo:design-snapshot', onSnapshot);
@@ -83,7 +91,10 @@ export const DesignStudio = () => {
       });
       if (error) throw error;
       setMessages((prev) => [...prev, { role: 'assistant', content: data?.response || 'Listo.' }]);
-      if (snap) setLastSnapshot(snap);
+      if (snap) {
+        setLastSnapshot(snap);
+        setPendingSnapshot(snap);
+      }
       await notifyUpdated();
     } catch (e) {
       console.error('DesignStudio:', e);
@@ -93,7 +104,10 @@ export const DesignStudio = () => {
       ]);
       // El agente puede haber aplicado herramientas ANTES de fallar (p. ej.
       // rate limit a mitad del loop): conserva el Deshacer y refresca igual.
-      if (snap) setLastSnapshot(snap);
+      if (snap) {
+        setLastSnapshot(snap);
+        setPendingSnapshot(snap);
+      }
       await notifyUpdated();
     } finally {
       setBusy(false);
@@ -107,6 +121,7 @@ export const DesignStudio = () => {
     setBusy(false);
     if (ok) {
       setLastSnapshot(null);
+      setPendingSnapshot(null);
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', content: 'Listo, deshice el último cambio. Tu tienda volvió a como estaba.' },

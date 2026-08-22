@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { TEMPLATES } from '@/lib/templatesCatalog';
 import { applyThemeProposal, type ThemeProposal } from '@/lib/applyThemeProposal';
-import { takeDesignSnapshot } from '@/lib/designSnapshots';
+import { takeDesignSnapshot, setPendingSnapshot } from '@/lib/designSnapshots';
 
 interface DesignWizardProps {
   open: boolean;
@@ -65,9 +65,17 @@ export const DesignWizard = ({ open, onOpenChange }: DesignWizardProps) => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       setProposals(data?.proposals ?? []);
-    } catch (e) {
+    } catch (e: any) {
       console.error('DesignWizard analyze:', e);
-      toast({ title: 'No pude analizar la inspiración', description: (e as Error).message, variant: 'destructive' });
+      // FunctionsHttpError: el mensaje en español del servidor viaja en el
+      // body del non-2xx (error.context); sin esto el usuario ve el genérico
+      // "Edge Function returned a non-2xx status code" en inglés.
+      let msg = (e as Error).message;
+      try {
+        const body = await e?.context?.json?.();
+        if (body?.error) msg = body.error;
+      } catch { /* body no-JSON: se queda el mensaje genérico */ }
+      toast({ title: 'No pude analizar la inspiración', description: msg, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -81,6 +89,7 @@ export const DesignWizard = ({ open, onOpenChange }: DesignWizardProps) => {
     // si no, el toast de abajo prometería algo falso.
     const snapId = await takeDesignSnapshot(tenantId, `antes del tema "${p.name}"`);
     if (snapId) {
+      setPendingSnapshot(snapId);
       window.dispatchEvent(new CustomEvent('toogo:design-snapshot', { detail: { id: snapId } }));
     }
     const ok = await applyThemeProposal(tenantId, p);
@@ -166,6 +175,12 @@ export const DesignWizard = ({ open, onOpenChange }: DesignWizardProps) => {
                       <span key={j} className="h-6 w-6 rounded-full border" style={{ backgroundColor: c }} title={c} />
                     ))}
                   </div>
+                  {(p.announcementText || p.tickerText) && (
+                    <div className="mb-3 space-y-1 rounded-lg bg-gray-50 p-2 text-xs text-gray-600">
+                      {p.announcementText && <p>📢 {p.announcementText}</p>}
+                      {p.tickerText && <p>〰️ {p.tickerText}</p>}
+                    </div>
+                  )}
                   <Button size="sm" className="w-full" disabled={applying !== null} onClick={() => apply(p, i)}>
                     {applying === i ? 'Aplicando…' : 'Aplicar este tema'}
                   </Button>
