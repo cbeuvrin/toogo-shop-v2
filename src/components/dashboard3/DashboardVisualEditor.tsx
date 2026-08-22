@@ -29,6 +29,7 @@ import { useTenantSettings } from "@/hooks/useTenantSettings";
 import { useTenantContext } from "@/contexts/TenantContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TemplateSelector } from "./TemplateSelector";
+import { DesignChat } from "./DesignChat";
 
 // Visual editor product interface for compatibility
 interface VisualEditorProduct {
@@ -290,6 +291,23 @@ export const DashboardVisualEditor = () => {
       }
     }
   }, [tenantId, tenantLoading]);
+
+  // El Diseñador IA escribe visual_editor_data por fuera de este componente;
+  // cuando avisa, recargamos para que preview y modales muestren lo nuevo.
+  useEffect(() => {
+    const onDesignUpdated = () => {
+      if (tenantId) {
+        loadEditorData({ silent: true });
+        // La plantilla y los colores globales viven en tenant_settings (estado
+        // por-instancia del hook): sin esto, un cambio de plantilla hecho por
+        // la IA no refresca el preview del editor.
+        loadSettings();
+      }
+    };
+    window.addEventListener('toogo:design-updated', onDesignUpdated);
+    return () => window.removeEventListener('toogo:design-updated', onDesignUpdated);
+  }, [tenantId]);
+
   useEffect(() => {
     // Convert products and categories from hooks to visual editor format
     const visualProducts: VisualEditorProduct[] = products.map(product => {
@@ -347,9 +365,11 @@ export const DashboardVisualEditor = () => {
     }
   }, [settings]);
 
-  const loadEditorData = async () => {
+  const loadEditorData = async (opts?: { silent?: boolean }) => {
     if (!tenantId) return;
-    setIsLoading(true);
+    // silent: la recarga disparada por el Diseñador IA no debe pasar por la
+    // rama del spinner — ese early-return desmonta el panel y borra el chat.
+    if (!opts?.silent) setIsLoading(true);
     console.log('Loading editor data for tenant:', tenantId);
     try {
       const {
@@ -943,7 +963,12 @@ export const DashboardVisualEditor = () => {
   }
 
   return (
-    <div className="space-y-6">
+    // Fusión "Editor Visual IA": el contenido del editor a la izquierda y el
+    // chat del Diseñador como columna fija a la derecha (en pantallas anchas).
+    // El chat vive FUERA de las sub-pestañas para que cambiar entre Editor y
+    // Galería no desmonte la conversación (Radix desmonta TabsContent).
+    <div className="flex flex-col gap-6 2xl:flex-row">
+      <div className="min-w-0 flex-1 space-y-6">
       <Tabs value={activeEditorTab} onValueChange={(v) => setActiveEditorTab(v as "editor" | "templates")} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="editor">Editor Visual</TabsTrigger>
@@ -1238,6 +1263,14 @@ export const DashboardVisualEditor = () => {
           />
         );
       })()}
+      </div>
+
+      {/* Columna del chat: pegajosa en desktop, debajo del editor en móvil. */}
+      <div className="2xl:w-[380px] 2xl:flex-shrink-0">
+        <div className="h-[560px] 2xl:sticky 2xl:top-4 2xl:h-[calc(100vh-140px)]">
+          <DesignChat />
+        </div>
+      </div>
     </div>
   );
 };

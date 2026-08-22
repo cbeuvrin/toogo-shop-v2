@@ -138,8 +138,8 @@ const Dashboard3 = () => {
     }, {
       id: "editor-visual" as const,
       icon: Brush,
-      label: "Editor Visual"
-    }, {
+      label: "Editor Visual IA"
+        }, {
       id: "compartir" as const,
       icon: Share2,
       label: "Compartir"

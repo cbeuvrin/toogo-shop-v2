@@ -15,6 +15,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { DesignWizard } from './DesignWizard';
 
 
 
@@ -28,6 +29,7 @@ export const TemplateSelector = ({ onUpdate }: TemplateSelectorProps) => {
     const [selectedTemplate, setSelectedTemplate] = React.useState<string | null>(null);
     const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
     const [isSaving, setIsSaving] = React.useState(false);
+    const [wizardOpen, setWizardOpen] = React.useState(false);
 
     const currentTemplateId = settings?.template_id || 'default';
 
@@ -69,6 +71,15 @@ export const TemplateSelector = ({ onUpdate }: TemplateSelectorProps) => {
 
     return (
         <div className="space-y-6">
+            <div className="mb-4 flex justify-end">
+                <button
+                    onClick={() => setWizardOpen(true)}
+                    className="rounded-full bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+                >
+                    ✨ Diséñala con IA
+                </button>
+            </div>
+            <DesignWizard open={wizardOpen} onOpenChange={setWizardOpen} />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {TEMPLATES.map((template) => {
                     const isActive = currentTemplateId === template.id;
