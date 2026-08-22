@@ -28,4 +28,8 @@ Deno.test('buildInspirationPrompt: incluye catálogo completo y reglas anti-copi
   }
   assertTrue(p.includes('joyería minimalista'), 'no incorpora la descripción del usuario');
   assertTrue(p.toLowerCase().includes('no copies'), 'faltan las reglas anti-copia');
+  assertTrue(p.includes('propose_store_themes'), 'falta la instrucción de responder solo vía la herramienta');
+  assertTrue(p.includes('#RRGGBB'), 'falta el formato hex de colores');
+  assertTrue(p.includes('diferentes'), 'falta la regla de propuestas distintas entre sí');
+  assertTrue(p.includes('español neutro'), 'falta la regla de español neutro');
 });
