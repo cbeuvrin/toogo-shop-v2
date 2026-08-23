@@ -85,10 +85,11 @@ export async function applyThemeProposal(tenantId: string, p: ThemeProposal): Pr
       styles: { ...styles, title },
       sectionBg: { ...((current.sectionBg as Record<string, unknown>) ?? {}), ...cleanBgs },
     };
-    await supabase.from('visual_editor_data').upsert(
+    const { error: heroError } = await supabase.from('visual_editor_data').upsert(
       { tenant_id: tenantId, element_type: 'hero', element_id: 'main_hero', data: merged },
       { onConflict: 'tenant_id,element_type,element_id' },
     );
+    if (heroError) console.error('applyThemeProposal hero:', heroError);
   }
   return true;
 }
