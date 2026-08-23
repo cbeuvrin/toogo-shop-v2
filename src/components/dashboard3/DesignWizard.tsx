@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { TEMPLATES } from '@/lib/templatesCatalog';
+import { HERO_FONT_OPTIONS } from '@/lib/heroFonts';
 import { applyThemeProposal, type ThemeProposal } from '@/lib/applyThemeProposal';
 import { takeDesignSnapshot, setPendingSnapshot } from '@/lib/designSnapshots';
 
@@ -100,7 +101,7 @@ export const DesignWizard = ({ open, onOpenChange }: DesignWizardProps) => {
       toast({
         title: 'Tema aplicado',
         description: snapId
-          ? 'Puedes deshacerlo desde el Diseñador IA.'
+          ? 'Puedes deshacerlo desde el Diseñador IA. ¿Banners a juego? Pídeselos al chat: «genera un banner para mi tienda».'
           : 'No pude guardar el punto de restauración: este cambio no se podrá deshacer con un click.',
       });
       onOpenChange(false);
@@ -175,6 +176,25 @@ export const DesignWizard = ({ open, onOpenChange }: DesignWizardProps) => {
                       <span key={j} className="h-6 w-6 rounded-full border" style={{ backgroundColor: c }} title={c} />
                     ))}
                   </div>
+                  {p.heroTitleFont && (() => {
+                    const f = HERO_FONT_OPTIONS.find((o) => o.value === p.heroTitleFont);
+                    return f ? (
+                      <p
+                        className="mb-2 truncate text-lg leading-tight"
+                        style={{ fontFamily: f.css, color: p.heroTitleColor || undefined }}
+                      >
+                        Aa · {f.label}
+                      </p>
+                    ) : null;
+                  })()}
+                  {p.sectionBackgrounds && Object.keys(p.sectionBackgrounds).length > 0 && (
+                    <div className="mb-2 flex items-center gap-1.5 text-[10px] text-gray-400">
+                      fondos
+                      {Object.entries(p.sectionBackgrounds).map(([k, c]) => (
+                        <span key={k} className="h-4 w-4 rounded border" style={{ backgroundColor: c }} title={`${k}: ${c}`} />
+                      ))}
+                    </div>
+                  )}
                   {(p.announcementText || p.tickerText) && (
                     <div className="mb-3 space-y-1 rounded-lg bg-gray-50 p-2 text-xs text-gray-600">
                       {p.announcementText && <p>📢 {p.announcementText}</p>}
