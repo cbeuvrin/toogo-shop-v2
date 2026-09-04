@@ -371,7 +371,7 @@ html:has(.l2root) { scroll-behavior: smooth; }
 .l2root .hero-title {
     color: var(--ink);
     /* Más chico: todo el título ("…manejada desde WhatsApp") en una línea en desktop */
-    font-size: clamp(2.2rem, 3.9vw, 3.6rem);
+    font-size: clamp(2.4rem, 4.2vw, 4rem);
     font-weight: 900;
     letter-spacing: -0.035em;
     line-height: 1.08;
