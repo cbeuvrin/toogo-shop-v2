@@ -13,14 +13,17 @@
     --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 .l2root * { margin: 0; padding: 0; box-sizing: border-box; }
-.l2root { scroll-behavior: smooth; }
+/* El que scrollea es el documento, no .l2root: smooth va en html (solo
+   cuando esta landing está montada) para que los anclas del menú no salten. */
+html:has(.l2root) { scroll-behavior: smooth; }
 .l2root {
     font-family: 'Outfit', system-ui, sans-serif;
     background: var(--paper);
     color: var(--ink);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+    /* clip, no hidden: hidden convierte el div en scroll container y traba la rueda */
+    overflow-x: clip;
 }
 .l2root img { max-width: 100%; display: block; }
 .l2root .container {
@@ -1345,5 +1348,7 @@
 
 /* Hero: WhatsApp negro + icono verde al lado */
 .l2root .wa-nowrap { white-space: nowrap; }
-.l2root .wa-word { color: var(--ink); }
+/* Segunda línea del hero: más chica para que quepa en una sola línea */
+.l2root .hero-line2 { font-size: 0.72em; white-space: nowrap; }
+.l2root .wa-word { color: var(--ink); font-style: italic; padding-right: 0.05em; }
 .l2root .wa-hero-icon { display: inline-block; height: 0.72em; width: auto; vertical-align: -0.06em; margin-left: 0.16em; }
