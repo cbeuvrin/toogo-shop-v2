@@ -5,7 +5,6 @@ import { ChatBotContainer } from "@/components/ChatBotContainer";
 import { SEOHead } from "@/components/SEOHead";
 import { Helmet } from "react-helmet-async";
 import { usePlatformFacebookPixel } from "@/hooks/usePlatformFacebookPixel";
-import { supabase } from "@/integrations/supabase/client";
 import "./LandingNueva.css";
 
 const A = "/assets/l2";      // assets propios de esta landing
@@ -43,23 +42,13 @@ const LandingNueva = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingFlowType, setOnboardingFlowType] = useState<"subdomain" | "domain" | undefined>(undefined);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [videoOpen, setVideoOpen] = useState(false);
-  const [heroEmail, setHeroEmail] = useState("");
   const [showFloatingCta, setShowFloatingCta] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
   const { trackPageView, trackLead } = usePlatformFacebookPixel();
 
   useEffect(() => { trackPageView('/', 'TOOGO - Landing'); }, []);
-
-  const captureLead = (source: string) => {
-    const email = heroEmail.trim();
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
-    supabase.functions.invoke('capture-lead', { body: { email, source } }).catch(() => {});
-  };
 
   const openOnboarding = (source: string, flow: "subdomain" | "domain" = "subdomain") => {
     trackLead('onboarding_started', { source });
@@ -98,18 +87,6 @@ const LandingNueva = () => {
     root.querySelectorAll('.reveal, .stagger').forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, []);
-
-  // Cerrar modal de video con Escape + reproducir
-  useEffect(() => {
-    if (videoOpen) {
-      videoRef.current?.play().catch(() => {});
-      const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setVideoOpen(false); };
-      document.addEventListener('keydown', onKey);
-      return () => document.removeEventListener('keydown', onKey);
-    } else {
-      videoRef.current?.pause();
-    }
-  }, [videoOpen]);
 
   const scrollCarousel = (dir: number) => carouselRef.current?.scrollBy({ left: dir * 320, behavior: 'smooth' });
 
@@ -170,21 +147,8 @@ const LandingNueva = () => {
                 <p className="hero-badge reveal hero-r1">0% de comisión de por vida — solo para las primeras tiendas</p>
                 <h1 className="hero-title reveal hero-r1">Tu tienda en línea gratis, manejada desde <span className="wa-nowrap"><span className="wa-word">WhatsApp</span><img src="https://cdn.simpleicons.org/whatsapp/25D366" alt="WhatsApp" className="wa-hero-icon" /></span></h1>
                 <p className="hero-sub reveal hero-r2">Crea tu tienda gratis y contrólala con un mensaje de WhatsApp.</p>
-                <form className="hero-form reveal hero-r3" onSubmit={(e) => { e.preventDefault(); captureLead('hero_email'); openOnboarding('hero_email'); }}>
-                  <input
-                    type="email"
-                    className="hero-email"
-                    placeholder="Ingresa tu email"
-                    aria-label="Tu email"
-                    value={heroEmail}
-                    onChange={(e) => setHeroEmail(e.target.value)}
-                  />
-                  <button type="submit" className="btn btn-primary btn-lg">Crear tienda gratis</button>
-                </form>
                 <div className="hero-ctas reveal hero-r3">
-                  <button type="button" className="btn btn-outline btn-lg btn-video" onClick={() => setVideoOpen(true)}>
-                    <span className="play-ico"></span> Ver video
-                  </button>
+                  <button type="button" className="btn btn-primary btn-lg" onClick={() => openOnboarding('hero_cta')}>Crear tienda gratis</button>
                 </div>
                 <p className="hero-trust reveal hero-r3">Tu tienda queda lista en menos de 5 minutos · Sin tarjeta · Cancela cuando quieras</p>
               </div>
@@ -440,19 +404,6 @@ const LandingNueva = () => {
           <p className="footer-copy">© 2026 Toogo. Todos los derechos reservados.</p>
         </footer>
 
-        {/* MODAL DE VIDEO */}
-        {videoOpen && (
-          <div className="video-modal">
-            <div className="video-modal-backdrop" onClick={() => setVideoOpen(false)}></div>
-            <div className="video-modal-box">
-              <button className="video-modal-close" aria-label="Cerrar" onClick={() => setVideoOpen(false)}>&times;</button>
-              <video ref={videoRef} controls playsInline>
-                <source src="/VIDEOS/landing-video.mp4" type="video/mp4" />
-              </video>
-            </div>
-          </div>
-        )}
-
         {/* CTA FLOTANTE (móvil) — se oculta con el onboarding abierto: su z-index
             (60) queda por encima del modal (z-50) y se veía flotando sobre el form */}
         {showFloatingCta && !showOnboarding && (
@@ -466,7 +417,6 @@ const LandingNueva = () => {
         open={showOnboarding}
         onOpenChange={(open) => { setShowOnboarding(open); if (!open) setOnboardingFlowType(undefined); }}
         initialFlowType={onboardingFlowType}
-        initialEmail={heroEmail}
       />
     </>
   );
