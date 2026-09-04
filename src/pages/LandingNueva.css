@@ -1091,6 +1091,8 @@ html:has(.l2root) { scroll-behavior: smooth; }
 }
 @media (max-width: 768px) {
 .l2root .nav-auth .btn-ghost { display: none; }
+/* En móvil el CTA vive abajo (floating-cta); el de la barra no cabe y la tapa */
+.l2root .nav-auth .btn-primary { display: none; }
 .l2root .hero-content { grid-template-columns: 1fr; }
 .l2root .hero-visual { margin-top: 8px; }
 .l2root .hero-collage { height: 54dvh; }

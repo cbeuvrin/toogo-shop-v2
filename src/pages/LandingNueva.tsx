@@ -453,8 +453,9 @@ const LandingNueva = () => {
           </div>
         )}
 
-        {/* CTA FLOTANTE (móvil) */}
-        {showFloatingCta && (
+        {/* CTA FLOTANTE (móvil) — se oculta con el onboarding abierto: su z-index
+            (60) queda por encima del modal (z-50) y se veía flotando sobre el form */}
+        {showFloatingCta && !showOnboarding && (
           <button className="floating-cta" onClick={() => openOnboarding('floating_cta')}>Crear tienda gratis</button>
         )}
 
