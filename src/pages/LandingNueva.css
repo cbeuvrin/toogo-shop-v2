@@ -1348,7 +1348,5 @@ html:has(.l2root) { scroll-behavior: smooth; }
 
 /* Hero: WhatsApp negro + icono verde al lado */
 .l2root .wa-nowrap { white-space: nowrap; }
-/* Segunda línea del hero: más chica para que quepa en una sola línea */
-.l2root .hero-line2 { font-size: 0.72em; white-space: nowrap; }
-.l2root .wa-word { color: var(--ink); font-style: italic; padding-right: 0.05em; }
+.l2root .wa-word { color: var(--ink); }
 .l2root .wa-hero-icon { display: inline-block; height: 0.72em; width: auto; vertical-align: -0.06em; margin-left: 0.16em; }
