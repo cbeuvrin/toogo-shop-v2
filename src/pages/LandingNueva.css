@@ -681,6 +681,8 @@ html:has(.l2root) { scroll-behavior: smooth; }
 @media (max-width: 768px) {
 .l2root .tpl-header { grid-template-columns: 1fr; gap: 20px; margin-bottom: 32px; }
 .l2root .tpl-title { max-width: none; }
+/* En una sola columna el botón heredaba el flex-end de desktop */
+.l2root .tpl-header-right { justify-content: center; }
 }
 .l2root .ia-section {
     padding: 96px 0;
