@@ -370,10 +370,11 @@ html:has(.l2root) { scroll-behavior: smooth; }
 }
 .l2root .hero-title {
     color: var(--ink);
-    font-size: clamp(2.6rem, 6vw, 4.6rem);
+    /* Más chico: todo el título ("…manejada desde WhatsApp") en una línea en desktop */
+    font-size: clamp(2rem, 3.6vw, 3.2rem);
     font-weight: 900;
     letter-spacing: -0.035em;
-    line-height: 1.02;
+    line-height: 1.08;
 }
 .l2root .hero-sub {
     color: var(--ink-soft);
@@ -1348,5 +1349,5 @@ html:has(.l2root) { scroll-behavior: smooth; }
 
 /* Hero: WhatsApp negro + icono verde al lado */
 .l2root .wa-nowrap { white-space: nowrap; }
-.l2root .wa-word { color: var(--ink); }
+.l2root .wa-word { color: var(--ink); font-style: italic; padding-right: 0.05em; }
 .l2root .wa-hero-icon { display: inline-block; height: 0.72em; width: auto; vertical-align: -0.06em; margin-left: 0.16em; }
