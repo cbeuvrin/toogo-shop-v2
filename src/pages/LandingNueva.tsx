@@ -374,10 +374,10 @@ const LandingNueva = () => {
 
           {/* CTA FINAL */}
           <section className="final-cta">
-            <div className="cta-marquee" aria-hidden="true"><img src={`${A}/toogo-wordmark.webp`} alt="" className="cta-logo" /></div>
             <div className="cta-content reveal">
               <button className="btn btn-primary btn-lg" onClick={() => openOnboarding('final_cta')}>Crear tienda gratis →</button>
-              <p className="cta-microcopy">Gratis para siempre · Sin tarjeta · Cancela cuando quieras</p>
+              {/* En móvil el microcopy se parte en dos líneas (micro-sep/micro-b) */}
+              <p className="cta-microcopy"><span>Gratis para siempre · Sin tarjeta</span><span className="micro-sep"> · </span><span className="micro-b">Cancela cuando quieras</span></p>
             </div>
           </section>
         </main>
