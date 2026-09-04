@@ -46,8 +46,6 @@ const LandingNueva = () => {
   const [videoOpen, setVideoOpen] = useState(false);
   const [heroEmail, setHeroEmail] = useState("");
   const [showFloatingCta, setShowFloatingCta] = useState(false);
-  const [showExit, setShowExit] = useState(false);
-  const exitShownRef = useRef(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -68,7 +66,6 @@ const LandingNueva = () => {
     setOnboardingFlowType(flow);
     setShowOnboarding(true);
     setMobileOpen(false);
-    setShowExit(false);
   };
 
   // CTA flotante en móvil: aparece cuando el hero sale de pantalla
@@ -82,18 +79,6 @@ const LandingNueva = () => {
     io.observe(hero);
     return () => io.disconnect();
   }, []);
-
-  // Exit-intent (desktop): al mover el mouse fuera por arriba, ofrecer el gancho una vez
-  useEffect(() => {
-    const onLeave = (e: MouseEvent) => {
-      if (e.clientY <= 0 && !exitShownRef.current && !showOnboarding) {
-        exitShownRef.current = true;
-        setShowExit(true);
-      }
-    };
-    document.addEventListener('mouseout', onLeave);
-    return () => document.removeEventListener('mouseout', onLeave);
-  }, [showOnboarding]);
 
   // Reveal + stagger al hacer scroll
   useEffect(() => {
@@ -473,23 +458,6 @@ const LandingNueva = () => {
           <button className="floating-cta" onClick={() => openOnboarding('floating_cta')}>Crear tienda gratis</button>
         )}
 
-        {/* EXIT-INTENT */}
-        {showExit && (
-          <div className="video-modal">
-            <div className="video-modal-backdrop" onClick={() => setShowExit(false)}></div>
-            <div className="exit-box">
-              <button className="video-modal-close" aria-label="Cerrar" onClick={() => setShowExit(false)}>&times;</button>
-              <p className="exit-badge">Oferta de lanzamiento</p>
-              <h3 className="exit-title">Antes de irte…</h3>
-              <p className="exit-sub">Crea tu tienda hoy y quédate con <strong>0% de comisión de por vida</strong>. Solo para las primeras tiendas.</p>
-              <form className="hero-form" onSubmit={(e) => { e.preventDefault(); captureLead('exit_intent'); openOnboarding('exit_intent'); }}>
-                <input type="email" className="hero-email" placeholder="Ingresa tu email" aria-label="Tu email" value={heroEmail} onChange={(e) => setHeroEmail(e.target.value)} />
-                <button type="submit" className="btn btn-primary btn-lg">Crear tienda gratis</button>
-              </form>
-              <p className="hero-trust">Sin tarjeta · Cancela cuando quieras</p>
-            </div>
-          </div>
-        )}
       </div>
 
       <ChatBotContainer />
