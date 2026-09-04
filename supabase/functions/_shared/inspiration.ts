@@ -1,6 +1,6 @@
 // Helpers puros del wizard "Diséñala con IA". Sin imports con red para que
 // `deno test` corra offline (designTools.ts tampoco tiene).
-import { TEMPLATE_NAMES } from './designTools.ts';
+import { TEMPLATE_NAMES, HERO_FONT_TOKENS } from './designTools.ts';
 
 export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 export const MAX_IMAGE_B64 = 6_000_000; // ≈ 4.5 MB reales
@@ -59,6 +59,8 @@ ${description?.trim() ? `Descripción del usuario sobre su negocio/estilo: "${de
 - Colores en hex #RRGGBB. background debe ser legible como fondo de página; navbar debe contrastar con el contenido.
 - Las 2-3 propuestas deben sentirse diferentes (p. ej. una fiel a la inspiración, una más sobria, una más atrevida).
 - announcementText y tickerText: frases cortas de venta en español neutro, escritas para la tienda del usuario (ej. "Envío gratis en pedidos desde $500"). Omítelas si no aportan.
+- heroTitleFont: elige UNA tipografía para el título de la portada acorde al mood, de esta lista exacta: ${HERO_FONT_TOKENS.join(', ')} (playfair=elegante/editorial, bebas=impacto/deportivo, lobster=script/artesanal, mono=tech, oswald=condensada moderna). heroTitleColor en hex solo si mejora el contraste con el fondo del hero.
+- sectionBackgrounds: fondos por sección (hero, section1, section2, footer) en hex #RRGGBB — inclúyelos SOLO si el look lo pide (p. ej. footer oscuro en un tema nocturno). Omite las secciones que no cambien.
 - name: nombre corto y atractivo del tema en español. rationale: UNA frase de por qué le va a su marca.
 Responde ÚNICAMENTE llamando la herramienta propose_store_themes.`;
 }

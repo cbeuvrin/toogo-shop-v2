@@ -409,6 +409,9 @@ export interface ThemeProposal {
   colors: { primary: string; secondary: string; background: string; navbar: string };
   announcementText?: string;
   tickerText?: string;
+  heroTitleFont?: string;
+  heroTitleColor?: string;
+  sectionBackgrounds?: { hero?: string; section1?: string; section2?: string; footer?: string };
 }
 
 /** null = propuesta válida; string = motivo del rechazo. */
@@ -427,6 +430,21 @@ export function validateThemeProposal(p: any): string | null {
     const v = (p as Record<string, unknown>)[k];
     if (v !== undefined && (typeof v !== 'string' || v.length === 0 || v.length > 120)) {
       return `${k} inválido`;
+    }
+  }
+  if (p.heroTitleFont !== undefined && !HERO_FONT_TOKENS.includes(p.heroTitleFont)) {
+    return 'heroTitleFont inválida';
+  }
+  if (p.heroTitleColor !== undefined && (typeof p.heroTitleColor !== 'string' || !HEX.test(p.heroTitleColor))) {
+    return 'heroTitleColor inválido';
+  }
+  if (p.sectionBackgrounds !== undefined) {
+    if (typeof p.sectionBackgrounds !== 'object' || p.sectionBackgrounds === null || Array.isArray(p.sectionBackgrounds)) {
+      return 'sectionBackgrounds inválido';
+    }
+    for (const [k, v] of Object.entries(p.sectionBackgrounds)) {
+      if (!SECTION_KEYS.includes(k)) return `sección inválida en sectionBackgrounds: ${k}`;
+      if (typeof v !== 'string' || !HEX.test(v)) return `color de fondo inválido en ${k}`;
     }
   }
   return null;

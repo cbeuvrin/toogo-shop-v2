@@ -9,6 +9,9 @@ export interface ThemeProposal {
   colors: { primary: string; secondary: string; background: string; navbar: string };
   announcementText?: string;
   tickerText?: string;
+  heroTitleFont?: string;
+  heroTitleColor?: string;
+  sectionBackgrounds?: { hero?: string; section1?: string; section2?: string; footer?: string };
 }
 
 // Merge sobre visual_editor_data idéntico al del editor: leer, mezclar, upsert
@@ -55,6 +58,38 @@ export async function applyThemeProposal(tenantId: string, p: ThemeProposal): Pr
   }
   if (p.tickerText) {
     await mergeVisual(tenantId, 'ticker', 'ticker_bar', { text: p.tickerText, enabled: true });
+  }
+  // Tipografía/color del título y fondos por sección: misma semántica que el
+  // editor (handleSaveHeroElement / handleSaveSectionBg): merge de
+  // hero/main_hero sin pisar el resto; el TEXTO top-level no se toca.
+  if (p.heroTitleFont || p.heroTitleColor || p.sectionBackgrounds) {
+    const { data } = await supabase
+      .from('visual_editor_data')
+      .select('data')
+      .eq('tenant_id', tenantId)
+      .eq('element_type', 'hero')
+      .eq('element_id', 'main_hero')
+      .maybeSingle();
+    const current = (data?.data as Record<string, unknown>) ?? {};
+    const styles = (current.styles as Record<string, Record<string, unknown>>) ?? {};
+    const title = {
+      ...(styles.title ?? {}),
+      ...(p.heroTitleFont ? { fontFamily: p.heroTitleFont } : {}),
+      ...(p.heroTitleColor ? { color: p.heroTitleColor } : {}),
+    };
+    const cleanBgs = Object.fromEntries(
+      Object.entries(p.sectionBackgrounds ?? {}).filter(([, v]) => typeof v === 'string'),
+    );
+    const merged = {
+      ...current,
+      styles: { ...styles, title },
+      sectionBg: { ...((current.sectionBg as Record<string, unknown>) ?? {}), ...cleanBgs },
+    };
+    const { error: heroError } = await supabase.from('visual_editor_data').upsert(
+      { tenant_id: tenantId, element_type: 'hero', element_id: 'main_hero', data: merged },
+      { onConflict: 'tenant_id,element_type,element_id' },
+    );
+    if (heroError) console.error('applyThemeProposal hero:', heroError);
   }
   return true;
 }

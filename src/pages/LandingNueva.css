@@ -13,14 +13,17 @@
     --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 .l2root * { margin: 0; padding: 0; box-sizing: border-box; }
-.l2root { scroll-behavior: smooth; }
+/* El que scrollea es el documento, no .l2root: smooth va en html (solo
+   cuando esta landing está montada) para que los anclas del menú no salten. */
+html:has(.l2root) { scroll-behavior: smooth; }
 .l2root {
     font-family: 'Outfit', system-ui, sans-serif;
     background: var(--paper);
     color: var(--ink);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+    /* clip, no hidden: hidden convierte el div en scroll container y traba la rueda */
+    overflow-x: clip;
 }
 .l2root img { max-width: 100%; display: block; }
 .l2root .container {
@@ -367,10 +370,11 @@
 }
 .l2root .hero-title {
     color: var(--ink);
-    font-size: clamp(2.6rem, 6vw, 4.6rem);
+    /* Más chico: todo el título ("…manejada desde WhatsApp") en una línea en desktop */
+    font-size: clamp(2.4rem, 4.2vw, 4rem);
     font-weight: 900;
     letter-spacing: -0.035em;
-    line-height: 1.02;
+    line-height: 1.08;
 }
 .l2root .hero-sub {
     color: var(--ink-soft);
@@ -1337,35 +1341,6 @@
 }
 @keyframes ctaPop { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
 
-/* Exit-intent modal */
-.l2root .exit-box {
-  position: relative;
-  z-index: 2;
-  width: min(460px, 92vw);
-  background: #fff;
-  border-radius: 24px;
-  padding: 40px 32px 32px;
-  text-align: center;
-  box-shadow: 0 40px 90px rgba(24, 24, 27, 0.4);
-  animation: popIn 0.35s var(--ease);
-}
-.l2root .exit-badge {
-  display: inline-block;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  padding: 6px 14px;
-  border-radius: 999px;
-  margin-bottom: 14px;
-}
-.l2root .exit-title { font-size: 1.9rem; font-weight: 900; letter-spacing: -0.02em; margin-bottom: 10px; }
-.l2root .exit-sub { color: var(--ink-soft); font-size: 1.02rem; margin-bottom: 22px; }
-.l2root .exit-box .hero-form { max-width: none; margin-bottom: 12px; }
-.l2root .exit-box .hero-trust { margin-top: 4px; }
-
 @media (max-width: 768px) {
   .l2root .floating-cta { display: block; }
   .l2root .hero-form { max-width: none; }
@@ -1374,5 +1349,5 @@
 
 /* Hero: WhatsApp negro + icono verde al lado */
 .l2root .wa-nowrap { white-space: nowrap; }
-.l2root .wa-word { color: var(--ink); }
+.l2root .wa-word { color: var(--ink); font-style: italic; padding-right: 0.05em; }
 .l2root .wa-hero-icon { display: inline-block; height: 0.72em; width: auto; vertical-align: -0.06em; margin-left: 0.16em; }

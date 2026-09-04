@@ -32,6 +32,17 @@ export const FeaturedProductsEditModal = ({
         }
     }, [isOpen]); // Remove initialProductIds dependency to avoid overwriting user edits if parent re-renders
 
+    // Ids de productos borrados quedan "fantasma" en visual_editor_data: ocupan
+    // cupo del contador (ej. 1/2 sin nada marcado) aunque la tienda los ignora
+    // al renderizar. Se podan cuando el catálogo ya cargó.
+    useEffect(() => {
+        if (!isOpen || isLoading || products.length === 0) return;
+        setSelectedIds(prev => {
+            const pruned = prev.filter(id => products.some(p => p.id === id));
+            return pruned.length === prev.length ? prev : pruned;
+        });
+    }, [isOpen, isLoading, products]);
+
     const toggleProduct = (productId: string) => {
         setSelectedIds(prev => {
             if (prev.includes(productId)) {

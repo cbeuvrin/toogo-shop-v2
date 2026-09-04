@@ -32,4 +32,7 @@ Deno.test('buildInspirationPrompt: incluye catálogo completo y reglas anti-copi
   assertTrue(p.includes('#RRGGBB'), 'falta el formato hex de colores');
   assertTrue(p.includes('diferentes'), 'falta la regla de propuestas distintas entre sí');
   assertTrue(p.includes('español neutro'), 'falta la regla de español neutro');
+  assertTrue(p.includes('heroTitleFont'), 'falta la guía de tipografía del hero');
+  assertTrue(p.includes('playfair'), 'falta la lista de tokens de fuente');
+  assertTrue(p.includes('sectionBackgrounds'), 'falta la guía de fondos por sección');
 });
