@@ -18,7 +18,10 @@ const NEGATIVE_CACHE_TTL_MS = 60 * 1000; // 1 minute for "not found / no redirec
 type TenantRouting = { primaryHost: string | null; expiresAt: number };
 const tenantCache = new Map<string, TenantRouting>();
 
-const CRAWLER_REGEX = /.*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot).*/i;
+// Mantener en sincronía con los "has" de vercel.json. Los agentes de IA de
+// recuperación en vivo (ChatGPT-User, Claude-User, Perplexity-User…) no
+// contienen "bot", por eso van explícitos.
+const CRAWLER_REGEX = /.*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot|GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|PerplexityBot|Perplexity-User|Applebot|Amazonbot|Bytespider|MistralAI-User|DuckAssistBot|Google-Extended).*/i;
 
 function isLocalOrPreviewHost(host: string): boolean {
     return host.startsWith('localhost')
@@ -88,9 +91,33 @@ export default async function middleware(request: Request) {
         }
     }
 
-    // 2. (Eliminado) El proxy de crawlers en '/' vive ahora en el rewrite de
-    // vercel.json → /api/prerender. Este middleware copiaba los headers del
-    // gateway de Supabase tal cual (Content-Type degradado a text/plain +
-    // CSP sandbox) y no mandaba ?path=, lo que producía el canonical roto
-    // /store-seo-handler en la portada. No reintroducir un fetch aquí.
+    // 2. Crawler proxy en '/'. Tiene que vivir AQUÍ y no en un rewrite de
+    // vercel.json: Vercel sirve archivos antes de aplicar rewrites y '/'
+    // coincide con index.html, así que un rewrite de '/' nunca dispara.
+    // OJO: los headers se fijan a mano — el gateway de Supabase degrada el
+    // Content-Type de las edge functions a text/plain + CSP sandbox, y
+    // copiarlos tal cual (bug histórico) le servía la portada a Google como
+    // texto plano. Y siempre mandar ?path=/ (sin él, la función veía su
+    // propio pathname y emitía canonical /store-seo-handler).
+    if (url.pathname === '/' && CRAWLER_REGEX.test(userAgent)) {
+        const destination = `${SUPABASE_URL}/functions/v1/store-seo-handler?host=${encodeURIComponent(host)}&path=%2F`;
+        try {
+            const response = await fetch(destination, { headers: { 'user-agent': userAgent } });
+            if (response.ok) {
+                const body = await response.text();
+                return new Response(body, {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'text/html; charset=utf-8',
+                        'Cache-Control': 'public, max-age=300',
+                    },
+                });
+            }
+            console.error('[Middleware] SEO handler non-OK:', response.status);
+            // Fall through to serving the SPA
+        } catch (error) {
+            console.error('[Middleware] Error proxying to SEO handler:', error);
+            // Fall through to serving the SPA
+        }
+    }
 }
