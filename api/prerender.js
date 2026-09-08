@@ -21,13 +21,12 @@ export default async function handler(req, res) {
     res.status(404).setHeader('X-Robots-Tag', 'noindex').send('Not found');
     return;
   }
-  const upstream = await fetch(`${BASE}/${fn}?path=${encodeURIComponent(path)}`, {
-    headers: {
-      'user-agent': req.headers['user-agent'] || '',
-      // El host real (marketing o dominio de tenant): la edge function decide
-      // con esto si sirve la rama de marketing o la tienda del tenant.
-      'x-forwarded-host': req.headers['x-forwarded-host'] || req.headers.host || 'www.toogo.store',
-    },
+  // El host real (marketing o dominio de tenant) viaja como query param:
+  // el gateway de Supabase pisa x-forwarded-host, pero la función lee ?host=
+  // con prioridad. Con esto decide entre la rama de marketing y la tienda.
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || 'www.toogo.store');
+  const upstream = await fetch(`${BASE}/${fn}?path=${encodeURIComponent(path)}&host=${encodeURIComponent(host)}`, {
+    headers: { 'user-agent': req.headers['user-agent'] || '' },
     redirect: 'manual',
   });
   const body = await upstream.text();
