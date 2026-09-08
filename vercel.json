@@ -106,7 +106,7 @@
       "destination": "/api/prerender?fn=generate-sitemap"
     },
     {
-      "source": "/((?!robots\\.txt|llms\\.txt|llms-full\\.txt|assets/|api/).*)",
+      "source": "/((?!robots\\.txt|llms\\.txt|llms-full\\.txt|b84560c66e5374c7e15ddf4bc5bd1090\\.txt|assets/|api/).*)",
       "destination": "/"
     }
   ],
