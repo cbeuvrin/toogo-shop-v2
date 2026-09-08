@@ -1,55 +1,69 @@
-# BORRADOR para validación de Carlos — NO publicado
+# BORRADOR v2 para validación de Carlos — NO publicado
 
-**Query objetivo:** "como vender por whatsapp" / "vender por whatsapp méxico" (demanda real y alta)
+**Query objetivo:** "como vender por whatsapp" / "vender por whatsapp méxico" (demanda real — es la puerta de entrada; el artículo pivota al posicionamiento correcto)
 **Slug propuesto:** `como-vender-por-whatsapp-mexico`
-**SEO title:** Cómo vender por WhatsApp en México: guía completa 2026
-**Meta description:** Guía práctica para vender por WhatsApp en México: catálogo, cobros con tarjeta, OXXO y SPEI, pedidos y errores comunes. Con o sin tienda en línea.
+**SEO title:** Vender por WhatsApp en México: lo que nadie te dice (y qué hacer mejor)
+**Meta description:** Vender por WhatsApp funciona hasta que te desborda. La jugada real: una tienda en línea que cobra sola y que tú administras desde WhatsApp. Guía honesta 2026.
+
+**Posicionamiento (regla del artículo):** TOOGO NO se presenta como herramienta para
+vender por WhatsApp. La tesis es: vender por chat tiene techo; lo que escala es una
+tienda que cobra sola — y lo único de TOOGO es que esa tienda **se administra desde
+WhatsApp** (que tus clientes te pidan por chat queda como opción, no como el producto).
 
 ---
 
-# Cómo vender por WhatsApp en México: guía completa
+# Vender por WhatsApp en México: lo que nadie te dice
 
-Si vendes por WhatsApp — o quieres empezar — ya estás donde compran los mexicanos: es la app más usada del país y para millones de negocios es EL canal de ventas. Esta guía te lleva de "mando fotos por chat" a un negocio ordenado que cobra en línea y no pierde pedidos.
+Si llegaste aquí, seguramente ya vendes por WhatsApp: mandas fotos, negocias por chat y cobras por transferencia. Funciona — hasta que te desborda. Esta guía te dice honestamente dónde está el techo de vender por chat, y cuál es la jugada que sí escala.
 
-## Los 3 niveles de vender por WhatsApp
+## Vender por WhatsApp funciona… hasta que deja de funcionar
 
-**Nivel 1 — El chat pelón.** Mandas fotos, negocias por mensaje, cobras por transferencia. Funciona para empezar, pero no escala: pierdes pedidos entre chats, no hay catálogo que compartir y cobrar es un ir y venir de capturas.
+WhatsApp es donde están tus clientes, y cerrar una venta por chat se siente natural. Pero cuando el negocio crece, aparecen los mismos problemas para todos:
 
-**Nivel 2 — WhatsApp Business.** La app gratuita de Meta te da perfil de negocio, catálogo básico, respuestas rápidas y etiquetas. Es un buen paso. Sus límites: el catálogo no cobra solo (el cliente igual te escribe para pagar), no controla inventario y no te da una página que puedas compartir fuera de WhatsApp.
+- **Cada venta es una negociación.** "¿Cuánto cuesta?", "¿hay en azul?", "mándame fotos" — media hora de chat por venta.
+- **Cobrar es un viacrucis.** Transferencias, capturas de pantalla, "ahorita te deposito". Pierdes al que quería pagar con tarjeta o en OXXO.
+- **Los pedidos viven en tu memoria.** Sin un lugar donde caigan ordenados, alguno se te va a olvidar — y ese cliente no vuelve.
+- **Tu catálogo son tus últimas fotos enviadas.** No hay un lugar fijo que puedas compartir en redes o anuncios.
 
-**Nivel 3 — Tienda en línea + WhatsApp.** Tienes una tienda con tu catálogo, precios y pagos en línea (tarjeta, OXXO, SPEI), y WhatsApp se vuelve tu canal de atención y cierre: compartes el link de un producto, el cliente paga solo, y tú confirmas por chat. Aquí es donde dejas de perder ventas.
+WhatsApp Business (la app gratuita de Meta) ayuda con el perfil de negocio y el catálogo básico, pero no resuelve lo de fondo: el catálogo no cobra solo y los pedidos siguen siendo chats.
 
-## Cómo montar el nivel 3 en una tarde
+## La jugada que sí escala: la tienda cobra, tú chateas
 
-1. **Crea tu tienda en línea.** Con TOOGO es gratis y sin tarjeta: eliges una plantilla, subes tus productos y tu tienda queda en línea en unos 5 minutos.
-2. **Conecta tus cobros.** Enlaza tu cuenta de Mercado Pago (tarjeta, OXXO y SPEI), PayPal o Stripe. El dinero llega directo a tu cuenta. [Guía paso a paso](https://www.toogo.store/ayuda/configurar-pagos).
-3. **Comparte links, no capturas.** En vez de mandar 5 fotos y negociar, mandas el link del producto: el cliente ve precio, fotos y paga ahí mismo.
-4. **Administra desde el chat.** Lo particular de TOOGO: la tienda misma se maneja desde WhatsApp. Subes un producto mandando una foto con el precio, consultas tus ventas del día preguntando por chat, y recibes tus pedidos ahí mismo — sin abrir la computadora.
+La solución no es dejar WhatsApp — es dejar de usarlo como caja registradora. El esquema que funciona:
 
-## Errores comunes al vender por WhatsApp
+1. **Una tienda en línea con tus productos y pagos integrados.** El cliente ve precios y fotos, y paga solo: tarjeta, OXXO o SPEI con Mercado Pago, o PayPal/Stripe. Sin negociación, sin capturas.
+2. **WhatsApp para lo que es bueno: la relación.** Compartes el link de un producto en el chat, resuelves dudas, avisas que el pedido va en camino. La venta se cierra sola en la tienda.
 
-- **Cobrar solo por transferencia.** Pierdes al que quiere pagar con tarjeta o en OXXO. Dar opciones sube la conversión.
-- **No tener catálogo compartible.** "Ahorita te mando fotos" es una venta que se enfría. Un link siempre está listo.
-- **Responder tarde.** En WhatsApp la venta es ahora; contesta rápido o deja un mensaje automático de bienvenida con tu link.
-- **Todo en un solo chat mental.** Sin un lugar donde caigan los pedidos, se te van a olvidar. Que los pedidos lleguen ordenados, no sueltos en la conversación.
+Crear esa tienda ya no cuesta ni requiere programar: con TOOGO es gratis (sin tarjeta), eliges una plantilla, subes tus productos y queda en línea en unos 5 minutos. [Aquí la guía de cobros](https://www.toogo.store/ayuda/configurar-pagos).
+
+## Y aquí lo que casi nadie ofrece: ADMINISTRAR tu tienda desde WhatsApp
+
+Ojo con la diferencia, porque no es lo mismo:
+
+- **Vender por WhatsApp** = tus clientes te compran por chat. Eso lo ofrece cualquier catálogo-chat, y ya viste su techo.
+- **Administrar tu tienda por WhatsApp** = TÚ manejas tu negocio por chat. Eso es lo que hace TOOGO, y en México no lo ofrece nadie más:
+
+Le mandas una foto con el precio a tu tienda… y el producto queda publicado. Preguntas "¿cuánto vendí hoy?" y te llega tu resumen. Cambias un banner, un texto o los colores desde el chat. Recibes y gestionas tus pedidos ahí mismo. Tu negocio completo, sin abrir la computadora — porque tú también vives en el celular.
+
+Y si quieres que tus clientes además te pidan por WhatsApp, esa opción existe. Pero es la guinda, no el pastel.
 
 ## Preguntas frecuentes
 
-**¿Puedo vender por WhatsApp sin tienda en línea?**
-Sí, mucha gente empieza así. Pero un catálogo con pagos integrados te ahorra la negociación por chat y te deja cobrar con tarjeta, OXXO y SPEI en vez de solo transferencias.
+**¿Entonces vender por WhatsApp está mal?**
+No — es un gran canal de atención y cierre. Lo que no escala es usarlo como catálogo, caja y libreta de pedidos al mismo tiempo.
 
 **¿Cuánto cuesta ponerlo en marcha?**
-WhatsApp Business es gratis, y una tienda en TOOGO también: el plan gratuito no pide tarjeta. Solo pagas las comisiones normales de tu procesador de pagos (Mercado Pago, PayPal o Stripe) por venta cobrada.
+Una tienda en TOOGO es gratis y no pide tarjeta. Solo pagas la comisión normal de tu procesador (Mercado Pago, PayPal o Stripe) por venta cobrada.
 
-**¿Qué necesito para cobrar con OXXO y SPEI?**
-Una cuenta de Mercado Pago conectada a tu tienda. El cliente elige "pagar en OXXO" o transferencia SPEI y a ti te llega el pago confirmado.
+**¿Qué necesito para cobrar con tarjeta, OXXO y SPEI?**
+Conectar tu propia cuenta de Mercado Pago a tu tienda; el dinero de cada venta llega directo a tu cuenta. PayPal y Stripe también están disponibles.
 
-**¿Cómo manejo mi tienda si siempre estoy en el celular?**
-Ese es el caso de TOOGO: la tienda se administra por WhatsApp — foto + precio = producto publicado; "¿cuánto vendí hoy?" = tu resumen de ventas por chat.
+**¿Qué significa que la tienda "se administra por WhatsApp"?**
+Que las tareas del día a día — publicar productos, ver ventas, gestionar pedidos, ajustar el diseño — las haces mandando mensajes a tu tienda, como le escribirías a un empleado. Foto + precio = producto publicado.
 
 ---
 
 **Notas para Carlos (no van en el artículo):**
-- Todo claim es del producto real (foto→producto, ventas por chat, MP/PayPal/Stripe, plan gratis). Nada de "la IA crea tu tienda".
-- Propongo publicarlo con autor con nombre (¿tú? ¿"Equipo TOOGO" mientras?) — el E-E-A-T mejora con persona.
-- Al publicar: aviso a IndexNow + tú pides indexación en GSC.
+- v2 tras tu corrección: TOOGO ya NO aparece como "herramienta para vender por WhatsApp"; el artículo usa esa búsqueda como puerta y pivota a la categoría real ("tu tienda se administra por WhatsApp"), con la distinción explícita.
+- Autor: ¿tu nombre o "Equipo TOOGO"?
+- Al publicar: IndexNow + tú pides indexación en GSC.
