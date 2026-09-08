@@ -7,6 +7,7 @@ interface SEOHeadProps {
   ogImage?: string;
   ogType?: string;
   structuredData?: object;
+  canonical?: string;
 }
 
 export const SEOHead = ({
@@ -18,8 +19,16 @@ export const SEOHead = ({
   keywords = "tienda en línea administrada por whatsapp, administrar mi tienda desde whatsapp, subir productos por whatsapp, crear tienda online gratis, ecommerce mexico, tienda virtual gratis, vender por whatsapp, tienda sin programacion, crear tienda virtual, negocio digital, comercio electrónico",
   ogImage = "https://toogo.store/assets/toogo-og-image.jpg",
   ogType = "website",
-  structuredData
+  structuredData,
+  canonical
 }: SEOHeadProps) => {
+  // Canonical por ruta (antes era fijo a la home en index.html y toda ruta
+  // sin prerender se declaraba duplicado de la portada). Sin query ni slash final.
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
+  const cleanPath = pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+  const canonicalUrl = canonical || `https://www.toogo.store${cleanPath === '/' ? '/' : cleanPath}`;
+  // (Solo lo usan páginas de marketing en www.toogo.store; si algún día se usa
+  // en tiendas de tenants, pasar `canonical` explícito con el dominio del tenant.)
   const defaultStructuredData = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -44,6 +53,7 @@ export const SEOHead = ({
       <title>{title}</title>
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
+      <link rel="canonical" href={canonicalUrl} />
       
       {/* Open Graph / Facebook */}
       <meta property="fb:app_id" content="1595938024873627" />

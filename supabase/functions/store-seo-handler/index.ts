@@ -24,12 +24,59 @@ const MKT_PAGES: Record<string, { title: string; description: string; h1: string
             'Tus clientes también pueden pedirte por WhatsApp, y cobras en línea con Mercado Pago, PayPal, OXXO y SPEI. Conecta tu dominio propio y vende en toda la República.',
         ],
     },
+    '/ayuda/configurar-pagos': {
+        title: 'Cómo configurar los pagos de tu tienda (Mercado Pago, PayPal y Stripe) | TOOGO',
+        description: 'Guía paso a paso para conectar Mercado Pago, PayPal o Stripe a tu tienda TOOGO y empezar a cobrar en línea en México: credenciales de producción, dónde pegarlas y cómo probar.',
+        h1: 'Cómo configurar los pagos de tu tienda en TOOGO',
+        body: [
+            'Para cobrar en línea en tu tienda TOOGO conectas tu propia cuenta de Mercado Pago, PayPal o Stripe. El dinero de cada venta llega directo a tu cuenta.',
+            'Mercado Pago (recomendado en México): crea tu cuenta de negocio, entra al Panel de Desarrolladores, crea una aplicación, activa las credenciales de producción y copia el Public Key y el Access Token en el panel de TOOGO. Con Mercado Pago tus clientes pagan con tarjeta, OXXO y SPEI.',
+            'PayPal: crea una cuenta Business, entra a PayPal Developers, crea una app en modo Live y copia el Client ID y el Secret en TOOGO.',
+            'Stripe: crea y activa tu cuenta, ve a API Keys y copia las claves Standard (publicable y secreta) en TOOGO.',
+            'Al guardar las credenciales, tu tienda muestra el pago en línea en el checkout automáticamente. Si necesitas ayuda, escríbenos a soporte@toogo.store.',
+        ],
+    },
+    '/terminos-condiciones': {
+        title: 'Términos y Condiciones de Uso | TOOGO',
+        description: 'Términos y condiciones de uso de la plataforma TOOGO (Keting Media, S.A. de C.V.): registro, funcionamiento, responsabilidades, pagos y comisiones, devoluciones, propiedad intelectual y jurisdicción.',
+        h1: 'Términos y Condiciones de Uso',
+        body: [
+            'La plataforma TOOGO es operada por Keting Media, S.A. de C.V. Estos términos regulan el uso de la plataforma por parte de vendedores y compradores.',
+            'El documento completo cubre: objeto y aceptación de los términos; registro y cuentas de usuario; funcionamiento de la plataforma; responsabilidad del vendedor; responsabilidad de la plataforma; pagos, comisiones y facturación; devoluciones, reembolsos y cancelaciones; propiedad intelectual e industrial; datos personales y privacidad; suspensión y terminación de cuentas; exoneración y liberación de responsabilidad; modificaciones; contacto; y jurisdicción y ley aplicable.',
+            'Consulta el texto íntegro en esta página dentro de la aplicación, o escríbenos a soporte@toogo.store.',
+        ],
+    },
+    '/politica-privacidad': {
+        title: 'Aviso de Privacidad Integral | TOOGO',
+        description: 'Aviso de privacidad de TOOGO (Keting Media, S.A. de C.V.): finalidades del tratamiento, datos que se recaban, derechos ARCO, revocación del consentimiento, transferencias y uso de cookies.',
+        h1: 'Aviso de Privacidad Integral',
+        body: [
+            'TOOGO, operado por Keting Media, S.A. de C.V., trata tus datos personales conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (México).',
+            'El aviso completo cubre: finalidades del tratamiento; datos personales que se recaban; derechos ARCO (acceso, rectificación, cancelación y oposición); área responsable de datos personales; revocación del consentimiento; transferencias de datos personales; uso de cookies y tecnologías similares; modificaciones al aviso; y autoridad competente.',
+            'Para ejercer tus derechos ARCO o resolver dudas, escríbenos a soporte@toogo.store.',
+        ],
+    },
+    '/liberacion-responsabilidad': {
+        title: 'Liberación de Responsabilidad | TOOGO',
+        description: 'Liberación de responsabilidad de la plataforma TOOGO: responsabilidad de los vendedores, facultades de la plataforma, obligación de indemnización y limitación de responsabilidad.',
+        h1: 'Liberación de Responsabilidad',
+        body: [
+            'Este documento establece el alcance de la responsabilidad entre TOOGO (Keting Media, S.A. de C.V.), los vendedores que crean su tienda y los compradores.',
+            'Cubre: responsabilidad de los vendedores sobre sus productos y ventas; facultades de la plataforma; obligación de indemnización; limitación de responsabilidad; y vigencia y modificaciones.',
+            'Consulta el texto íntegro en esta página dentro de la aplicación, o escríbenos a soporte@toogo.store.',
+        ],
+    },
 };
 
-const marketingHtml = (rawPath: string): string => {
+const marketingHtml = (rawPath: string): string | null => {
     let path = rawPath || '/';
     if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
-    const page = MKT_PAGES[path] || MKT_PAGES['/'];
+    // Defensivo: si el path llega como la ruta de la propia función (query
+    // param perdido en el rewrite), es la home. BUG histórico: esto producía
+    // canonical https://www.toogo.store/store-seo-handler en la portada.
+    if (path === '/store-seo-handler' || path.startsWith('/functions/')) path = '/';
+    const page = MKT_PAGES[path];
+    if (!page) return null; // ruta desconocida → 404 (evita soft-404 con canonical falso)
     const canonical = `${MKT_SITE}${path === '/' ? '/' : path}`;
     const title = escapeHtml(page.title);
     const description = escapeHtml(page.description);
@@ -135,7 +182,7 @@ Deno.serve(async (req) => {
         }
 
         // Clean hostname
-        hostname = hostname?.split(':')[0]; // Remove port
+        hostname = hostname?.split(':')[0] ?? null; // Remove port
         if (hostname?.startsWith('www.') && !hostname.includes('toogo.store')) {
             hostname = hostname.replace('www.', '');
         }
@@ -155,7 +202,14 @@ Deno.serve(async (req) => {
         // tenant), servimos el HTML de marketing. Evita el 404 "Tenant not found".
         if (hostname === 'toogo.store' || hostname === 'www.toogo.store') {
             const path = url.searchParams.get('path') || url.pathname || '/';
-            return new Response(marketingHtml(path), {
+            const html = marketingHtml(path);
+            if (html === null) {
+                return new Response('Not found', {
+                    status: 404,
+                    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Robots-Tag': 'noindex', ...corsHeaders },
+                });
+            }
+            return new Response(html, {
                 status: 200,
                 headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300', ...corsHeaders },
             });
@@ -248,7 +302,7 @@ Deno.serve(async (req) => {
 
     } catch (error) {
         console.error('Error in store-seo-handler:', error);
-        return new Response(JSON.stringify({ error: error.message }), {
+        return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
             status: 500,
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });

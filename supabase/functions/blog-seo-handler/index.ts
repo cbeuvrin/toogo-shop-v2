@@ -62,6 +62,76 @@ Deno.serve(async (req) => {
     console.log('Crawler detected:', isCrawler);
     console.log('Blog path:', blogPath);
     
+    // Listado /blog para crawlers: antes caía al shell de la SPA con el
+    // canonical de la home y el listado era invisible para buscadores e IA.
+    if (isCrawler && (blogPath === '/blog' || blogPath === '/blog/')) {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_ANON_KEY')!
+      );
+      const { data: posts } = await supabase
+        .from('blog_posts')
+        .select('slug, title, seo_title, seo_description, excerpt, published_at')
+        .eq('status', 'published')
+        .order('published_at', { ascending: false })
+        .limit(50);
+      const list = posts || [];
+      const canonical = 'https://www.toogo.store/blog';
+      const title = 'Blog de TOOGO — Guías para vender en línea en México';
+      const description = 'Guías y consejos para emprendedores: cómo crear tu tienda en línea gratis, vender por WhatsApp y cobrar en línea en México.';
+      const ld = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Blog',
+        '@id': `${canonical}#blog`,
+        url: canonical,
+        name: title,
+        inLanguage: 'es-MX',
+        publisher: { '@id': 'https://www.toogo.store/#organization' },
+        blogPost: list.map((p) => ({
+          '@type': 'BlogPosting',
+          headline: p.seo_title || p.title,
+          url: `https://www.toogo.store/blog/${p.slug}`,
+          datePublished: p.published_at,
+        })),
+      });
+      const items = list.map((p) => `    <article>
+      <h2><a href="https://www.toogo.store/blog/${escapeHtml(p.slug)}">${escapeHtml(p.seo_title || p.title)}</a></h2>
+      <p>${escapeHtml(p.seo_description || p.excerpt || '')}</p>
+      ${p.published_at ? `<time datetime="${escapeHtml(String(p.published_at).slice(0, 10))}">${escapeHtml(String(p.published_at).slice(0, 10))}</time>` : ''}
+    </article>`).join('\n');
+      const html = `<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)}</title>
+  <meta name="description" content="${escapeHtml(description)}">
+  <link rel="canonical" href="${canonical}">
+  <meta name="robots" content="index, follow">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="TOOGO">
+  <meta property="og:locale" content="es_MX">
+  <meta property="og:title" content="${escapeHtml(title)}">
+  <meta property="og:description" content="${escapeHtml(description)}">
+  <meta property="og:url" content="${canonical}">
+  <script type="application/ld+json">${ld}</script>
+</head>
+<body>
+  <header><a href="https://www.toogo.store/">TOOGO</a></header>
+  <main>
+    <h1>Blog de TOOGO</h1>
+    <p>${escapeHtml(description)}</p>
+${items}
+  </main>
+  <footer><p>TOOGO — Crea tu tienda en línea gratis y manéjala desde WhatsApp.</p></footer>
+</body>
+</html>`;
+      return new Response(html, {
+        status: 200,
+        headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=300', ...corsHeaders },
+      });
+    }
+
     // Solo procesar si es un crawler y es una URL de blog
     if (!isCrawler || !blogPath.startsWith('/blog/')) {
       console.log('Not a crawler or not a blog URL, redirecting to app');
@@ -236,7 +306,7 @@ Deno.serve(async (req) => {
     
   } catch (error) {
     console.error('Error in blog-seo-handler:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
       status: 500,
       headers: { 
         'Content-Type': 'application/json',

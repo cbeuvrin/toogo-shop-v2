@@ -22,7 +22,62 @@
           "value": ".*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot|GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|PerplexityBot|Perplexity-User|Applebot|Amazonbot|Bytespider|MistralAI-User|DuckAssistBot|Google-Extended).*"
         }
       ],
-      "destination": "https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/store-seo-handler?path=/"
+      "destination": "/api/prerender?fn=store-seo-handler&path=/"
+    },
+    {
+      "source": "/blog",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot|GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|PerplexityBot|Perplexity-User|Applebot|Amazonbot|Bytespider|MistralAI-User|DuckAssistBot|Google-Extended).*"
+        }
+      ],
+      "destination": "/api/prerender?fn=blog-seo-handler&path=/blog"
+    },
+    {
+      "source": "/terminos-condiciones",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot|GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|PerplexityBot|Perplexity-User|Applebot|Amazonbot|Bytespider|MistralAI-User|DuckAssistBot|Google-Extended).*"
+        }
+      ],
+      "destination": "/api/prerender?fn=store-seo-handler&path=/terminos-condiciones"
+    },
+    {
+      "source": "/politica-privacidad",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot|GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|PerplexityBot|Perplexity-User|Applebot|Amazonbot|Bytespider|MistralAI-User|DuckAssistBot|Google-Extended).*"
+        }
+      ],
+      "destination": "/api/prerender?fn=store-seo-handler&path=/politica-privacidad"
+    },
+    {
+      "source": "/liberacion-responsabilidad",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot|GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|PerplexityBot|Perplexity-User|Applebot|Amazonbot|Bytespider|MistralAI-User|DuckAssistBot|Google-Extended).*"
+        }
+      ],
+      "destination": "/api/prerender?fn=store-seo-handler&path=/liberacion-responsabilidad"
+    },
+    {
+      "source": "/ayuda/configurar-pagos",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot|GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|PerplexityBot|Perplexity-User|Applebot|Amazonbot|Bytespider|MistralAI-User|DuckAssistBot|Google-Extended).*"
+        }
+      ],
+      "destination": "/api/prerender?fn=store-seo-handler&path=/ayuda/configurar-pagos"
     },
     {
       "source": "/blog/:slug",
@@ -33,7 +88,7 @@
           "value": ".*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot|GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|PerplexityBot|Perplexity-User|Applebot|Amazonbot|Bytespider|MistralAI-User|DuckAssistBot|Google-Extended).*"
         }
       ],
-      "destination": "https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/blog-seo-handler?path=/blog/:slug"
+      "destination": "/api/prerender?fn=blog-seo-handler&path=/blog/:slug"
     },
     {
       "source": "/blog/:slug/",
@@ -44,7 +99,7 @@
           "value": ".*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot|GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|PerplexityBot|Perplexity-User|Applebot|Amazonbot|Bytespider|MistralAI-User|DuckAssistBot|Google-Extended).*"
         }
       ],
-      "destination": "https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/blog-seo-handler?path=/blog/:slug/"
+      "destination": "/api/prerender?fn=blog-seo-handler&path=/blog/:slug/"
     },
     {
       "source": "/blog/:slug",
@@ -55,14 +110,14 @@
           "value": "crawler"
         }
       ],
-      "destination": "https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/blog-seo-handler?path=/blog/:slug"
+      "destination": "/api/prerender?fn=blog-seo-handler&path=/blog/:slug"
     },
     {
       "source": "/sitemap.xml",
-      "destination": "https://herqxhfmsstbteahhxpr.supabase.co/functions/v1/generate-sitemap"
+      "destination": "/api/prerender?fn=generate-sitemap"
     },
     {
-      "source": "/((?!robots\\.txt|assets/).*)",
+      "source": "/((?!robots\\.txt|llms\\.txt|llms-full\\.txt|assets/|api/).*)",
       "destination": "/"
     }
   ],

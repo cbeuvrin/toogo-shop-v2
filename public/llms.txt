@@ -1,0 +1,22 @@
+# TOOGO
+
+> Plataforma mexicana para crear una tienda en línea gratis en 5 minutos y administrarla desde WhatsApp, sin programar. El comerciante sube productos mandando una foto por chat, recibe y gestiona pedidos, cambia el diseño de su tienda y consulta sus ventas — todo por WhatsApp. Cobros en línea con Mercado Pago (tarjeta, OXXO, SPEI), PayPal y Stripe. Plan gratuito real, sin tarjeta de crédito.
+
+TOOGO es operado por Keting Media, S.A. de C.V. (México). Idioma del sitio: español (es-MX). Mercado principal: México.
+
+## Páginas principales
+
+- [Inicio](https://www.toogo.store/): qué es TOOGO, cómo funciona la administración por WhatsApp, plantillas y precios.
+- [Blog](https://www.toogo.store/blog): guías para crear una tienda en línea y vender por internet en México.
+- [Guía completa para crear tu tienda en línea](https://www.toogo.store/blog/guia-completa-para-crear-tu-tienda-en-linea-con-toogo): paso a paso con precios y preguntas frecuentes.
+- [Cómo configurar los pagos](https://www.toogo.store/ayuda/configurar-pagos): conectar Mercado Pago, PayPal o Stripe.
+
+## Legal
+
+- [Términos y condiciones](https://www.toogo.store/terminos-condiciones)
+- [Aviso de privacidad](https://www.toogo.store/politica-privacidad)
+
+## Contacto
+
+- Soporte: soporte@toogo.store
+- Facebook: https://www.facebook.com/Toogo.Online/
