@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Calendar, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { usePlatformFacebookPixel } from '@/hooks/usePlatformFacebookPixel';
+import { BlogHeader } from '@/components/BlogHeader';
 
 export default function Blog() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,6 +31,7 @@ export default function Blog() {
       </Helmet>
 
       <div className="min-h-screen bg-background">
+        <BlogHeader />
         {/* Header */}
         <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-16">
           <div className="container mx-auto px-4">

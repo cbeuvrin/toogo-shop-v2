@@ -50,6 +50,15 @@ const LandingNueva = () => {
 
   useEffect(() => { trackPageView('/', 'TOOGO - Landing'); }, []);
 
+  // "?crear=1" (CTA del blog): abre el onboarding directo al llegar
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('crear')) {
+      openOnboarding('blog_cta');
+      window.history.replaceState({}, '', '/');
+    }
+  }, []);
+
   const openOnboarding = (source: string, flow: "subdomain" | "domain" = "subdomain") => {
     trackLead('onboarding_started', { source });
     setOnboardingFlowType(flow);
@@ -119,6 +128,7 @@ const LandingNueva = () => {
               <li><a href="#whatsapp">WhatsApp</a></li>
               <li><a href="#precios">Precios</a></li>
               <li><a href="#faq">Preguntas</a></li>
+              <li><Link to="/blog">Blog</Link></li>
             </ul>
             <div className="nav-auth">
               <Link to="/auth" className="btn btn-ghost">Iniciar sesión</Link>
@@ -134,6 +144,7 @@ const LandingNueva = () => {
               <a href="#whatsapp" onClick={() => setMobileOpen(false)}>WhatsApp</a>
               <a href="#precios" onClick={() => setMobileOpen(false)}>Precios</a>
               <a href="#faq" onClick={() => setMobileOpen(false)}>Preguntas</a>
+              <Link to="/blog" onClick={() => setMobileOpen(false)}>Blog</Link>
               <Link to="/auth" className="mobile-login">Iniciar sesión</Link>
             </div>
           )}

@@ -8,6 +8,7 @@ import { usePlatformFacebookPixel } from '@/hooks/usePlatformFacebookPixel';
 import { TableOfContents } from '@/components/blog/TableOfContents';
 import { RelatedArticles } from '@/components/blog/RelatedArticles';
 import { processHeadingsWithIds, extractHeadings } from '@/lib/blogUtils';
+import { BlogHeader } from '@/components/BlogHeader';
 
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
@@ -138,6 +139,7 @@ export default function BlogPost() {
       </Helmet>
 
       <div className="min-h-screen bg-background">
+        <BlogHeader />
         {/* Header */}
         <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground py-8">
           <div className="container mx-auto px-4">
