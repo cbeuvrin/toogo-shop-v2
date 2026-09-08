@@ -88,20 +88,9 @@ export default async function middleware(request: Request) {
         }
     }
 
-    // 2. Crawler proxy (only on '/')
-    if (url.pathname === '/' && CRAWLER_REGEX.test(userAgent)) {
-        const destination = `${SUPABASE_URL}/functions/v1/store-seo-handler?host=${encodeURIComponent(host)}`;
-        console.log(`[Middleware] Proxying crawler (${userAgent}) to ${destination}`);
-
-        try {
-            const response = await fetch(destination);
-            return new Response(response.body, {
-                status: response.status,
-                headers: response.headers,
-            });
-        } catch (error) {
-            console.error('[Middleware] Error proxying to SEO handler:', error);
-            // Fall through to serving the SPA
-        }
-    }
+    // 2. (Eliminado) El proxy de crawlers en '/' vive ahora en el rewrite de
+    // vercel.json → /api/prerender. Este middleware copiaba los headers del
+    // gateway de Supabase tal cual (Content-Type degradado a text/plain +
+    // CSP sandbox) y no mandaba ?path=, lo que producía el canonical roto
+    // /store-seo-handler en la portada. No reintroducir un fetch aquí.
 }
