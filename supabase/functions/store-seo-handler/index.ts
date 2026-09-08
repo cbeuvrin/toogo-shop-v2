@@ -13,7 +13,7 @@ const FB_APP_ID = Deno.env.get('FACEBOOK_APP_ID') || '1595938024873627';
 // Va aquí (mismo handler) porque Vercel no permite dos rewrites con source "/".
 const MKT_SITE = 'https://www.toogo.store';
 const MKT_OG = `${MKT_SITE}/assets/mascot-toogo.png`;
-const MKT_PAGES: Record<string, { title: string; description: string; h1: string; body: string[] }> = {
+const MKT_PAGES: Record<string, { title: string; description: string; h1: string; body: string[]; faq?: [string, string][] }> = {
     '/': {
         title: 'Crea tu tienda en línea gratis y manéjala por WhatsApp | TOOGO',
         description: 'Crea tu tienda en línea gratis en 5 minutos y adminístrala desde WhatsApp: sube productos con una foto, recibe pedidos y consulta tus ventas por chat. Hecho para México.',
@@ -22,6 +22,13 @@ const MKT_PAGES: Record<string, { title: string; description: string; h1: string
             'TOOGO es la plataforma mexicana para crear tu tienda en línea gratis en 5 minutos, sin programar. Elige una plantilla, sube tus productos y empieza a vender.',
             'Lo que hace diferente a TOOGO: administras toda tu tienda desde WhatsApp. Subes un producto mandando una foto y un precio, recibes y gestionas tus pedidos, cambias el diseño de tu tienda y consultas tus ventas del día — todo por chat, sin abrir la computadora.',
             'Tus clientes también pueden pedirte por WhatsApp, y cobras en línea con Mercado Pago, PayPal, OXXO y SPEI. Conecta tu dominio propio y vende en toda la República.',
+        ],
+        // Copy aprobado por Carlos (Sep 8 2026). También alimenta el FAQPage del JSON-LD.
+        faq: [
+            ['¿Cuánto cuesta crear una tienda en TOOGO?', 'Nada: el plan gratuito es real y no pide tarjeta. Creas tu tienda, subes productos y vendes sin pagar mensualidad.'],
+            ['¿Cómo administro mi tienda desde WhatsApp?', 'Mandas una foto con el precio y el producto se publica; recibes pedidos, cambias el diseño y consultas tus ventas por chat.'],
+            ['¿Cómo cobro en línea?', 'Conectas tu propia cuenta de Mercado Pago (tarjeta, OXXO y SPEI), PayPal o Stripe; el dinero llega directo a tu cuenta.'],
+            ['¿Necesito saber programar?', 'No. Eliges una plantilla, subes tus productos y tu tienda queda lista en unos 5 minutos.'],
         ],
     },
     '/ayuda/configurar-pagos': {
@@ -80,9 +87,20 @@ const marketingHtml = (rawPath: string): string | null => {
     const canonical = `${MKT_SITE}${path === '/' ? '/' : path}`;
     const title = escapeHtml(page.title);
     const description = escapeHtml(page.description);
+    const faqLd = page.faq ? [{
+        '@type': 'FAQPage',
+        '@id': `${MKT_SITE}${path === '/' ? '/' : path}#faq`,
+        inLanguage: 'es-MX',
+        mainEntity: page.faq.map(([q, a]) => ({
+            '@type': 'Question',
+            name: q,
+            acceptedAnswer: { '@type': 'Answer', text: a },
+        })),
+    }] : [];
     const ld = JSON.stringify({
         '@context': 'https://schema.org',
         '@graph': [
+            ...faqLd,
             { '@type': 'Organization', '@id': `${MKT_SITE}/#organization`, name: 'TOOGO', alternateName: ['TOOGO Store', 'TOOGO México'], url: `${MKT_SITE}/`, logo: { '@type': 'ImageObject', url: MKT_OG }, description: 'Plataforma mexicana para crear una tienda en línea gratis en 5 minutos y administrarla desde WhatsApp, sin programar.', areaServed: { '@type': 'Country', name: 'México' }, sameAs: ['https://www.facebook.com/Toogo.Online/'] },
             { '@type': 'WebSite', '@id': `${MKT_SITE}/#website`, url: `${MKT_SITE}/`, name: 'TOOGO', inLanguage: 'es-MX', publisher: { '@id': `${MKT_SITE}/#organization` } },
             { '@type': 'SoftwareApplication', name: 'TOOGO', applicationCategory: 'BusinessApplication', applicationSubCategory: 'E-commerce Platform', operatingSystem: 'Web, iOS, Android', url: `${MKT_SITE}/`, inLanguage: 'es-MX', description: 'Crea tu tienda en línea gratis en 5 minutos y adminístrala desde WhatsApp. Sin programar.', featureList: ['Administra tu tienda desde WhatsApp', 'Sube productos mandando una foto por WhatsApp', 'Recibe y gestiona pedidos por chat', 'Consulta tus ventas preguntando por WhatsApp', 'Cambia el diseño de tu tienda sin computadora', 'Cobros con Mercado Pago, PayPal, OXXO y SPEI', 'Dominio propio y plantillas listas'], offers: { '@type': 'Offer', price: '0', priceCurrency: 'MXN', availability: 'https://schema.org/InStock', url: `${MKT_SITE}/precios` }, publisher: { '@id': `${MKT_SITE}/#organization` } },
@@ -117,6 +135,10 @@ const marketingHtml = (rawPath: string): string | null => {
   <main>
     <h1>${escapeHtml(page.h1)}</h1>
     ${page.body.map((p) => `<p>${escapeHtml(p)}</p>`).join('\n    ')}
+    ${page.faq ? `<section>
+      <h2>Preguntas frecuentes</h2>
+      ${page.faq.map(([q, a]) => `<h3>${escapeHtml(q)}</h3>\n      <p>${escapeHtml(a)}</p>`).join('\n      ')}
+    </section>` : ''}
   </main>
   <footer><p>TOOGO — Crea tu tienda en línea gratis y manéjala desde WhatsApp. Hecho para México.</p></footer>
 </body>
