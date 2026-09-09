@@ -23,6 +23,21 @@ const tenantCache = new Map<string, TenantRouting>();
 // contienen "bot", por eso van explícitos.
 const CRAWLER_REGEX = /.*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot|GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|PerplexityBot|Perplexity-User|Applebot|Amazonbot|Bytespider|MistralAI-User|DuckAssistBot|Google-Extended).*/i;
 
+// Rutas del sitio de MARKETING que existen de verdad para un buscador.
+// Todo lo demás en www.toogo.store devuelve 404 real a los bots (antes: el
+// shell de la SPA con 200 = soft-404, penalizado por GSC). Los humanos no
+// pasan por aquí: siguen viendo la SPA con su página NotFound.
+// Mantener en sincronía con las rutas públicas de AppRoutes.tsx.
+const MKT_BOT_PATHS = new Set([
+    '/',
+    '/blog',
+    '/soporte',
+    '/ayuda/configurar-pagos',
+    '/terminos-condiciones',
+    '/politica-privacidad',
+    '/liberacion-responsabilidad',
+]);
+
 function isLocalOrPreviewHost(host: string): boolean {
     return host.startsWith('localhost')
         || host.startsWith('127.0.0.1')
@@ -99,6 +114,27 @@ export default async function middleware(request: Request) {
     // copiarlos tal cual (bug histórico) le servía la portada a Google como
     // texto plano. Y siempre mandar ?path=/ (sin él, la función veía su
     // propio pathname y emitía canonical /store-seo-handler).
+    // 3. 404 real para bots en rutas de marketing inexistentes (anti soft-404).
+    // Solo hosts de marketing; nunca archivos (contienen '.') ni /api/ ni /blog/<slug>
+    // (la validez del slug la decide blog-seo-handler con la base de datos).
+    if (
+        (host === 'toogo.store' || host === 'www.toogo.store') &&
+        CRAWLER_REGEX.test(userAgent) &&
+        !url.pathname.includes('.') &&
+        !url.pathname.startsWith('/api/') &&
+        !url.pathname.startsWith('/blog/')
+    ) {
+        const clean = url.pathname.length > 1 && url.pathname.endsWith('/')
+            ? url.pathname.slice(0, -1)
+            : url.pathname;
+        if (!MKT_BOT_PATHS.has(clean)) {
+            return new Response('Not found', {
+                status: 404,
+                headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Robots-Tag': 'noindex' },
+            });
+        }
+    }
+
     if (url.pathname === '/' && CRAWLER_REGEX.test(userAgent)) {
         const destination = `${SUPABASE_URL}/functions/v1/store-seo-handler?host=${encodeURIComponent(host)}&path=%2F`;
         try {
