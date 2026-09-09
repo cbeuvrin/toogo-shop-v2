@@ -107,6 +107,7 @@ Deno.serve(async (req) => {
   <title>${escapeHtml(title)}</title>
   <meta name="description" content="${escapeHtml(description)}">
   <link rel="canonical" href="${canonical}">
+  <link rel="icon" href="https://www.toogo.store/favicon-96.png" type="image/png">
   <meta name="robots" content="index, follow">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="TOOGO">
@@ -264,6 +265,7 @@ ${items}
   
   <!-- Canonical URL -->
   <link rel="canonical" href="${articleUrl}">
+  <link rel="icon" href="https://www.toogo.store/favicon-96.png" type="image/png">
   
   <!-- Language -->
   <meta http-equiv="Content-Language" content="es-MX">

@@ -114,6 +114,7 @@ const marketingHtml = (rawPath: string): string | null => {
   <title>${title}</title>
   <meta name="description" content="${description}">
   <link rel="canonical" href="${canonical}">
+  <link rel="icon" href="${MKT_SITE}/favicon-96.png" type="image/png">
   <meta name="robots" content="index, follow">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="TOOGO">
