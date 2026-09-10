@@ -7,12 +7,23 @@ import './index.css';
 // React. Sin esto, el split de SmartHomePage encadena la red (chunk inicial
 // → arranca React → recién pide LandingNueva/Tienda) y el LCP paga un viaje
 // extra. Vite deduplica: el React.lazy reutiliza esta misma promesa.
+let warmup: Promise<unknown> | null = null;
 if (window.location.pathname.replace(/\/$/, '') === '') {
   const h = window.location.hostname;
   const esMarketing = h === 'toogo.store' || h === 'www.toogo.store'
     || h.includes('vercel.app') || h.includes('localhost')
     || h.includes('lovableproject.com') || h.includes('lovable.app');
-  (esMarketing ? import('@/pages/LandingNueva') : import('@/pages/Tienda')).catch(() => {});
+  warmup = (esMarketing ? import('@/pages/LandingNueva') : import('@/pages/Tienda')).catch(() => {});
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+const mount = () => createRoot(document.getElementById("root")!).render(<App />);
+
+// landing.html (prerender por host, ver scripts/build-landing-html.mjs) trae
+// el hero ya pintado en #root y marca window.__prerendered. Si montamos React
+// antes de que el chunk lazy de la landing esté listo, el Suspense barrería
+// ese DOM con el LoadingScreen — esperamos el warmup (tope 3s por si falla).
+if ((window as any).__prerendered && warmup) {
+  Promise.race([warmup, new Promise((r) => setTimeout(r, 3000))]).then(mount);
+} else {
+  mount();
+}

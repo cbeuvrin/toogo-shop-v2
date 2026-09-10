@@ -30,4 +30,8 @@ dist-ssr
 supabase/.temp/
 
 # Scripts de seeding / desarrollo (no para producción)
-scripts/
+scripts/*
+# … pero los del prerender de la landing SÍ van al repo (el build de Vercel los necesita)
+!scripts/build-landing-html.mjs
+!scripts/capture-landing-snippet.mjs
+!scripts/landing-root-snippet.html

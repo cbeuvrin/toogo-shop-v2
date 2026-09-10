@@ -42,6 +42,12 @@ const FAQS = [
   ["¿Cómo funciona el soporte?", "Chat y correo, más guías paso a paso para resolver todo sin depender de terceros."],
 ];
 
+// landing.html (prerender por host) ya muestra el hero: si re-montamos con
+// las clases reveal "vírgenes", el hero se desvanecería y volvería a entrar.
+// Con el flag nace con .in y no se nota el relevo estático→React.
+const PRE = typeof window !== 'undefined' && (window as any).__prerendered === true;
+const IN = PRE ? ' in' : '';
+
 const LandingNueva = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingFlowType, setOnboardingFlowType] = useState<"subdomain" | "domain" | undefined>(undefined);
@@ -192,15 +198,15 @@ const LandingNueva = () => {
           <section className="hero" ref={heroRef}>
             <div className="hero-content">
               <div className="hero-copy">
-                <p className="hero-badge reveal hero-r1">0% de comisión de por vida — solo para las primeras tiendas</p>
-                <h1 className="hero-title reveal hero-r1">Tu tienda en línea gratis, manejada desde <span className="wa-nowrap"><span className="wa-word">WhatsApp</span><img src={`${A}/icons/whatsapp-green.svg`} alt="WhatsApp" className="wa-hero-icon" /></span></h1>
-                <p className="hero-sub reveal hero-r2">Crea tu tienda gratis y contrólala con un mensaje de WhatsApp.</p>
-                <div className="hero-ctas reveal hero-r3">
+                <p className={`hero-badge reveal hero-r1${IN}`}>0% de comisión de por vida — solo para las primeras tiendas</p>
+                <h1 className={`hero-title reveal hero-r1${IN}`}>Tu tienda en línea gratis, manejada desde <span className="wa-nowrap"><span className="wa-word">WhatsApp</span><img src={`${A}/icons/whatsapp-green.svg`} alt="WhatsApp" className="wa-hero-icon" /></span></h1>
+                <p className={`hero-sub reveal hero-r2${IN}`}>Crea tu tienda gratis y contrólala con un mensaje de WhatsApp.</p>
+                <div className={`hero-ctas reveal hero-r3${IN}`}>
                   <button type="button" className="btn btn-primary btn-lg" onClick={() => openOnboarding('hero_cta')}>Crear tienda gratis</button>
                 </div>
-                <p className="hero-trust reveal hero-r3">Tu tienda queda lista en menos de 5 minutos · Sin tarjeta · Cancela cuando quieras</p>
+                <p className={`hero-trust reveal hero-r3${IN}`}>Tu tienda queda lista en menos de 5 minutos · Sin tarjeta · Cancela cuando quieras</p>
               </div>
-              <div className="hero-visual reveal hero-rv" aria-hidden="true">
+              <div className={`hero-visual reveal hero-rv${IN}`} aria-hidden="true">
                 <div className="hero-collage">
                   <div className="collage-col col-a">
                     {[`${TPL}/mediterraneo.webp`, `${TPL}/caribe.webp`, `${TPL}/nature.webp`].concat([`${TPL}/mediterraneo.webp`, `${TPL}/caribe.webp`, `${TPL}/nature.webp`]).map((s, i) => <img key={i} src={s} alt="" />)}

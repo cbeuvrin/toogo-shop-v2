@@ -4,6 +4,8 @@ Allow: /
 Disallow: /auth
 Disallow: /dashboard
 Disallow: /admin
+# landing.html es el prerender interno de '/' (lo sirve el middleware); no indexar el duplicado
+Disallow: /landing.html
 
 User-agent: Googlebot
 Allow: /

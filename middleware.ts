@@ -156,4 +156,18 @@ export default async function middleware(request: Request) {
             // Fall through to serving the SPA
         }
     }
+
+    // 4. HUMANOS en '/' del sitio de marketing: servir dist/landing.html —
+    // el index.html del build con el hero ya prerenderizado dentro de #root
+    // (lo genera scripts/build-landing-html.mjs). SOLO estos dos hosts:
+    // las tiendas de los tenants siguen recibiendo index.html intacto.
+    // Es un rewrite (la URL visible sigue siendo '/'): el header
+    // x-middleware-rewrite es el mecanismo estándar de Vercel Edge
+    // Middleware para reescribir sin @vercel/edge como dependencia.
+    if ((host === 'toogo.store' || host === 'www.toogo.store') && url.pathname === '/') {
+        const dest = new URL('/landing.html', url);
+        return new Response(null, {
+            headers: { 'x-middleware-rewrite': dest.toString() },
+        });
+    }
 }
