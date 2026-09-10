@@ -447,13 +447,13 @@ const LandingNueva = () => {
               <p>La plataforma más fácil para crear tu tienda online.</p>
             </div>
             <nav className="footer-col">
-              <h4>Soporte</h4>
+              <h3>Soporte</h3>
               <Link to="/blog">Blog</Link>
               <Link to="/soporte">Centro de ayuda</Link>
               <a href="mailto:soporte@toogo.store">soporte@toogo.store</a>
             </nav>
             <nav className="footer-col">
-              <h4>Legal</h4>
+              <h3>Legal</h3>
               <Link to="/terminos-condiciones">Términos y condiciones</Link>
               <Link to="/politica-privacidad">Política de privacidad</Link>
             </nav>

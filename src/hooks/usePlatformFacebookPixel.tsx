@@ -71,10 +71,20 @@ export const usePlatformFacebookPixel = () => {
     window.addEventListener('pointerdown', injectScript, { once: true, passive: true });
     window.addEventListener('scroll', injectScript, { once: true, passive: true });
     window.addEventListener('keydown', injectScript, { once: true });
-    if ('requestIdleCallback' in window) {
-      (window as any).requestIdleCallback(injectScript, { timeout: 3000 });
+    // El respaldo automático espera al evento load: en móvil lento el timer
+    // desde el mount caía ANTES de load y Lighthouse volvía a contar los
+    // 238KB de Meta dentro de la carga de la página.
+    const armIdleFallback = () => {
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(injectScript, { timeout: 3000 });
+      } else {
+        setTimeout(injectScript, 3000);
+      }
+    };
+    if (document.readyState === 'complete') {
+      armIdleFallback();
     } else {
-      setTimeout(injectScript, 3000);
+      window.addEventListener('load', armIdleFallback, { once: true });
     }
 
     console.log('🔷 [Facebook Pixel] Queue ready, PageView queued');
