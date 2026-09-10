@@ -93,7 +93,7 @@ export const SpeechBubble = ({ onOpenChat }: SpeechBubbleProps) => {
               <div className="flex flex-col gap-2">
                 <Button 
                   onClick={handleStartChat}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-10 rounded-lg font-medium flex items-center gap-2 transition-all duration-200"
+                  className="w-full bg-[#8346C1] hover:bg-[#6E38A6] text-white h-10 rounded-lg font-medium flex items-center gap-2 transition-all duration-200"
                 >
                   <MessageCircle size={16} />
                   Empezar a chatear
