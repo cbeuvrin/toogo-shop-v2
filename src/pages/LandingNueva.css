@@ -608,12 +608,16 @@ html:has(.l2root) { scroll-behavior: smooth; }
     display: flex;
     gap: 16px;
     overflow-x: auto;
-    scroll-snap-type: x mandatory;
     scroll-behavior: smooth;
     padding: 8px 4px 24px;
     scrollbar-width: none;
 }
 .l2root .carousel::-webkit-scrollbar { display: none; }
+/* El snap se activa solo cuando el usuario toca el carrusel (clase .snap
+   desde LandingNueva.tsx). Con snap mandatory desde el inicio, Chrome hace
+   scrolls de acomodo durante la carga y deja de medir el LCP de toda la
+   página (PageSpeed daba Error NO_LCP, Rendimiento inmedible). */
+.l2root .carousel.snap { scroll-snap-type: x mandatory; }
 .l2root .tpl-card {
     scroll-snap-align: start;
     flex: 0 0 auto;

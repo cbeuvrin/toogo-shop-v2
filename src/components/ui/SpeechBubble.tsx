@@ -15,10 +15,11 @@ export const SpeechBubble = ({ onOpenChat }: SpeechBubbleProps) => {
     const hasSeenWelcome = localStorage.getItem('toogo-welcome-shown');
     
     if (!hasSeenWelcome) {
-      // Show bubble after a brief delay for better UX
+      // Espera pedida por Carlos: que el saludo de Toogi no tape la página
+      // apenas carga — 3 segundos de respiro antes de aparecer.
       const timer = setTimeout(() => {
         setIsVisible(true);
-      }, 1500);
+      }, 3000);
 
       return () => clearTimeout(timer);
     }

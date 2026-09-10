@@ -97,7 +97,26 @@ const LandingNueva = () => {
     return () => io.disconnect();
   }, []);
 
-  const scrollCarousel = (dir: number) => carouselRef.current?.scrollBy({ left: dir * 320, behavior: 'smooth' });
+  // Snap del carrusel solo tras la primera interacción del usuario: la regla
+  // .carousel.snap vive en el CSS. Nunca poner scroll-snap mandatory de
+  // entrada — los scrolls de acomodo que dispara al cargar hacen que Chrome
+  // deje de medir el LCP de toda la página (NO_LCP en PageSpeed).
+  useEffect(() => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const enable = () => el.classList.add('snap');
+    el.addEventListener('pointerdown', enable, { once: true, passive: true });
+    el.addEventListener('wheel', enable, { once: true, passive: true });
+    return () => {
+      el.removeEventListener('pointerdown', enable);
+      el.removeEventListener('wheel', enable);
+    };
+  }, []);
+
+  const scrollCarousel = (dir: number) => {
+    carouselRef.current?.classList.add('snap');
+    carouselRef.current?.scrollBy({ left: dir * 320, behavior: 'smooth' });
+  };
 
   const faqSchema = {
     "@context": "https://schema.org",
