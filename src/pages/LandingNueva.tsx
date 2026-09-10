@@ -1,7 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import { OnboardingModal } from "@/components/OnboardingModal";
-import { ChatBotContainer } from "@/components/ChatBotContainer";
+
+// Lazy: el modal arrastra Supabase, PlanSelector y la base de países; el chat,
+// todo su árbol de UI. Ninguno hace falta para pintar la landing — se cargan
+// al abrir el onboarding y en el primer respiro del navegador respectivamente.
+const OnboardingModal = lazy(() => import("@/components/OnboardingModal").then(m => ({ default: m.OnboardingModal })));
+const ChatBotContainer = lazy(() => import("@/components/ChatBotContainer").then(m => ({ default: m.ChatBotContainer })));
 import { SEOHead } from "@/components/SEOHead";
 import { Helmet } from "react-helmet-async";
 import { usePlatformFacebookPixel } from "@/hooks/usePlatformFacebookPixel";
@@ -43,12 +47,25 @@ const LandingNueva = () => {
   const [onboardingFlowType, setOnboardingFlowType] = useState<"subdomain" | "domain" | undefined>(undefined);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showFloatingCta, setShowFloatingCta] = useState(false);
+  const [chatReady, setChatReady] = useState(false);
+  const [onboardingLoaded, setOnboardingLoaded] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
   const { trackPageView, trackLead } = usePlatformFacebookPixel();
 
   useEffect(() => { trackPageView('/', 'TOOGO - Landing'); }, []);
+
+  // El chat de Toogi se monta cuando el navegador queda libre tras la carga
+  useEffect(() => {
+    const arm = () => setChatReady(true);
+    if ('requestIdleCallback' in window) {
+      const id = (window as any).requestIdleCallback(arm, { timeout: 2000 });
+      return () => (window as any).cancelIdleCallback?.(id);
+    }
+    const t = setTimeout(arm, 1500);
+    return () => clearTimeout(t);
+  }, []);
 
   // "?crear=1" (CTA del blog): abre el onboarding directo al llegar
   useEffect(() => {
@@ -60,6 +77,7 @@ const LandingNueva = () => {
   }, []);
 
   const openOnboarding = (source: string, flow: "subdomain" | "domain" = "subdomain") => {
+    setOnboardingLoaded(true);
     trackLead('onboarding_started', { source });
     setOnboardingFlowType(flow);
     setShowOnboarding(true);
@@ -175,7 +193,7 @@ const LandingNueva = () => {
             <div className="hero-content">
               <div className="hero-copy">
                 <p className="hero-badge reveal hero-r1">0% de comisión de por vida — solo para las primeras tiendas</p>
-                <h1 className="hero-title reveal hero-r1">Tu tienda en línea gratis, manejada desde <span className="wa-nowrap"><span className="wa-word">WhatsApp</span><img src="https://cdn.simpleicons.org/whatsapp/25D366" alt="WhatsApp" className="wa-hero-icon" /></span></h1>
+                <h1 className="hero-title reveal hero-r1">Tu tienda en línea gratis, manejada desde <span className="wa-nowrap"><span className="wa-word">WhatsApp</span><img src={`${A}/icons/whatsapp-green.svg`} alt="WhatsApp" className="wa-hero-icon" /></span></h1>
                 <p className="hero-sub reveal hero-r2">Crea tu tienda gratis y contrólala con un mensaje de WhatsApp.</p>
                 <div className="hero-ctas reveal hero-r3">
                   <button type="button" className="btn btn-primary btn-lg" onClick={() => openOnboarding('hero_cta')}>Crear tienda gratis</button>
@@ -217,7 +235,7 @@ const LandingNueva = () => {
               <div className="int-row stagger">
                 {INTEGRATIONS.map((slug) => (
                   <div className="int-tile" key={slug}>
-                    <img src={`https://cdn.simpleicons.org/${slug}/3f3f46`} alt={INT_NAMES[slug]} title={INT_NAMES[slug]} />
+                    <img src={`${A}/icons/${slug}.svg`} alt={INT_NAMES[slug]} title={INT_NAMES[slug]} />
                   </div>
                 ))}
               </div>
@@ -451,12 +469,20 @@ const LandingNueva = () => {
 
       </div>
 
-      <ChatBotContainer />
-      <OnboardingModal
-        open={showOnboarding}
-        onOpenChange={(open) => { setShowOnboarding(open); if (!open) setOnboardingFlowType(undefined); }}
-        initialFlowType={onboardingFlowType}
-      />
+      {chatReady && (
+        <Suspense fallback={null}>
+          <ChatBotContainer />
+        </Suspense>
+      )}
+      {onboardingLoaded && (
+        <Suspense fallback={null}>
+          <OnboardingModal
+            open={showOnboarding}
+            onOpenChange={(open) => { setShowOnboarding(open); if (!open) setOnboardingFlowType(undefined); }}
+            initialFlowType={onboardingFlowType}
+          />
+        </Suspense>
+      )}
     </>
   );
 };

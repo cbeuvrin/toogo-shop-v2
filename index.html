@@ -47,8 +47,9 @@
          script below invalidates SW caches on new releases. -->
     <meta name="build-version" content="3.1.0-2026-05-19">
     
-    <!-- DNS Preconnect for Faster Loading -->
-    <link rel="preconnect" href="https://herqxhfmsstbteahhxpr.supabase.co">
+    <!-- dns-prefetch (no preconnect): la landing no llama a Supabase en el
+         primer paint; el preconnect completo desperdiciaba una conexión y
+         PageSpeed lo marcaba como no usado. -->
     <link rel="dns-prefetch" href="https://herqxhfmsstbteahhxpr.supabase.co">
 
     <!-- Twitter -->

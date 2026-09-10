@@ -34,8 +34,11 @@ export const usePlatformFacebookPixel = () => {
 
     console.log('🔷 [Facebook Pixel] Initializing with ID:', FACEBOOK_PIXEL_ID);
 
-    // Initialize Facebook Pixel
-    (function(f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
+    // El stub de cola se crea DE INMEDIATO (los track se encolan y no se
+    // pierde ninguno), pero el script de Meta (238KB que PageSpeed marcaba
+    // en la ruta crítica) se inyecta hasta que el navegador esté libre o el
+    // usuario interactúe — lo que ocurra primero.
+    (function(f: any, n?: any) {
       if (f.fbq) return;
       n = f.fbq = function() {
         n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
@@ -45,21 +48,42 @@ export const usePlatformFacebookPixel = () => {
       n.loaded = true;
       n.version = '2.0';
       n.queue = [];
-      t = b.createElement(e);
-      t.async = true;
-      t.src = v;
-      s = b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t, s);
-    })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+    })(window);
 
-    // Initialize pixel
+    // Encolar init + PageView ya mismo; se envían cuando cargue el script
     window.fbq('init', FACEBOOK_PIXEL_ID);
     window.fbq('track', 'PageView');
 
-    console.log('🔷 [Facebook Pixel] Initialized and PageView tracked');
+    let injected = false;
+    const injectScript = () => {
+      if (injected) return;
+      injected = true;
+      const t = document.createElement('script');
+      t.async = true;
+      t.src = 'https://connect.facebook.net/en_US/fbevents.js';
+      const s = document.getElementsByTagName('script')[0];
+      s.parentNode?.insertBefore(t, s);
+      console.log('🔷 [Facebook Pixel] Script injected (deferred)');
+      window.removeEventListener('pointerdown', injectScript);
+      window.removeEventListener('scroll', injectScript);
+      window.removeEventListener('keydown', injectScript);
+    };
+    window.addEventListener('pointerdown', injectScript, { once: true, passive: true });
+    window.addEventListener('scroll', injectScript, { once: true, passive: true });
+    window.addEventListener('keydown', injectScript, { once: true });
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(injectScript, { timeout: 3000 });
+    } else {
+      setTimeout(injectScript, 3000);
+    }
+
+    console.log('🔷 [Facebook Pixel] Queue ready, PageView queued');
 
     // Cleanup function
     return () => {
+      window.removeEventListener('pointerdown', injectScript);
+      window.removeEventListener('scroll', injectScript);
+      window.removeEventListener('keydown', injectScript);
       const script = document.querySelector('script[src*="fbevents.js"]');
       if (script) {
         script.remove();

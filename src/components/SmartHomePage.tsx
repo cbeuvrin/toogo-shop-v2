@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useTenantByDomain } from '@/hooks/useTenantByDomain';
-import Index from '@/pages/Index';
-import LandingNueva from '@/pages/LandingNueva';
-import Tienda from '@/pages/Tienda';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
+
+// Lazy: la landing y la tienda NO deben viajar juntas en el chunk inicial.
+// Tienda arrastra las 10 plantillas (~cientos de KB) y la landing no la usa;
+// era la mayor parte del "JS sin usar" que marcaba PageSpeed en '/'.
+const LandingNueva = React.lazy(() => import('@/pages/LandingNueva'));
+const Tienda = React.lazy(() => import('@/pages/Tienda'));
 
 export const SmartHomePage = () => {
   const { tenant, isLoading, error } = useTenantByDomain();
@@ -41,10 +44,10 @@ export const SmartHomePage = () => {
     // Exception: /tienda on vercel should show Tienda (demo)
     if (hostname.includes('vercel.app') && pathname === '/tienda') {
       console.log('🏪 [SmartHomePage] Vercel preview con /tienda - mostrando Tienda (demo)');
-      return <Tienda />;
+      return <Suspense fallback={<LoadingScreen />}><Tienda /></Suspense>;
     }
     console.log('🏠 [SmartHomePage] Dominio principal/preview detectado - mostrando Index (landing)');
-    return <LandingNueva />;
+    return <Suspense fallback={<LoadingScreen />}><LandingNueva /></Suspense>;
   }
 
   // Show loading state (with fallback)
@@ -57,15 +60,15 @@ export const SmartHomePage = () => {
   if (hostname.includes('lovableproject.com') || hostname.includes('lovable.app') || hostname.includes('localhost') || hostname.includes('vercel.app')) {
     if (pathname === '/tienda') {
       console.log('🏪 [SmartHomePage] Dominio de preview con /tienda - mostrando Tienda (demo)');
-      return <Tienda />;
+      return <Suspense fallback={<LoadingScreen />}><Tienda /></Suspense>;
     } else {
       console.log('🏠 [SmartHomePage] Dominio de preview - mostrando Index (landing) (fallback:', fallbackToIndex, ')');
-      return <LandingNueva />;
+      return <Suspense fallback={<LoadingScreen />}><LandingNueva /></Suspense>;
     }
   }
 
   // For any other domain (subdomain or purchased domains)
   // Let Tienda component handle whether the store exists or not
   console.log('🏪 [SmartHomePage] Dominio no principal - mostrando Tienda (resolverá existencia internamente)');
-  return <Tienda />;
+  return <Suspense fallback={<LoadingScreen />}><Tienda /></Suspense>;
 };
