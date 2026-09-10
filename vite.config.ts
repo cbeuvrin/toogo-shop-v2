@@ -22,6 +22,9 @@ export default defineConfig(({ mode }) => ({
       // VitePWA entirely or re-enable PWA scoped strictly to /admin.
       selfDestroying: true,
       registerType: 'autoUpdate',
+      // defer: el <script src="/registerSW.js"> síncrono bloqueaba el primer
+      // render ~580ms según PageSpeed; el SW no necesita correr temprano.
+      injectRegister: 'script-defer',
       includeAssets: ['favicon.png', 'assets/**/*'],
       manifest: {
         name: 'TOOGO - Panel de Administración v3',

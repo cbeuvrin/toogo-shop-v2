@@ -195,7 +195,16 @@ const LandingNueva = () => {
                   </div>
                 </div>
                 <div className="hero-phone-wrap">
-                  <img src={`${A}/iphone-toogi.webp`} alt="Conversación de WhatsApp con el asistente Toogi" className="phone-img" />
+                  {/* Es el elemento LCP: srcset para no bajar 850px en móvil,
+                      y fetchpriority alta para que Chrome no lo encole. */}
+                  <img
+                    src={`${A}/iphone-toogi.webp`}
+                    srcSet={`${A}/iphone-toogi-520.webp 520w, ${A}/iphone-toogi.webp 850w`}
+                    sizes="(max-width: 768px) 68vw, 440px"
+                    fetchPriority="high"
+                    alt="Conversación de WhatsApp con el asistente Toogi"
+                    className="phone-img"
+                  />
                 </div>
               </div>
             </div>
