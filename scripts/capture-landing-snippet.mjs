@@ -35,6 +35,11 @@ await new Promise((r) => setTimeout(r, 1200));
 
 const html = await page.evaluate(() => {
   const root = document.getElementById('root').cloneNode(true);
+  // La imagen estática del hero va 1px más grande que la regla CSS: así el
+  // repintado cuando React reemplaza el DOM es estrictamente menor y Chrome
+  // no emite un candidato LCP tardío (Render Delay de 2-6s si se omite).
+  const phone = root.querySelector('.phone-img');
+  if (phone) phone.style.width = 'min(441px,96.2vw)';
   // Fuera lo que monta JS después (chat de Toogi, portales, modales)
   root.querySelectorAll('.animate-scale-in, [data-radix-portal], [role="dialog"]').forEach((n) => n.remove());
   root.querySelectorAll(':scope > div:not(.l2root)').forEach((n) => n.remove());
