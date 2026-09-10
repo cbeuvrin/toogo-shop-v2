@@ -1047,6 +1047,13 @@ html:has(.l2root) { scroll-behavior: smooth; }
     font-size: 0.88rem;
     padding-top: 28px;
 }
+@media (max-width: 768px) {
+/* En móvil las 3 columnas no caben (la de Legal se salía de pantalla):
+   marca arriba y las dos columnas de links lado a lado debajo. */
+.l2root .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+.l2root .footer-brand { grid-column: 1 / -1; }
+.l2root .footer-brand p { max-width: none; }
+}
 @media (prefers-reduced-motion: no-preference) {
 .l2root .reveal {
         /* 0.01 y no 0: Chrome excluye del LCP todo elemento cuyo primer
