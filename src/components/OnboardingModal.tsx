@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -76,6 +76,11 @@ export const OnboardingModal = ({
   const [isCheckingDomain, setIsCheckingDomain] = useState(false);
   const [isDomainAvailable, setIsDomainAvailable] = useState<boolean | null>(null);
   const [isVerificationSent, setIsVerificationSent] = useState(false);
+  // Guardas anti doble clic: el envío del código tarda 1-2 s y cada invocación
+  // genera un código nuevo (verify-code solo acepta el último), así que un
+  // segundo clic mientras el primero está en vuelo invalidaba el primer correo.
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const sendingCodeRef = useRef(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [isProcessingVerification, setIsProcessingVerification] = useState(false);
@@ -465,6 +470,9 @@ export const OnboardingModal = ({
       });
       return;
     }
+    if (sendingCodeRef.current) return;
+    sendingCodeRef.current = true;
+    setIsSendingCode(true);
     setIsVerificationSent(true);
     try {
       // Send verification code via Edge Function
@@ -510,6 +518,9 @@ export const OnboardingModal = ({
         title: "Error",
         description: "Error al enviar el código. Intenta de nuevo."
       });
+    } finally {
+      sendingCodeRef.current = false;
+      setIsSendingCode(false);
     }
   };
   const verifyCode = async () => {
@@ -667,6 +678,9 @@ export const OnboardingModal = ({
     }
   };
   const resendVerificationCode = async () => {
+    if (sendingCodeRef.current) return;
+    sendingCodeRef.current = true;
+    setIsSendingCode(true);
     try {
       const {
         data,
@@ -694,6 +708,9 @@ export const OnboardingModal = ({
         title: "Error",
         description: "Error al reenviar el código. Intenta de nuevo."
       });
+    } finally {
+      sendingCodeRef.current = false;
+      setIsSendingCode(false);
     }
   };
   const processPayment = async () => {
@@ -1380,10 +1397,13 @@ export const OnboardingModal = ({
               </label>
             </div>
             
-            <Button onClick={sendVerificationCode} disabled={emailAvailable === false || checkingEmail || !formData.email || !formData.acceptedTerms} className="w-full rounded-[30px]">
+            <Button onClick={sendVerificationCode} disabled={emailAvailable === false || checkingEmail || isSendingCode || !formData.email || !formData.acceptedTerms} className="w-full rounded-[30px]">
               {checkingEmail ? <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Verificando email...
+                </> : isSendingCode ? <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Enviando código...
                 </> : 'Crear cuenta'}
             </Button>
             
@@ -1456,8 +1476,8 @@ export const OnboardingModal = ({
               </Button>
               
               <div className="text-center">
-                <Button variant="ghost" onClick={resendVerificationCode} size="sm">
-                  ¿No recibiste el código? Reenviar
+                <Button variant="ghost" onClick={resendVerificationCode} size="sm" disabled={isSendingCode}>
+                  {isSendingCode ? 'Enviando...' : '¿No recibiste el código? Reenviar'}
                 </Button>
               </div>
             </div>

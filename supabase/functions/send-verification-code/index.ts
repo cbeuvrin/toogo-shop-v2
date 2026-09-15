@@ -40,6 +40,27 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Idempotencia: si hace < 15 s ya se generó un código vigente para este
+    // correo (doble clic, reintento de red), no generamos otro. Cada código
+    // nuevo invalida el anterior en verify-code, y el usuario recibía dos
+    // correos de los cuales solo el último servía.
+    const { data: recent } = await supabase
+      .from('verification_codes')
+      .select('id')
+      .eq('email', email)
+      .eq('used', false)
+      .gt('created_at', new Date(Date.now() - 15 * 1000).toISOString())
+      .limit(1)
+      .maybeSingle();
+
+    if (recent) {
+      console.log(`Duplicate request within 15s for ${email}; reusing existing code`);
+      return new Response(
+        JSON.stringify({ success: true, message: "Código de verificación enviado", deduped: true }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     // Generate 6-digit verification code
     const code = generateVerificationCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
