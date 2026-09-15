@@ -58,6 +58,11 @@ const LandingNueva = () => {
   const rootRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
+  const videoSectionRef = useRef<HTMLElement>(null);
+  const videoFrameRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [videoStarted, setVideoStarted] = useState(false);
   const { trackPageView, trackLead } = usePlatformFacebookPixel();
 
   useEffect(() => { trackPageView('/', 'TOOGO - Landing'); }, []);
@@ -119,6 +124,45 @@ const LandingNueva = () => {
     }, { threshold: 0.15 });
     root.querySelectorAll('.reveal, .stagger').forEach((el) => io.observe(el));
     return () => io.disconnect();
+  }, []);
+
+  // Video bajo el hero: entra un poco reducido y crece hasta su tamaño al
+  // avanzar el scroll (solo transform, sin layout). No arranca solo: el
+  // usuario le da play con los controles nativos; si sale de pantalla mientras
+  // se reproduce, se pausa. preload="none" para que no pese en la carga inicial.
+  useEffect(() => {
+    const section = videoSectionRef.current;
+    const frame = videoFrameRef.current;
+    const video = videoRef.current;
+    if (!section || !frame || !video) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      if (reduced) { frame.style.transform = ''; return; }
+      const r = section.getBoundingClientRect();
+      const vh = window.innerHeight;
+      // 0 cuando el borde superior de la sección asoma por abajo;
+      // 1 cuando ya subió hasta ~el 12% de la pantalla (crecimiento gradual).
+      const p = Math.min(1, Math.max(0, (vh - r.top) / (vh * 0.88)));
+      const eased = 1 - Math.pow(1 - p, 2);
+      const min = window.innerWidth < 768 ? 0.9 : 0.82;
+      frame.style.transform = `scale(${(min + (1 - min) * eased).toFixed(4)})`;
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting && !video.paused) video.pause();
+    }, { threshold: 0.2 });
+    io.observe(section);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+      io.disconnect();
+    };
   }, []);
 
   // Snap del carrusel solo tras la primera interacción del usuario: la regla
@@ -231,6 +275,34 @@ const LandingNueva = () => {
                   />
                 </div>
               </div>
+            </div>
+          </section>
+
+          {/* VIDEO — entra reducido y crece con el scroll */}
+          <section className="video-section" ref={videoSectionRef}>
+            <div className="video-frame" ref={videoFrameRef}>
+              <video
+                ref={videoRef}
+                className="video-el"
+                src={`${A}/toogov2.mp4`}
+                poster={`${A}/toogov2-poster.jpg`}
+                controls={videoStarted}
+                playsInline
+                preload="none"
+                aria-label="Demo de TOOGO"
+                onPlay={() => { setVideoPlaying(true); setVideoStarted(true); }}
+                onPause={() => setVideoPlaying(false)}
+              />
+              {!videoPlaying && (
+                <button
+                  type="button"
+                  className="video-play"
+                  onClick={() => videoRef.current?.play().catch(() => {})}
+                  aria-label="Reproducir video"
+                >
+                  <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" /></svg>
+                </button>
+              )}
             </div>
           </section>
 
