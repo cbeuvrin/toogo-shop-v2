@@ -63,6 +63,7 @@ const LandingNueva = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
   const [videoStarted, setVideoStarted] = useState(false);
+  const [posts, setPosts] = useState<{ slug: string; title: string }[]>([]);
   const { trackPageView, trackLead } = usePlatformFacebookPixel();
 
   useEffect(() => { trackPageView('/', 'TOOGO - Landing'); }, []);
@@ -163,6 +164,31 @@ const LandingNueva = () => {
       if (raf) cancelAnimationFrame(raf);
       io.disconnect();
     };
+  }, []);
+
+  // Últimos artículos para el pie: enlaces internos del sitio hacia el blog.
+  // Sin ellos Google deja los posts en "Descubierta, sin indexar" (conoce las
+  // URLs por el sitemap, pero nada apunta a ellas). Se piden con fetch pelado
+  // a PostgREST, NO con el cliente de Supabase: ese arrastra ~34KB y lo
+  // sacamos a propósito del camino crítico de la landing.
+  useEffect(() => {
+    const url = import.meta.env.VITE_SUPABASE_URL;
+    const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    if (!url || !key) return;
+    const pedir = () => {
+      fetch(
+        `${url}/rest/v1/blog_posts?select=slug,seo_title,title&status=eq.published&order=published_at.desc&limit=3`,
+        { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+      )
+        .then((r) => (r.ok ? r.json() : []))
+        .then((d: { slug: string; seo_title?: string; title: string }[]) =>
+          setPosts(d.map((p) => ({ slug: p.slug, title: p.seo_title || p.title }))),
+        )
+        .catch(() => {});
+    };
+    const w = window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+    if (w.requestIdleCallback) w.requestIdleCallback(pedir, { timeout: 2500 });
+    else setTimeout(pedir, 1200);
   }, []);
 
   // Snap del carrusel solo tras la primera interacción del usuario: la regla
@@ -524,6 +550,15 @@ const LandingNueva = () => {
               <img src={`${A}/toogo-wordmark.webp`} alt="Toogo" className="footer-logo" />
               <p>La plataforma más fácil para crear tu tienda online.</p>
             </div>
+            {posts.length > 0 && (
+              <nav className="footer-col footer-posts">
+                <h3>Últimos artículos</h3>
+                {posts.map((p) => (
+                  <Link key={p.slug} to={`/blog/${p.slug}`}>{p.title}</Link>
+                ))}
+                <Link to="/blog" className="footer-posts-all">Ver todos →</Link>
+              </nav>
+            )}
             <nav className="footer-col">
               <h3>Soporte</h3>
               <Link to="/blog">Blog</Link>

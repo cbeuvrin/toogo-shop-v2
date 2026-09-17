@@ -190,6 +190,16 @@ ${items}
       });
     }
     
+    // Enlaces cruzados entre artículos: sin ellos cada post es una hoja
+    // suelta y Google no tiene por dónde seguir rastreando el blog.
+    const { data: related } = await supabase
+      .from('blog_posts')
+      .select('slug, seo_title, title')
+      .eq('status', 'published')
+      .neq('slug', slug)
+      .order('published_at', { ascending: false })
+      .limit(3);
+
     console.log('Post found:', post.title);
     console.log('Serving crawler SEO HTML (no redirect)');
     
@@ -274,12 +284,25 @@ ${items}
   <script type="application/ld+json">${blogLd}</script>
 </head>
 <body>
+  <header>
+    <a href="https://www.toogo.store/">TOOGO</a>
+    <nav><a href="https://www.toogo.store/">Inicio</a> <a href="https://www.toogo.store/blog">Blog</a></nav>
+  </header>
   <article>
     <h1>${title}</h1>
     <p>${description}</p>
     <img src="${imageUrl}" alt="${title}" />
     <div>${articleContent}</div>
   </article>
+  <footer>
+    ${related && related.length ? `<nav>
+      <h2>Sigue leyendo</h2>
+      <ul>
+        ${related.map((r: Record<string, string>) => `<li><a href="https://www.toogo.store/blog/${escapeHtml(r.slug)}">${escapeHtml(r.seo_title || r.title)}</a></li>`).join('\n        ')}
+      </ul>
+    </nav>` : ''}
+    <p><a href="https://www.toogo.store/">Crea tu tienda en línea gratis con TOOGO</a> y manéjala desde WhatsApp.</p>
+  </footer>
 </body>
 </html>`;
     

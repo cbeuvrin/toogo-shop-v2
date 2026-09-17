@@ -136,6 +136,7 @@ export default async function middleware(request: Request) {
     }
 
     if (url.pathname === '/' && CRAWLER_REGEX.test(userAgent)) {
+        const isMarketingHost = host === 'toogo.store' || host === 'www.toogo.store';
         const destination = `${SUPABASE_URL}/functions/v1/store-seo-handler?host=${encodeURIComponent(host)}&path=%2F`;
         try {
             const response = await fetch(destination, { headers: { 'user-agent': userAgent } });
@@ -147,6 +148,18 @@ export default async function middleware(request: Request) {
                         'Content-Type': 'text/html; charset=utf-8',
                         'Cache-Control': 'public, max-age=300',
                     },
+                });
+            }
+            // 404 del handler = el host no corresponde a ninguna tienda
+            // (subdominio huérfano como demo.toogo.store). Antes caía al SPA y
+            // Google indexaba la página "subdominio disponible" como duplicado
+            // de la portada. Ahora 404 real + noindex, igual que las rutas de
+            // marketing inexistentes. Otros errores (handler caído) sí caen al
+            // SPA para no desindexar tiendas vivas por una falla temporal.
+            if (response.status === 404 && !isMarketingHost) {
+                return new Response('Not Found', {
+                    status: 404,
+                    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Robots-Tag': 'noindex' },
                 });
             }
             console.error('[Middleware] SEO handler non-OK:', response.status);

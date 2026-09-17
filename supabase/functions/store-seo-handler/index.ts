@@ -75,7 +75,35 @@ const MKT_PAGES: Record<string, { title: string; description: string; h1: string
     },
 };
 
-const marketingHtml = (rawPath: string): string | null => {
+// Últimos artículos del blog: enlaces internos desde TODAS las páginas de
+// marketing hacia los posts. Sin esto Google los deja en "Descubierta, sin
+// indexar": conoce las URLs por el sitemap pero nada del sitio apunta a ellas,
+// así que no gasta rastreo en ir a buscarlas.
+type BlogLink = { slug: string; title: string };
+
+const fetchLatestPosts = async (): Promise<BlogLink[]> => {
+    try {
+        const supabase = createClient(
+            Deno.env.get('SUPABASE_URL')!,
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+        );
+        const { data } = await supabase
+            .from('blog_posts')
+            .select('slug, seo_title, title')
+            .eq('status', 'published')
+            .order('published_at', { ascending: false })
+            .limit(6);
+        return (data || []).map((p: Record<string, string>) => ({
+            slug: p.slug,
+            title: p.seo_title || p.title,
+        }));
+    } catch (e) {
+        console.error('[store-seo-handler] No se pudieron leer los posts:', e);
+        return [];   // el HTML se sirve igual, solo sin el bloque de artículos
+    }
+};
+
+const marketingHtml = (rawPath: string, posts: BlogLink[] = []): string | null => {
     let path = rawPath || '/';
     if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
     // Defensivo: si el path llega como la ruta de la propia función (query
@@ -141,7 +169,16 @@ const marketingHtml = (rawPath: string): string | null => {
       ${page.faq.map(([q, a]) => `<h3>${escapeHtml(q)}</h3>\n      <p>${escapeHtml(a)}</p>`).join('\n      ')}
     </section>` : ''}
   </main>
-  <footer><p>TOOGO — Crea tu tienda en línea gratis y manéjala desde WhatsApp. Hecho para México.</p></footer>
+  <footer>
+    ${posts.length ? `<nav>
+      <h2>Últimos artículos</h2>
+      <ul>
+        ${posts.map((p) => `<li><a href="${MKT_SITE}/blog/${escapeHtml(p.slug)}">${escapeHtml(p.title)}</a></li>`).join('\n        ')}
+      </ul>
+      <p><a href="${MKT_SITE}/blog">Ver todos los artículos</a></p>
+    </nav>` : ''}
+    <p>TOOGO — Crea tu tienda en línea gratis y manéjala desde WhatsApp. Hecho para México.</p>
+  </footer>
 </body>
 </html>`;
 };
@@ -225,7 +262,7 @@ Deno.serve(async (req) => {
         // tenant), servimos el HTML de marketing. Evita el 404 "Tenant not found".
         if (hostname === 'toogo.store' || hostname === 'www.toogo.store') {
             const path = url.searchParams.get('path') || url.pathname || '/';
-            const html = marketingHtml(path);
+            const html = marketingHtml(path, await fetchLatestPosts());
             if (html === null) {
                 return new Response('Not found', {
                     status: 404,

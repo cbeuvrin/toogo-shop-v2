@@ -1078,7 +1078,7 @@ html:has(.l2root) { scroll-behavior: smooth; }
 }
 .l2root .footer-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: 2fr 1.5fr 1fr 1fr;
     gap: 48px;
     padding-bottom: 48px;
     border-bottom: 1px solid var(--line);
@@ -1093,6 +1093,14 @@ html:has(.l2root) { scroll-behavior: smooth; }
     font-size: 0.92rem;
 }
 .l2root .footer-col a:hover { color: var(--accent); }
+.l2root .footer-posts a {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+}
+.l2root .footer-posts-all { color: var(--accent); font-weight: 600; }
 .l2root .footer-copy {
     text-align: center;
     color: var(--ink-soft);
@@ -1104,6 +1112,7 @@ html:has(.l2root) { scroll-behavior: smooth; }
    marca arriba y las dos columnas de links lado a lado debajo. */
 .l2root .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
 .l2root .footer-brand { grid-column: 1 / -1; }
+.l2root .footer-posts { grid-column: 1 / -1; }
 .l2root .footer-brand p { max-width: none; }
 }
 @media (prefers-reduced-motion: no-preference) {
