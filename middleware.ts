@@ -117,6 +117,24 @@ export default async function middleware(request: Request) {
     // 3. 404 real para bots en rutas de marketing inexistentes (anti soft-404).
     // Solo hosts de marketing; nunca archivos (contienen '.') ni /api/ ni /blog/<slug>
     // (la validez del slug la decide blog-seo-handler con la base de datos).
+    // 3.bis Restos de la etapa WordPress que SÍ llevan extensión, por eso la
+    // regla de abajo (que excluye todo lo que tenga '.') los dejaba pasar al
+    // SPA: devolvían 200 con HTML, o sea soft-404. Ojo: /sitemap.xml, los
+    // llms.txt, robots.txt y el .txt de verificación del dominio son archivos
+    // reales y no deben entrar aquí.
+    if (
+        (host === 'toogo.store' || host === 'www.toogo.store') &&
+        (/\.php$/i.test(url.pathname)
+            || /^\/wp-/i.test(url.pathname)
+            || /^\/sitemap[-_]index\.xml$/i.test(url.pathname)
+            || /^\/.+-sitemap\.xml$/i.test(url.pathname))
+    ) {
+        return new Response('Not found', {
+            status: 404,
+            headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Robots-Tag': 'noindex' },
+        });
+    }
+
     if (
         (host === 'toogo.store' || host === 'www.toogo.store') &&
         CRAWLER_REGEX.test(userAgent) &&
