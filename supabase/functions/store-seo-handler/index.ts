@@ -346,6 +346,7 @@ Deno.serve(async (req) => {
   <h1>${title}</h1>
   <p>${description}</p>
   <img src="${imageUrl}" alt="${title}" />
+  ${tenant.plan === 'free' ? `<footer><p>Hecho con <a href="${MKT_SITE}">TOOGO</a></p></footer>` : ''}
 </body>
 </html>`;
 

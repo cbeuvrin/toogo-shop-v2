@@ -11,6 +11,7 @@ import { BauhausTemplate } from "@/templates/layouts/BauhausTemplate/BauhausTemp
 import { CyberTemplate } from "@/templates/layouts/CyberTemplate/CyberTemplate";
 import { StoreNotFound } from "./StoreNotFound";
 import { ProductDetailModal } from "@/templates/productDetail/ProductDetailModal";
+import { ToogoBadge } from "@/components/store/ToogoBadge";
 import { CardStyleContext } from "@/contexts/CardStyleContext";
 import { heroFontFamily } from "@/lib/heroFonts";
 import { useDeviceType, pickFontSize, pickEnabled, pickImage, pickPosition } from "@/hooks/useDeviceType";
@@ -137,6 +138,9 @@ const Tienda = () => {
   return (
     <>
       <TemplateRenderer {...store} onProductClick={handleProductClick} />
+      {/* Plan gratis: sello con enlace a TOOGO. Debe seguir coincidiendo con el
+          que emite store-seo-handler para los rastreadores. */}
+      {store.tenant?.plan === 'free' && <ToogoBadge />}
       <ProductDetailModal
         open={!!modalProduct}
         onOpenChange={(open) => { if (!open) setModalProduct(null); }}
