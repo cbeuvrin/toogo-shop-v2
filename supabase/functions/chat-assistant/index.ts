@@ -105,23 +105,69 @@ PASO 6: Si elegiste gratis, ¡ya tienes tu tienda! Si elegiste Pro, pagar y espe
       temperature 
     });
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-pro-preview',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: message }
-        ],
-        max_tokens: maxTokens,
-        temperature: temperature,
-        stream: false
-      }),
-    });
+    // Gemini directo con la llave propia de TOOGO (GOOGLE_AI_API_KEY, la misma que
+    // ya usan gemini-image-processor, ai-quick-setup y whatsapp-ai-agent), en vez de
+    // la pasarela de Lovable. Dos razones: dejamos de depender de un intermediario
+    // del que ya migramos, y usamos un modelo sin razonamiento.
+    //
+    // OJO con el modelo: antes era gemini-3-pro-preview, que piensa antes de
+    // responder y consume el presupuesto de tokens razonando. Con max_tokens 500
+    // cortaba TODAS las respuestas a media palabra (57 caracteres). Para un
+    // asistente de soporte no hace falta un modelo de razonamiento.
+    const GOOGLE_AI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    const MODELO = 'gemini-2.5-flash';
+
+    const llamarGemini = async () => {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent?key=${GOOGLE_AI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            contents: [{ role: 'user', parts: [{ text: message }] }],
+            generationConfig: {
+              maxOutputTokens: maxTokens,
+              temperature: temperature,
+            },
+          }),
+        },
+      );
+      if (!r.ok) throw new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 200)}`);
+      const j = await r.json();
+      const texto = j?.candidates?.[0]?.content?.parts?.map((x: { text?: string }) => x.text).join('') ?? '';
+      if (!texto.trim()) throw new Error('Gemini devolvió una respuesta vacía');
+      return texto;
+    };
+
+    // Respaldo temporal: si la llave propia falla, Toogi sigue contestando por la
+    // pasarela de Lovable en vez de quedarse mudo frente a un visitante. Cuando
+    // lleve un tiempo estable con Gemini directo, este bloque se puede borrar
+    // junto con el secreto LOVABLE_API_KEY.
+    let assistantMessage: string;
+    try {
+      if (!GOOGLE_AI_API_KEY) throw new Error('Falta GOOGLE_AI_API_KEY');
+      assistantMessage = await llamarGemini();
+      console.log('Respuesta generada con Gemini directo:', MODELO);
+    } catch (errGemini) {
+      console.error('[chat-assistant] Gemini directo falló, uso la pasarela de Lovable:', errGemini);
+      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-3-pro-preview',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: message }
+          ],
+          max_tokens: maxTokens,
+          temperature: temperature,
+          stream: false
+        }),
+      });
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -147,11 +193,11 @@ PASO 6: Si elegiste gratis, ¡ya tienes tu tienda! Si elegiste Pro, pagar y espe
       throw new Error(`Lovable AI error: ${response.status}`);
     }
 
-    const data = await response.json();
-    const assistantMessage = data.choices[0]?.message?.content;
-
-    if (!assistantMessage) {
-      throw new Error('No response from OpenAI');
+      const data = await response.json();
+      assistantMessage = data.choices[0]?.message?.content;
+      if (!assistantMessage) {
+        throw new Error('La pasarela de Lovable tampoco devolvió respuesta');
+      }
     }
 
     console.log('Chat response generated successfully');
