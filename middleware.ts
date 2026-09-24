@@ -23,6 +23,12 @@ const tenantCache = new Map<string, TenantRouting>();
 // contienen "bot", por eso van explícitos.
 const CRAWLER_REGEX = /.*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot|GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|PerplexityBot|Perplexity-User|Applebot|Amazonbot|Bytespider|MistralAI-User|DuckAssistBot|Google-Extended).*/i;
 
+// Un navegador de verdad: Mozilla/5.0 + un motor conocido. Se comprueba
+// DESPUÉS de CRAWLER_REGEX, porque casi todos los bots también dicen Mozilla.
+// Sirve para distinguir "persona con navegador" de "cliente que solo baja el
+// HTML" (fetchers, herramientas, crawlers que aún no están en la lista).
+const NAVEGADOR_REAL = /Mozilla\/5\.0.*(Chrome|CriOS|Safari|Firefox|FxiOS|Edg|OPR|Trident)/i;
+
 // Rutas del sitio de MARKETING que existen de verdad para un buscador.
 // Todo lo demás en www.toogo.store devuelve 404 real a los bots (antes: el
 // shell de la SPA con 200 = soft-404, penalizado por GSC). Los humanos no
@@ -164,6 +170,39 @@ export default async function middleware(request: Request) {
                 status: 404,
                 headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Robots-Tag': 'noindex' },
             });
+        }
+    }
+
+    // 3.quater El contenido del blog solo llega a los user-agents de
+    // CRAWLER_REGEX (rewrites de vercel.json). Cualquier otro cliente que no
+    // ejecute JavaScript recibe la cáscara de React: 3 palabras. Esa lista es
+    // blanca, así que cada cliente nuevo nace invisible hasta que alguien lo
+    // agregue a mano.
+    // Esta rama cubre SOLO el hueco: ni bot conocido ni navegador real. Los
+    // navegadores siguen recibiendo la SPA y los bots conocidos siguen pasando
+    // por los rewrites, ambos sin tocar. Es aditiva a propósito: si algo aquí
+    // falla, se cae al comportamiento actual en vez de romperlo.
+    if (
+        (host === 'toogo.store' || host === 'www.toogo.store') &&
+        url.pathname.startsWith('/blog') &&
+        !CRAWLER_REGEX.test(userAgent) &&
+        !NAVEGADOR_REAL.test(userAgent)
+    ) {
+        const destination = `${SUPABASE_URL}/functions/v1/blog-seo-handler`
+            + `?path=${encodeURIComponent(url.pathname)}&host=${encodeURIComponent(host)}`;
+        try {
+            const response = await fetch(destination, { headers: { 'user-agent': userAgent } });
+            if (response.ok) {
+                return new Response(await response.text(), {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'text/html; charset=utf-8',
+                        'Cache-Control': 'public, max-age=300',
+                    },
+                });
+            }
+        } catch {
+            // Sin red o función caída: seguimos al flujo normal (la SPA).
         }
     }
 
