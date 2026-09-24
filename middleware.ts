@@ -188,8 +188,14 @@ export default async function middleware(request: Request) {
         !CRAWLER_REGEX.test(userAgent) &&
         !NAVEGADOR_REAL.test(userAgent)
     ) {
+        // preview=crawler es obligatorio aquí: blog-seo-handler tiene SU PROPIA
+        // lista blanca de user-agents y responde 302 a todo lo que no reconoce,
+        // así que reenviarle un UA como "python-requests" devolvía un redirect
+        // en vez del artículo. Este parámetro es la puerta que la función ya
+        // tenía prevista para forzar la rama de prerenderizado.
         const destination = `${SUPABASE_URL}/functions/v1/blog-seo-handler`
-            + `?path=${encodeURIComponent(url.pathname)}&host=${encodeURIComponent(host)}`;
+            + `?path=${encodeURIComponent(url.pathname)}&host=${encodeURIComponent(host)}`
+            + `&preview=crawler`;
         try {
             const response = await fetch(destination, { headers: { 'user-agent': userAgent } });
             if (response.ok) {
