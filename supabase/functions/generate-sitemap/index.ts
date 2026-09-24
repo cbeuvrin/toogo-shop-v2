@@ -38,20 +38,37 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${blogPosts?.length || 0} published blog posts`);
 
-    // Fecha FIJA de última edición real de las páginas estáticas. NO usar new Date()
-    // aquí: un lastmod que cambia a diario sin que cambie el contenido es una señal
-    // de frescura falsa y Google deja de confiar en el sitemap. Actualizar a mano al
-    // editar de verdad estas páginas.
-    const today = '2026-07-28';
+    // Fecha de última edición REAL por página. Sigue sin usarse new Date(): un
+    // lastmod que cambia a diario sin que cambie el contenido es frescura falsa y
+    // Google deja de confiar en el sitemap. Pero el problema contrario también
+    // existe y es el que teníamos: una fecha fija que nadie actualiza. Todas estas
+    // decían 2026-07-28 mientras la portada cambiaba en septiembre, así que Google
+    // dejó de pasar. Al editar de verdad una página, subir SU fecha aquí.
+    const EDITADAS = {
+      home: '2026-09-23',        // video bajo el hero (15 sep), enlaces del blog en el pie (16 sep), /precios y pie nuevo (23 sep)
+      precios: '2026-09-23',     // página nueva
+      soporte: '2026-09-23',     // página nueva
+      ayuda: '2026-07-28',
+      legales: '2026-07-28',
+    };
+
+    // /blog sí cambia solo: su fecha es la del post más reciente. Eso no es
+    // frescura falsa, es el hecho de que se publicó algo.
+    const blogLastmod = blogPosts?.length
+      ? new Date(Math.max(...blogPosts.map((p: { updated_at: string }) => new Date(p.updated_at).getTime())))
+          .toISOString().split('T')[0]
+      : EDITADAS.home;
 
     // Static pages configuration
     const staticPages = [
-      { url: '/', priority: '1.0', changefreq: 'weekly', lastmod: today },
-      { url: '/blog', priority: '0.9', changefreq: 'weekly', lastmod: today },
-      { url: '/terminos-condiciones', priority: '0.3', changefreq: 'monthly', lastmod: today },
-      { url: '/politica-privacidad', priority: '0.3', changefreq: 'monthly', lastmod: today },
-      { url: '/liberacion-responsabilidad', priority: '0.3', changefreq: 'monthly', lastmod: today },
-      { url: '/ayuda/configurar-pagos', priority: '0.5', changefreq: 'monthly', lastmod: today },
+      { url: '/', priority: '1.0', changefreq: 'weekly', lastmod: EDITADAS.home },
+      { url: '/precios', priority: '0.9', changefreq: 'monthly', lastmod: EDITADAS.precios },
+      { url: '/blog', priority: '0.9', changefreq: 'weekly', lastmod: blogLastmod },
+      { url: '/ayuda/configurar-pagos', priority: '0.5', changefreq: 'monthly', lastmod: EDITADAS.ayuda },
+      { url: '/soporte', priority: '0.5', changefreq: 'monthly', lastmod: EDITADAS.soporte },
+      { url: '/terminos-condiciones', priority: '0.3', changefreq: 'monthly', lastmod: EDITADAS.legales },
+      { url: '/politica-privacidad', priority: '0.3', changefreq: 'monthly', lastmod: EDITADAS.legales },
+      { url: '/liberacion-responsabilidad', priority: '0.3', changefreq: 'monthly', lastmod: EDITADAS.legales },
     ];
 
     // Build XML sitemap

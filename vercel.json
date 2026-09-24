@@ -10,6 +10,17 @@
       ],
       "destination": "https://www.toogo.store/:path*",
       "permanent": true
+    },
+    {
+      "source": "/:path+/",
+      "has": [
+        {
+          "type": "host",
+          "value": "^(www\\.)?toogo\\.store$"
+        }
+      ],
+      "destination": "/:path+",
+      "permanent": true
     }
   ],
   "rewrites": [
@@ -106,7 +117,29 @@
       "destination": "/api/prerender?fn=generate-sitemap"
     },
     {
-      "source": "/((?!robots\\.txt|llms\\.txt|llms-full\\.txt|b84560c66e5374c7e15ddf4bc5bd1090\\.txt|assets/|api/).*)",
+      "source": "/precios",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot|GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|PerplexityBot|Perplexity-User|Applebot|Amazonbot|Bytespider|MistralAI-User|DuckAssistBot|Google-Extended).*"
+        }
+      ],
+      "destination": "/api/prerender?fn=store-seo-handler&path=/precios"
+    },
+    {
+      "source": "/soporte",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterestbot|SkypeUriPreview|Googlebot|GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-User|Claude-SearchBot|PerplexityBot|Perplexity-User|Applebot|Amazonbot|Bytespider|MistralAI-User|DuckAssistBot|Google-Extended).*"
+        }
+      ],
+      "destination": "/api/prerender?fn=store-seo-handler&path=/soporte"
+    },
+    {
+      "source": "/((?!robots\\.txt|toogo-indexnow-2f8c41ab9d7e4c06b153ae77d92f10c4\\.txt|llms\\.txt|llms-full\\.txt|b84560c66e5374c7e15ddf4bc5bd1090\\.txt|assets/|api/).*)",
       "destination": "/"
     }
   ],
@@ -114,7 +147,10 @@
     {
       "source": "/landing.html",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400"
+        }
       ]
     },
     {
@@ -129,37 +165,55 @@
     {
       "source": "/assets/(.*).png",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
       ]
     },
     {
       "source": "/assets/(.*).jpg",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
       ]
     },
     {
       "source": "/assets/(.*).jpeg",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
       ]
     },
     {
       "source": "/assets/(.*).webp",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
       ]
     },
     {
       "source": "/assets/(.*).svg",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
       ]
     },
     {
       "source": "/assets/(.*).mp4",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
       ]
     }
   ]

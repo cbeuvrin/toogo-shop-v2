@@ -13,7 +13,8 @@ const FB_APP_ID = Deno.env.get('FACEBOOK_APP_ID') || '1595938024873627';
 // Va aquí (mismo handler) porque Vercel no permite dos rewrites con source "/".
 const MKT_SITE = 'https://www.toogo.store';
 const MKT_OG = `${MKT_SITE}/assets/mascot-toogo.png`;
-const MKT_PAGES: Record<string, { title: string; description: string; h1: string; body: string[]; faq?: [string, string][] }> = {
+type Plan = { name: string; price: string; period: string; summary: string; features: string[] };
+const MKT_PAGES: Record<string, { title: string; description: string; h1: string; body: string[]; faq?: [string, string][]; plans?: Plan[]; crumb?: string }> = {
     '/': {
         title: 'Crea tu tienda en línea gratis y manéjala por WhatsApp | TOOGO',
         description: 'Crea tu tienda en línea gratis en 5 minutos y adminístrala desde WhatsApp: sube productos con una foto, recibe pedidos y consulta tus ventas por chat. Hecho para México.',
@@ -29,6 +30,72 @@ const MKT_PAGES: Record<string, { title: string; description: string; h1: string
             ['¿Cómo administro mi tienda desde WhatsApp?', 'Mandas una foto con el precio y el producto se publica; recibes pedidos, cambias el diseño y consultas tus ventas por chat.'],
             ['¿Cómo cobro en línea?', 'Conectas tu propia cuenta de Mercado Pago (tarjeta, OXXO y SPEI), PayPal o Stripe; el dinero llega directo a tu cuenta.'],
             ['¿Necesito saber programar?', 'No. Eliges una plantilla, subes tus productos y tu tienda queda lista en unos 5 minutos.'],
+        ],
+    },
+    // /precios existia en el nav y en offers.url del schema pero nunca fue una ruta:
+    // devolvia 404 a todos los bots. Los precios salen de la seccion #precios de
+    // LandingNueva.tsx; si cambian alli, cambiarlos aqui.
+    '/precios': {
+        title: 'Precios de TOOGO: plan gratis y plan Basic desde $299 MXN al mes',
+        description: 'TOOGO tiene un plan gratuito real, sin tarjeta y para siempre, y un plan Basic de $299 MXN al mes con dominio propio y productos ilimitados. 0% de comisión por venta en ambos.',
+        h1: 'Precios de TOOGO',
+        crumb: 'Precios',
+        body: [
+            'TOOGO tiene dos planes y ninguno cobra comisión por venta: te quedas con el 100% de lo que vendes. El plan gratuito no pide tarjeta de crédito y no vence.',
+            'El plan Basic cuesta $299 MXN al mes y agrega dominio propio, productos ilimitados y tu tienda sin el sello de TOOGO. Puedes empezar gratis y cambiar de plan cuando quieras, sin permanencia.',
+        ],
+        plans: [
+            {
+                name: 'Gratis', price: '0', period: 'para siempre',
+                summary: 'Para empezar a vender hoy, sin tarjeta de crédito.',
+                features: [
+                    'Tienda con subdominio .toogo.store',
+                    'Hasta 20 productos',
+                    'Todos los diseños premium',
+                    'Carrito y checkout listos',
+                    'Bot de WhatsApp para editar tu tienda',
+                    'Conecta Mercado Pago o PayPal',
+                    'Toogi, tu asistente con IA para tu tienda',
+                    'Panel de pedidos y clientes',
+                    '0% de comisión por venta',
+                ],
+            },
+            {
+                name: 'Basic', price: '299', period: 'al mes',
+                summary: 'Todo lo del plan gratuito, y además tu propio dominio.',
+                features: [
+                    'Dominio propio (conéctalo o cómpralo aquí)',
+                    'Productos ilimitados',
+                    'Tu marca sin sello TOOGO',
+                    'Tu logo como ícono de la tienda',
+                    'Estadísticas y analytics avanzados',
+                    'Google Analytics y Meta Pixel',
+                    'Soporte prioritario',
+                    '0% de comisión por venta',
+                ],
+            },
+        ],
+        faq: [
+            ['¿Cuánto cuesta TOOGO?', 'El plan gratuito cuesta $0 MXN y no vence ni pide tarjeta. El plan Basic cuesta $299 MXN al mes. Ninguno cobra comisión por venta.'],
+            ['¿El plan gratis tiene límite de tiempo?', 'No. Es gratis para siempre, con hasta 20 productos y tu tienda en un subdominio .toogo.store.'],
+            ['¿TOOGO cobra comisión por cada venta?', 'No. La comisión de TOOGO es 0% en todos los planes. Solo pagas lo que cobre tu pasarela de pago (Mercado Pago, PayPal o Stripe).'],
+            ['¿Necesito tarjeta de crédito para empezar?', 'No. Creas tu tienda con el plan gratuito sin registrar ningún medio de pago.'],
+            ['¿Puedo cambiar de plan después?', 'Sí, cuando quieras y sin permanencia. Empiezas gratis y pasas a Basic el día que necesites dominio propio o más productos.'],
+        ],
+    },
+    '/soporte': {
+        title: 'Soporte de TOOGO: ayuda para tu tienda en línea',
+        description: 'Cómo contactar al soporte de TOOGO y dónde encontrar las guías para configurar pagos, conectar tu dominio y administrar tu tienda desde WhatsApp.',
+        h1: 'Soporte de TOOGO',
+        crumb: 'Soporte',
+        body: [
+            'Si necesitas ayuda con tu tienda, escríbenos a soporte@toogo.store. Respondemos en español y te acompañamos hasta que tu tienda quede vendiendo.',
+            'Las dudas más comunes son cómo conectar tu pasarela de pago y cómo administrar la tienda desde WhatsApp. Para lo primero tenemos una guía paso a paso con Mercado Pago, PayPal y Stripe.',
+            'También puedes escribirle al bot de TOOGO por WhatsApp para subir productos, cambiar precios o consultar tus ventas sin abrir la computadora.',
+        ],
+        faq: [
+            ['¿Cómo contacto al soporte de TOOGO?', 'Escribe a soporte@toogo.store. También puedes pedir ayuda por WhatsApp desde tu panel.'],
+            ['¿Cómo conecto mi pasarela de pago?', 'Conectas tu propia cuenta de Mercado Pago, PayPal o Stripe desde el panel. La guía completa está en la página de ayuda para configurar pagos.'],
         ],
     },
     '/ayuda/configurar-pagos': {
@@ -125,13 +192,45 @@ const marketingHtml = (rawPath: string, posts: BlogLink[] = []): string | null =
             acceptedAnswer: { '@type': 'Answer', text: a },
         })),
     }] : [];
+    // Si la pagina declara planes, publicamos un AggregateOffer con los dos precios
+    // reales. Antes era un Offer suelto con price 0 apuntando a /precios, que era 404.
+    const OFFERS_LD = page.plans
+        ? {
+            '@type': 'AggregateOffer',
+            offerCount: page.plans.length,
+            lowPrice: page.plans[0].price,
+            highPrice: page.plans[page.plans.length - 1].price,
+            priceCurrency: 'MXN',
+            url: `${MKT_SITE}/precios`,
+            offers: page.plans.map((pl) => ({
+                '@type': 'Offer',
+                '@id': `${MKT_SITE}/precios#plan-${pl.name.toLowerCase()}`,
+                name: `Plan ${pl.name}`,
+                description: pl.summary,
+                price: pl.price,
+                priceCurrency: 'MXN',
+                availability: 'https://schema.org/InStock',
+                url: `${MKT_SITE}/precios`,
+                seller: { '@id': `${MKT_SITE}/#organization` },
+            })),
+        }
+        : { '@type': 'Offer', price: '0', priceCurrency: 'MXN', availability: 'https://schema.org/InStock', url: `${MKT_SITE}/precios` };
+    const crumbLd = page.crumb ? [{
+        '@type': 'BreadcrumbList',
+        '@id': `${canonical}#breadcrumb`,
+        itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Inicio', item: `${MKT_SITE}/` },
+            { '@type': 'ListItem', position: 2, name: page.crumb, item: canonical },
+        ],
+    }] : [];
     const ld = JSON.stringify({
         '@context': 'https://schema.org',
         '@graph': [
             ...faqLd,
-            { '@type': 'Organization', '@id': `${MKT_SITE}/#organization`, name: 'TOOGO', alternateName: ['TOOGO Store', 'TOOGO México'], url: `${MKT_SITE}/`, logo: { '@type': 'ImageObject', url: MKT_OG }, description: 'Plataforma mexicana para crear una tienda en línea gratis en 5 minutos y administrarla desde WhatsApp, sin programar.', areaServed: { '@type': 'Country', name: 'México' }, sameAs: ['https://www.facebook.com/Toogo.Online/'] },
+            ...crumbLd,
+            { '@type': 'Organization', '@id': `${MKT_SITE}/#organization`, name: 'TOOGO', alternateName: ['TOOGO Store', 'TOOGO México'], url: `${MKT_SITE}/`, logo: { '@type': 'ImageObject', url: MKT_OG }, description: 'Plataforma mexicana para crear una tienda en línea gratis en 5 minutos y administrarla desde WhatsApp, sin programar.', legalName: 'Keting Media, S.A. de C.V.', email: 'soporte@toogo.store', disambiguatingDescription: 'TOOGO (toogo.store) es una plataforma mexicana de comercio electrónico operada por Keting Media, S.A. de C.V. No tiene relación con Toogo/TOOGONET, software francés para agencias de viajes, ni con Toogo Rides, ni con Too Good To Go.', areaServed: { '@type': 'Country', name: 'México' }, sameAs: ['https://www.facebook.com/Toogo.Online/', 'https://www.youtube.com/@toogostore'] },
             { '@type': 'WebSite', '@id': `${MKT_SITE}/#website`, url: `${MKT_SITE}/`, name: 'TOOGO', inLanguage: 'es-MX', publisher: { '@id': `${MKT_SITE}/#organization` } },
-            { '@type': 'SoftwareApplication', name: 'TOOGO', applicationCategory: 'BusinessApplication', applicationSubCategory: 'E-commerce Platform', operatingSystem: 'Web, iOS, Android', url: `${MKT_SITE}/`, inLanguage: 'es-MX', description: 'Crea tu tienda en línea gratis en 5 minutos y adminístrala desde WhatsApp. Sin programar.', featureList: ['Administra tu tienda desde WhatsApp', 'Sube productos mandando una foto por WhatsApp', 'Recibe y gestiona pedidos por chat', 'Consulta tus ventas preguntando por WhatsApp', 'Cambia el diseño de tu tienda sin computadora', 'Cobros con Mercado Pago, PayPal, OXXO y SPEI', 'Dominio propio y plantillas listas'], offers: { '@type': 'Offer', price: '0', priceCurrency: 'MXN', availability: 'https://schema.org/InStock', url: `${MKT_SITE}/precios` }, publisher: { '@id': `${MKT_SITE}/#organization` } },
+            { '@type': 'SoftwareApplication', '@id': `${MKT_SITE}/#software`, name: 'TOOGO', applicationCategory: 'BusinessApplication', applicationSubCategory: 'E-commerce Platform', operatingSystem: 'Web, iOS, Android', url: `${MKT_SITE}/`, inLanguage: 'es-MX', description: 'Crea tu tienda en línea gratis en 5 minutos y adminístrala desde WhatsApp. Sin programar.', featureList: ['Administra tu tienda desde WhatsApp', 'Sube productos mandando una foto por WhatsApp', 'Recibe y gestiona pedidos por chat', 'Consulta tus ventas preguntando por WhatsApp', 'Cambia el diseño de tu tienda sin computadora', 'Cobros con Mercado Pago, PayPal, OXXO y SPEI', 'Dominio propio y plantillas listas'], offers: OFFERS_LD, publisher: { '@id': `${MKT_SITE}/#organization` } },
         ],
     });
     return `<!DOCTYPE html>
@@ -164,6 +263,18 @@ const marketingHtml = (rawPath: string, posts: BlogLink[] = []): string | null =
   <main>
     <h1>${escapeHtml(page.h1)}</h1>
     ${page.body.map((p) => `<p>${escapeHtml(p)}</p>`).join('\n    ')}
+    ${page.plans ? `<table>
+      <caption>Planes y precios de TOOGO</caption>
+      <thead><tr><th>Plan</th><th>Precio</th><th>Comisión por venta</th><th>Incluye</th></tr></thead>
+      <tbody>
+        ${page.plans.map((pl) => `<tr><td>${escapeHtml(pl.name)}</td><td>$${escapeHtml(pl.price)} MXN ${escapeHtml(pl.period)}</td><td>0%</td><td>${escapeHtml(pl.features.join('; '))}</td></tr>`).join('\n        ')}
+      </tbody>
+    </table>
+    ${page.plans.map((pl) => `<section>
+      <h2>Plan ${escapeHtml(pl.name)} — $${escapeHtml(pl.price)} MXN ${escapeHtml(pl.period)}</h2>
+      <p>${escapeHtml(pl.summary)}</p>
+      <ul>${pl.features.map((f) => `<li>${escapeHtml(f)}</li>`).join('')}</ul>
+    </section>`).join('\n    ')}` : ''}
     ${page.faq ? `<section>
       <h2>Preguntas frecuentes</h2>
       ${page.faq.map(([q, a]) => `<h3>${escapeHtml(q)}</h3>\n      <p>${escapeHtml(a)}</p>`).join('\n      ')}
@@ -177,7 +288,15 @@ const marketingHtml = (rawPath: string, posts: BlogLink[] = []): string | null =
       </ul>
       <p><a href="${MKT_SITE}/blog">Ver todos los artículos</a></p>
     </nav>` : ''}
-    <p>TOOGO — Crea tu tienda en línea gratis y manéjala desde WhatsApp. Hecho para México.</p>
+    <nav>
+      <a href="${MKT_SITE}/precios">Precios</a>
+      <a href="${MKT_SITE}/ayuda/configurar-pagos">Cómo configurar los pagos</a>
+      <a href="${MKT_SITE}/soporte">Soporte</a>
+      <a href="${MKT_SITE}/terminos-condiciones">Términos y condiciones</a>
+      <a href="${MKT_SITE}/politica-privacidad">Aviso de privacidad</a>
+      <a href="${MKT_SITE}/liberacion-responsabilidad">Liberación de responsabilidad</a>
+    </nav>
+    <p>TOOGO — Crea tu tienda en línea gratis y manéjala desde WhatsApp. Hecho para México. Operado por Keting Media, S.A. de C.V.</p>
   </footer>
 </body>
 </html>`;
@@ -327,8 +446,6 @@ Deno.serve(async (req) => {
   <meta property="og:image" content="${imageUrl}">
   <meta property="og:image:secure_url" content="${imageUrl}">
   <meta property="og:image:type" content="${imageType}">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
   <meta property="og:url" content="${storeUrl}">
   <meta property="og:site_name" content="${escapeHtml(tenant.name)}">
   <meta property="og:locale" content="es_MX">

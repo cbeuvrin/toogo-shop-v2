@@ -18,6 +18,7 @@ const PaymentError = React.lazy(() => import("./pages/PaymentError"));
 const AuthHandshake = React.lazy(() => import("./pages/AuthHandshake"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 const SubdomainAvailablePage = React.lazy(() => import("./pages/SubdomainAvailablePage"));
+const Precios = React.lazy(() => import("./pages/Precios"));
 const TerminosCondiciones = React.lazy(() => import("./pages/TerminosCondiciones"));
 const PoliticaPrivacidad = React.lazy(() => import("./pages/PoliticaPrivacidad"));
 const LiberacionResponsabilidad = React.lazy(() => import("./pages/LiberacionResponsabilidad"));
@@ -57,6 +58,7 @@ export const AppRoutes = () => {
                 <Route path="/mercadopago-connected" element={<MercadopagoConnected />} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/blog/:slug" element={<BlogPost />} />
+                <Route path="/precios" element={<Precios />} />
                 <Route path="/soporte" element={<Soporte />} />
                 <Route path="/product/:slug" element={<ProductDetail />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

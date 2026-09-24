@@ -31,6 +31,11 @@ const CRAWLER_REGEX = /.*(bot|crawler|spider|crawling|Facebot|FacebookBot|facebo
 const MKT_BOT_PATHS = new Set([
     '/',
     '/blog',
+    // /precios estaba en el nav y en offers.url del schema pero no aquí: la regla
+    // anti-soft-404 de abajo le devolvía 404 + noindex a todos los bots mientras
+    // las personas veían la página. Mismo caso /soporte, que además no tenía
+    // entrada en MKT_PAGES y caía a la cáscara vacía de React.
+    '/precios',
     '/soporte',
     '/ayuda/configurar-pagos',
     '/terminos-condiciones',
