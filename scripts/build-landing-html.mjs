@@ -17,7 +17,7 @@
 // sirve el Edge Middleware únicamente para toogo.store/www.toogo.store en
 // '/'; las tiendas de clientes siguen recibiendo index.html.
 
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -55,6 +55,31 @@ html = html.slice(0, rootOpen)
 // modulepreload SOLO aquí (el provider lo importa igual cuando lo necesite).
 html = html.replace(/\s*<link rel="modulepreload"[^>]*supabase-[^>]*>/g, '');
 
+// El CSS de la landing viaja en el chunk de LandingNueva, que carga el JS.
+// Pero el markup del hero ya está EN el HTML (arriba), así que el navegador
+// lo pintaba con el CSS base —que no tiene ninguna de estas clases— y se veía
+// un instante sin estilos: el <img> del ícono de WhatsApp del <h1> no trae
+// width/height y su SVG solo tiene viewBox, así que sin CSS el navegador lo
+// pinta al tamaño por defecto de un reemplazado (300x150). De ahí el
+// "WhatsApp gigante" antes de que hidratara React.
+// Lo enlazamos como hoja bloqueante para que el markup prerenderizado y su
+// CSS lleguen juntos. Solo aquí: index.html (las tiendas) no lo necesita.
+const landingCss = readdirSync(join(root, 'dist', 'assets'))
+  .find((f) => /^LandingNueva-.*\.css$/.test(f));
+if (!landingCss) {
+  throw new Error('No encuentro dist/assets/LandingNueva-*.css — ¿cambió el nombre del chunk?');
+}
+// Después de la hoja principal, para conservar el mismo orden de cascada que
+// tenía en runtime (base primero, landing después).
+const mainCss = /<link rel="stylesheet"[^>]*href="\/assets\/index-[^"]+\.css"[^>]*>/;
+if (!mainCss.test(html)) {
+  throw new Error('No encuentro la hoja de estilos principal en dist/index.html');
+}
+html = html.replace(
+  mainCss,
+  (tag) => `${tag}\n  <link rel="stylesheet" crossorigin href="/assets/${landingCss}">`,
+);
+
 writeFileSync(outPath, html);
 
 const kb = (html.length / 1024).toFixed(1);
@@ -63,6 +88,9 @@ const checks = {
   'sin modulepreload de supabase': !/modulepreload[^>]*supabase-/.test(html),
   '__prerendered flag': html.includes('window.__prerendered'),
   'script del bundle intacto': html.includes('<script type="module"'),
+  'CSS de la landing enlazado en el head':
+    html.indexOf(`/assets/${landingCss}`) !== -1 &&
+    html.indexOf(`/assets/${landingCss}`) < html.indexOf('</head>'),
 };
 console.log(`dist/landing.html generado (${kb} KB)`);
 for (const [k, v] of Object.entries(checks)) {
