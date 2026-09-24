@@ -16,7 +16,7 @@ export const SEOHead = ({
   // WhatsApp; cerrar la venta por ahí es una opción suya, va al final.
   title = "Crea tu tienda en línea gratis y manéjala por WhatsApp | TOOGO",
   description = "Crea tu tienda en línea gratis y manéjala desde WhatsApp: sube productos con una foto y mira tus ventas por chat. Y si quieres, cierras la venta por WhatsApp.",
-  keywords = "tienda en línea administrada por whatsapp, administrar mi tienda desde whatsapp, subir productos por whatsapp, crear tienda online gratis, ecommerce mexico, tienda virtual gratis, vender por whatsapp, tienda sin programacion, crear tienda virtual, negocio digital, comercio electrónico",
+  keywords = "tienda en línea administrada por whatsapp, administrar mi tienda desde whatsapp, subir productos por whatsapp, crear tienda online gratis, ecommerce mexico, tienda virtual gratis, tienda sin programacion, crear tienda virtual, negocio digital, comercio electrónico",
   ogImage = "https://toogo.store/assets/toogo-og-image.jpg",
   ogType = "website",
   structuredData,

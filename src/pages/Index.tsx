@@ -483,7 +483,7 @@ const Index = () => {
               </li>
               <li className="flex items-center">
                 <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 text-green-500 mr-2 lg:mr-3 flex-shrink-0" />
-                <span className="text-gray-700 text-sm lg:text-base">Ventas por WhatsApp</span>
+                <span className="text-gray-700 text-sm lg:text-base">Administra tu tienda por WhatsApp</span>
               </li>
               <li className="flex items-center">
                 <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5 text-green-500 mr-2 lg:mr-3 flex-shrink-0" />

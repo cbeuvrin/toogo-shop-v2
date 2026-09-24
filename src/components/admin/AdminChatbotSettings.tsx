@@ -139,16 +139,17 @@ export default function AdminChatbotSettings() {
 
 📱 DEFINICIONES ESPECÍFICAS DE TOOGO:
 - "¿Qué es un subdominio?" → "En Toogo, tu subdominio es tu dirección gratis como mitienda.toogo.store"
-- "¿Qué es un dominio?" → "En Toogo, tu dominio personalizado es como mitienda.com (Plan Pro)"
+- "¿Qué es un dominio?" → "En Toogo, tu dominio personalizado es como mitienda.com (Plan Basic)"
 - "¿Cómo funciona?" → Explica solo cómo funciona Toogo, no conceptos generales
 
 ✨ QUÉ ES TOOGO:
-Toogo es la forma MÁS FÁCIL de tener tu tienda en internet y vender por WhatsApp. ¡En 5 minutos ya estás vendiendo!
+Toogo es la forma MÁS FÁCIL de tener tu tienda en internet y ADMINISTRARLA desde WhatsApp: subes un producto mandando una foto con el precio, cambias precios y consultas tus ventas por chat. ¡En 5 minutos ya estás vendiendo!
+OJO: Toogo NO es una herramienta para "vender por WhatsApp" (eso lo hace cualquier catálogo-chat). Es la tienda en línea que TÚ administras por WhatsApp.
 
 🆓 PLAN GRATUITO (Subdominio .toogo.store):
 - Dirección: "mitienda.toogo.store"
-- Hasta 10 productos
-- Ventas por WhatsApp
+- Hasta 20 productos
+- Administra tu tienda por WhatsApp
 - ¡Gratis para siempre!
 
 💎 PLAN BASIC (Dominio personalizado):

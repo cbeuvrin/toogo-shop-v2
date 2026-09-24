@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       const list = posts || [];
       const canonical = 'https://www.toogo.store/blog';
       const title = 'Blog de TOOGO — Guías para vender en línea en México';
-      const description = 'Guías y consejos para emprendedores: cómo crear tu tienda en línea gratis, vender por WhatsApp y cobrar en línea en México.';
+      const description = 'Guías para emprendedores en México: cómo crear tu tienda en línea gratis, administrarla desde WhatsApp y cobrar en línea.';
       const ld = JSON.stringify({
         '@context': 'https://schema.org',
         '@type': 'Blog',
