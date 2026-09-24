@@ -1,3 +1,10 @@
+> ⚠️ **CORRECCIÓN (24 sep 2026) — leer antes de usar este documento.**
+> Verificado en vivo: la ficha "Toogo" de **Capterra (global y México), ComparaSoftware,
+> Software Advice y Appvizer** ya está ocupada por **TOOGONET**, un software francés para
+> agencias de viajes, con 4,8/5 y 35 reseñas. Registrarse ahí como "Toogo" a secas no va a
+> funcionar. Usar siempre nombre calificado: **"TOOGO México"** o **"TOOGO Store"**.
+> **G2 y Product Hunt sí están libres** (verificado el 24 sep 2026) y son la prioridad.
+
 # Fase 2 GEO — Fichas en directorios (paquete para copiar y pegar)
 
 > Por qué importa: los LLMs (ChatGPT, Perplexity, Claude) citan lo que encuentran en
