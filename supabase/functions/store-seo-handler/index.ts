@@ -194,15 +194,20 @@ const marketingHtml = (rawPath: string, posts: BlogLink[] = []): string | null =
     }] : [];
     // Si la pagina declara planes, publicamos un AggregateOffer con los dos precios
     // reales. Antes era un Offer suelto con price 0 apuntando a /precios, que era 404.
-    const OFFERS_LD = page.plans
+    // Los planes salen SIEMPRE de /precios, no de la página que se esté sirviendo:
+    // el SoftwareApplication es una sola entidad (mismo @id) en todo el sitio, así
+    // que debe declarar los mismos precios en la portada y en /precios. Antes la
+    // portada decía solo "price: 0" y se contradecía con la tabla.
+    const planes = MKT_PAGES['/precios']?.plans;
+    const OFFERS_LD = planes
         ? {
             '@type': 'AggregateOffer',
-            offerCount: page.plans.length,
-            lowPrice: page.plans[0].price,
-            highPrice: page.plans[page.plans.length - 1].price,
+            offerCount: planes.length,
+            lowPrice: planes[0].price,
+            highPrice: planes[planes.length - 1].price,
             priceCurrency: 'MXN',
             url: `${MKT_SITE}/precios`,
-            offers: page.plans.map((pl) => ({
+            offers: planes.map((pl) => ({
                 '@type': 'Offer',
                 '@id': `${MKT_SITE}/precios#plan-${pl.name.toLowerCase()}`,
                 name: `Plan ${pl.name}`,
