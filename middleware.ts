@@ -140,6 +140,33 @@ export default async function middleware(request: Request) {
         });
     }
 
+    // 3.ter Archivos de descubrimiento para agentes de IA que NO publicamos.
+    // Un auditor pidió /ai-catalog.json y recibió el HTML de la SPA con 200:
+    // intentó leerlo como JSON y reportó "manifiesto malformado", cuando en
+    // realidad el archivo nunca existió. Un 404 honesto dice lo que pasa.
+    // Aplica a cualquier user-agent a propósito: quien pide estos archivos es
+    // una máquina, y la regla anti-soft-404 de abajo solo mira a los bots
+    // conocidos (además de saltarse todo lo que lleve '.').
+    // NO generalizar a "cualquier ruta con punto": /sw.js, /registerSW.js,
+    // /manifest.webmanifest, /icons/*.png y /llms-full.txt son archivos reales
+    // servidos desde aquí, y el middleware corre ANTES del sistema de archivos.
+    if (host === 'toogo.store' || host === 'www.toogo.store') {
+        const p = url.pathname.toLowerCase();
+        // acme-challenge queda fuera: es la validación de los certificados SSL.
+        const wellKnownReal = p.startsWith('/.well-known/acme-challenge/');
+        const esSondaDeAgente =
+            (p.startsWith('/.well-known/') && !wellKnownReal)
+            || p === '/ai-catalog.json'
+            || p === '/ai-plugin.json'
+            || p === '/openapi.json';
+        if (esSondaDeAgente) {
+            return new Response('Not found', {
+                status: 404,
+                headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Robots-Tag': 'noindex' },
+            });
+        }
+    }
+
     if (
         (host === 'toogo.store' || host === 'www.toogo.store') &&
         CRAWLER_REGEX.test(userAgent) &&
