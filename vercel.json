@@ -139,7 +139,7 @@
       "destination": "/api/prerender?fn=store-seo-handler&path=/soporte"
     },
     {
-      "source": "/((?!robots\\.txt|toogo-indexnow-2f8c41ab9d7e4c06b153ae77d92f10c4\\.txt|llms\\.txt|llms-full\\.txt|b84560c66e5374c7e15ddf4bc5bd1090\\.txt|assets/|api/).*)",
+      "source": "/((?!robots\\.txt|llms\\.txt|llms-full\\.txt|b84560c66e5374c7e15ddf4bc5bd1090\\.txt|assets/|api/).*)",
       "destination": "/"
     }
   ],
