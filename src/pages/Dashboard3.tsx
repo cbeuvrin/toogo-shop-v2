@@ -21,6 +21,11 @@ import { TenantSelector } from "@/components/dashboard/TenantSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { useFavicon } from "@/hooks/useFavicon";
 type DashboardSection = "resumen" | "productos" | "ordenes" | "pagos" | "envios" | "analytics" | "editor-visual" | "compartir" | "mi-perfil";
+// Sub-pestañas dentro de "Mi Perfil". Sirven como lista blanca de deep-links:
+// un ?tab= que coincida abre Mi Perfil y después la sub-pestaña correspondiente.
+const PERFIL_SUBTABS = ["mis-datos", "usuarios", "mi-plan", "mis-dominios", "cupones", "whatsapp-bot", "legal"] as const;
+type ProfileSubTab = typeof PERFIL_SUBTABS[number];
+
 const Dashboard3 = () => {
   const {
     isAuthenticated,
@@ -41,7 +46,7 @@ const Dashboard3 = () => {
   const { progress } = useOnboardingProgress();
   const [completedSteps, setCompletedSteps] = useState(0);
   const [hideOnboarding, setHideOnboarding] = useState(false);
-  const [profileSubTab, setProfileSubTab] = useState<"mis-datos" | "usuarios" | "mi-plan" | "mis-dominios" | "cupones" | "whatsapp-bot" | "legal">("mis-datos");
+  const [profileSubTab, setProfileSubTab] = useState<ProfileSubTab>("mis-datos");
   const [logoUrl, setLogoUrl] = useState<string>('');
 
   // Onboarding is "done" once the 5 steps are complete (step_5_publish = steps
@@ -65,14 +70,15 @@ const Dashboard3 = () => {
     }
   }, [isOnboardingComplete, activeTab]);
 
-  // Soporte para deep-links desde emails (?tab=mis-dominios)
-  // Permite que el link del email de renovación lleve directo a la pantalla de dominios
+  // Soporte para deep-links: correos de renovación (?tab=mis-dominios) y el
+  // regreso desde Mercado Pago tras contratar un plan (?tab=mi-plan).
+  // Todas estas viven como sub-pestañas dentro de "mi-perfil", así que hay que
+  // abrir la pestaña padre y después la hija.
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get("tab");
-    if (tabParam === "mis-dominios") {
+    const tabParam = new URLSearchParams(window.location.search).get("tab");
+    if (tabParam && (PERFIL_SUBTABS as readonly string[]).includes(tabParam)) {
       setActiveTab("mi-perfil");
-      setProfileSubTab("mis-dominios");
+      setProfileSubTab(tabParam as ProfileSubTab);
     }
   }, []);
 

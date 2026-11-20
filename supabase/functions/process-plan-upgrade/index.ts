@@ -7,6 +7,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// El sitio público donde vive el dashboard. NO es SUPABASE_URL: esa apunta al
+// proyecto de Supabase, que no sirve ninguna ruta de la aplicación. Mandar ahí
+// al usuario tras pagar lo deja en un 404. Mismo valor que usa toggle-auto-renew.
+const SITE_URL = 'https://www.toogo.store';
+
 interface UpgradeRequest {
   plan_id: string;
   billing_cycle: 'monthly' | 'semi_annual' | 'annual';
@@ -152,14 +157,14 @@ serve(async (req) => {
 
     const mpData = await preapprovalClient.create({
       body: {
-        reason: `Plan Pro Toogo - ${billingLabel}`,
+        reason: planConfig.name || `Plan Toogo - ${billingLabel}`,
         auto_recurring: {
           frequency: billingFrequency,
           frequency_type: 'months',
           transaction_amount: planConfig.price_mxn,
           currency_id: 'MXN'
         },
-        back_url: `${Deno.env.get('SUPABASE_URL')}/dashboard/plan`,
+        back_url: `${SITE_URL}/dashboard?tab=mi-plan&upgrade=ok`,
         notification_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mercadopago-webhook`,
         payer_email: user.email
       }
